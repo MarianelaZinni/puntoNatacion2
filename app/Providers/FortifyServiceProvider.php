@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Fortify\Fortify;
+use Laravel\Fortify\Contracts\LogoutResponse as LogoutResponseContract;
+use App\Actions\Fortify\LogoutResponse;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -15,7 +17,8 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Registrar la implementación personalizada de la respuesta de logout
+        $this->app->singleton(LogoutResponseContract::class, LogoutResponse::class);
     }
 
     /**
