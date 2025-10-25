@@ -46,11 +46,24 @@
     </div>
 @endif
 
-        @if(session('error'))
-            <div class="mb-4 p-3 rounded bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200">
-                {{ session('error') }}
-            </div>
-        @endif
+       @if(session('error'))
+    <div id="flash-error"
+         class="mb-4 p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/30 dark:border-red-800 text-red-800 dark:text-red-200 flex items-start gap-3 shadow-sm"
+         role="alert" aria-live="assertive" data-timeout="8000">
+        <div class="flex-1">
+            {{ session('error') }}
+        </div>
+
+        <!-- Close button -->
+        <button type="button"
+                class="ml-2 -mr-1 p-1 rounded hover:bg-red-100 dark:hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] text-red-800 dark:text-red-200"
+                aria-label="Cerrar mensaje" id="flash-error-close">
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+@endif
 
         <div id="students-table-wrapper" class="overflow-x-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
@@ -315,6 +328,43 @@ document.addEventListener('DOMContentLoaded', function () {
     alert.addEventListener('focusin', function () {
         clearTimeout(timer);
     });
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Reusable handler for flash alerts
+    function initFlash(id, closeId) {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        const timeout = parseInt(el.dataset.timeout || 5000, 10);
+
+        const dismiss = () => {
+            el.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+            setTimeout(() => {
+                if (el && el.parentNode) el.parentNode.removeChild(el);
+            }, 500);
+        };
+
+        const timer = setTimeout(dismiss, timeout);
+
+        const closeBtn = document.getElementById(closeId);
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                clearTimeout(timer);
+                dismiss();
+            });
+        }
+
+        // If user focuses inside alert (keyboard), keep it visible
+        el.addEventListener('focusin', function () {
+            clearTimeout(timer);
+        });
+    }
+
+    // initialize both success and error if present
+    initFlash('flash-success', 'flash-success-close');
+    initFlash('flash-error', 'flash-error-close');
 });
 </script>
     @endpush
