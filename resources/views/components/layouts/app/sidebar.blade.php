@@ -14,8 +14,8 @@
             <flux:navlist variant="outline">
                 <flux:navlist.group :heading="__('Platform')" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
-                    <flux:navlist.item icon="user-group" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
-                    <flux:navlist.item icon="calendar-days" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                    <flux:navlist.item icon="user-group"  :href="route('students.index')"  :current="request()->routeIs('students.*')" wire:navigate> {{ __('Alumnos') }}</flux:navlist.item>
+                    <flux:navlist.item icon="calendar-days" :href="route('students.index')" :current="request()->routeIs('classes.*')" wire:navigate> {{ __('Clases') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 
@@ -121,6 +121,7 @@
 
         {{ $slot }}
 
+        @stack('scripts')
         @fluxScripts
     </body>
 </html>

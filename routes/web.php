@@ -15,19 +15,19 @@ Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-Route::get('/alumnos', [StudentController::class, 'index'])->name('students.index');
-Route::get('/alumnos/create', [StudentController::class, 'create'])->name('students.create');
-Route::post('/alumnos', [StudentController::class, 'store'])->name('students.store');
-Route::get('/alumnos/{alumno}', [StudentController::class, 'show'])->name('students.show');
-Route::get('/alumnos/{alumno}/edit', [StudentController::class, 'edit'])->name('students.edit');
-Route::put('/alumnos/{alumno}', [StudentController::class, 'update'])->name('students.update');
-Route::delete('/alumnos/{alumno}', [StudentController::class, 'destroy'])->name('students.destroy');
+Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
+Route::post('/students', [StudentController::class, 'store'])->name('students.store');
+Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
+Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
+Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
+Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
 
 // Extra: Anotar a clase y registrar pago
-Route::get('/alumnos/{alumno}/enroll-class', [StudentController::class, 'enrollClassForm'])->name('students.enrollClassForm');
-Route::post('/alumnos/{alumno}/enroll-class', [StudentController::class, 'enrollClass'])->name('students.enrollClass');
-//Route::get('/alumnos/{alumno}/register-payment', [StudentController::class, 'registerPaymentForm'])->name('students.registerPaymentForm');
-//Route::post('/alumnos/{alumno}/register-payment', [StudentController::class, 'registerPayment'])->name('students.registerPayment');
+Route::get('/students/{student}/enroll-class', [StudentController::class, 'enrollClassForm'])->name('students.enrollClassForm');
+Route::post('/students/{student}/enroll-class', [StudentController::class, 'enrollClass'])->name('students.enrollClass');
+//Route::get('/students/{student}/register-payment', [StudentController::class, 'registerPaymentForm'])->name('students.registerPaymentForm');
+//Route::post('/students/{student}/register-payment', [StudentController::class, 'registerPayment'])->name('students.registerPayment');
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
