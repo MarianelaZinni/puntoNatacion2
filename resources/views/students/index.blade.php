@@ -1,15 +1,12 @@
 <x-layouts.app title="Alumnos">
     <div class="max-w-6xl mx-auto py-8 px-4">
         <div class="flex items-center justify-between mb-6">
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Alumnos</h1>
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">ALUMNOS</h1>
 
             <a href="{{ route('students.create') }}"
-               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-800 text-white rounded shadow hover:bg-blue-700 dark:hover:bg-blue-900 transition">
-                <!-- Icon (plus) -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Crear nuevo alumno
+               class="inline-flex items-center gap-2 px-4 py-2 bg-[#29b1dc] hover:bg-[#24a8cf] text-white rounded shadow transition focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc]">
+                 <flux:icon name="user-plus" class="h-5 w-5" />
+                Nuevo Alumno
             </a>
         </div>
 
