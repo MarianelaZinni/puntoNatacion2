@@ -28,10 +28,23 @@
         </div>
 
         @if(session('success'))
-            <div class="mb-4 p-3 rounded bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200">
-                {{ session('success') }}
-            </div>
-        @endif
+    <div id="flash-success" class="mb-4 p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/30 dark:border-green-800 text-green-800 dark:text-green-200 flex items-start gap-3 shadow-sm"
+         role="status" aria-live="polite" data-timeout="5000">
+        <div class="flex-1">
+            {{ session('success') }}
+        </div>
+
+        <!-- Close button -->
+        <button type="button"
+                class="ml-2 -mr-1 p-1 rounded hover:bg-green-100 dark:hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] text-green-800 dark:text-green-200"
+                aria-label="Cerrar mensaje" id="flash-success-close">
+            <!-- simple X icon -->
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+@endif
 
         @if(session('error'))
             <div class="mb-4 p-3 rounded bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200">
@@ -269,5 +282,40 @@
         });
     })();
     </script>
+    <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const alert = document.getElementById('flash-success');
+    if (!alert) return;
+
+    // lee timeout desde data attribute (ms)
+    const timeout = parseInt(alert.dataset.timeout || 5000, 10);
+
+    // helper: fade out and remove
+    const dismissAlert = () => {
+        alert.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+        // after transition remove from DOM
+        setTimeout(() => {
+            if (alert && alert.parentNode) alert.parentNode.removeChild(alert);
+        }, 500);
+    };
+
+    // auto dismiss
+    const timer = setTimeout(dismissAlert, timeout);
+
+    // close button
+    const closeBtn = document.getElementById('flash-success-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+            clearTimeout(timer);
+            dismissAlert();
+        });
+    }
+
+    // if user focuses inside alert (keyboard), keep it visible — optional
+    alert.addEventListener('focusin', function () {
+        clearTimeout(timer);
+    });
+});
+</script>
     @endpush
 </x-layouts.app>
