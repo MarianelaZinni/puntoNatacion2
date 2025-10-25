@@ -101,7 +101,7 @@ class StudentController extends Controller
         $request->validate([
             'dni' => 'required|unique:students,dni,' . $student->id,
             'name' => 'required',
-            'email' => 'required|email|unique:students,eail,' . $student->id,
+            'email' => 'required|email|unique:students,email,' . $student->id,
             'address' => 'nullable',
             'phone' => 'nullable',
         ]);
