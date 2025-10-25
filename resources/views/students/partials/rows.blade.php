@@ -31,6 +31,22 @@
                 {{-- <FluxIcon name="pencil-square" class="h-5 w-5" /> --}}
             </a>
 
+             <!-- Eliminar (user-minus) - form required for DELETE -->
+            <form action="{{ route('students.destroy', $student) }}" method="POST" class="inline">
+                @csrf
+                @method('DELETE')
+                <button type="button"
+                        onclick="confirmDelete(this)"
+                        title="Eliminar {{ $student->name }}"
+                        aria-label="Eliminar {{ $student->name }}"
+                        class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-400 border-0">
+                    <span class="sr-only">Eliminar</span>
+
+                    <flux:icon name="user-minus" class="h-5 w-5" />
+                    {{-- <FluxIcon name="user-minus" class="h-5 w-5" /> --}}
+                </button>
+            </form>
+
             <!-- Anotar a clase (clipboard-document-check) -->
             <a href="{{ route('students.enrollClassForm', $student) }}"
                title="Anotar a clase {{ $student->name }}"
@@ -52,22 +68,6 @@
                 <flux:icon name="currency-dollar" class="h-5 w-5" />
                 {{-- <FluxIcon name="currency-dollar" class="h-5 w-5" /> --}}
             </a>
-
-            <!-- Eliminar (user-minus) - form required for DELETE -->
-            <form action="{{ route('students.destroy', $student) }}" method="POST" class="inline">
-                @csrf
-                @method('DELETE')
-                <button type="button"
-                        onclick="confirmDelete(this)"
-                        title="Eliminar {{ $student->name }}"
-                        aria-label="Eliminar {{ $student->name }}"
-                        class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-400 border-0">
-                    <span class="sr-only">Eliminar</span>
-
-                    <flux:icon name="user-minus" class="h-5 w-5" />
-                    {{-- <FluxIcon name="user-minus" class="h-5 w-5" /> --}}
-                </button>
-            </form>
 
         </div>
     </td>
