@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Volt;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\SubjectController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -22,6 +23,14 @@ Route::get('/students/{student}', [StudentController::class, 'show'])->name('stu
 Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
 Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
 Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
+
+Route::get('/subjects', [SubjectController::class, 'index'])->name('subjects.index');
+Route::get('/subjects/events', [SubjectController::class, 'events']);
+Route::post('/subjects', [SubjectController::class, 'store']);
+Route::put('/subjects/{subject}', [SubjectController::class, 'update']);
+Route::put('/subjects/{subject}/move', [SubjectController::class, 'move']);
+Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy']);
+
 
 // Extra: Anotar a clase y registrar pago
 Route::get('/students/{student}/enroll-class', [StudentController::class, 'enrollClassForm'])->name('students.enrollClassForm');
