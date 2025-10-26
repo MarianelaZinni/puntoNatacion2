@@ -12,7 +12,7 @@
             </a>
 
             <flux:navlist variant="outline">
-                <flux:navlist.group :heading="__('Platform')" class="grid">
+                <flux:navlist.group class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
                     <flux:navlist.item icon="user-group"  :href="route('students.index')"  :current="request()->routeIs('students.*')" wire:navigate> {{ __('Alumnos') }}</flux:navlist.item>
                     <flux:navlist.item icon="calendar-days" :href="route('subjects.index')" :current="request()->routeIs('subjects.*')" wire:navigate> {{ __('Clases') }}</flux:navlist.item>
