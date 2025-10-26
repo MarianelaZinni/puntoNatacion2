@@ -8,10 +8,13 @@ use Illuminate\Http\Request;
 
 class SubjectController extends Controller
 {
-    // Página del calendario
+    /**
+     * Página del calendario
+     */
     public function index()
     {
         $subjectTypes = SubjectType::all();
+
         // Colores fijos por materia (id => color)
         $subjectColors = [
             1 => '#29b1dc',
@@ -20,23 +23,29 @@ class SubjectController extends Controller
             4 => '#ed64a6',
             5 => '#a78bfa',
         ];
+
         return view('subjects.index', compact('subjectTypes', 'subjectColors'));
     }
 
-    // Devuelve los eventos en formato FullCalendar (recurrentes semanalmente)
+    /**
+     * Devuelve los eventos en formato FullCalendar (recurrentes semanalmente)
+     */
     public function events()
     {
+        // Eager load subjectType y students para evitar N+1
         $subjects = Subject::with(['subjectType', 'students'])->get();
+
         $events = [];
         $daysMap = [
-            'Domingo' => 7,
-            'Lunes' => 1,
-            'Martes' => 2,
-            'Miércoles' => 3,
-            'Jueves' => 4,
-            'Viernes' => 5,
-            'Sábado' => 6,
+            'Domingo'   => 0,
+            'Lunes'     => 1,
+            'Martes'    => 2,
+            'Miercoles' => 3,
+            'Jueves'    => 4,
+            'Viernes'   => 5,
+            'Sabado'    => 6,
         ];
+        // Colores fijos por materia (id => color)
         $subjectColors = [
             1 => '#29b1dc',
             2 => '#48bb78',
@@ -53,9 +62,17 @@ class SubjectController extends Controller
             $enrolled = $subject->students ? $subject->students->count() : 0;
             $free_capacity = $subject->capacity - $enrolled;
 
+            // Usa description de subjectType como base del título; fallback a value o 'Sin materia'
+            $baseTitle = optional($subject->subjectType)->description
+                ?? optional($subject->subjectType)->value
+                ?? 'Sin materia';
+
+            // Concatenamos cupos al título para que FullCalendar lo muestre directamente
+            $titleWithCapacity = sprintf('%s — Cupo: %d | Libre: %d', $baseTitle, $subject->capacity, $free_capacity);
+
             $events[] = [
                 'id' => $subject->id,
-                'title' => $subject->subjectType->name ?? 'Sin materia',
+                'title' => $titleWithCapacity,
                 'daysOfWeek' => [$dow],
                 'startTime' => substr($subject->start_time, 0, 5),
                 'endTime' => substr($subject->end_time, 0, 5),
@@ -68,10 +85,13 @@ class SubjectController extends Controller
                 ],
             ];
         }
+
         return response()->json($events);
     }
 
-    // Crear clase
+    /**
+     * Crear clase
+     */
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -81,11 +101,15 @@ class SubjectController extends Controller
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
         ]);
+
         $subject = Subject::create($data);
+
         return response()->json(['success' => true, 'subject' => $subject]);
     }
 
-    // Editar clase
+    /**
+     * Editar clase
+     */
     public function update(Request $request, Subject $subject)
     {
         $data = $request->validate([
@@ -95,11 +119,15 @@ class SubjectController extends Controller
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
         ]);
+
         $subject->update($data);
+
         return response()->json(['success' => true, 'subject' => $subject]);
     }
 
-    // Drag & drop: mover clase a otro día/hora
+    /**
+     * Drag & drop: mover clase a otro día/hora
+     */
     public function move(Request $request, Subject $subject)
     {
         $data = $request->validate([
@@ -107,14 +135,19 @@ class SubjectController extends Controller
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
         ]);
+
         $subject->update($data);
+
         return response()->json(['success' => true, 'subject' => $subject]);
     }
 
-    // Borrar clase
+    /**
+     * Borrar clase
+     */
     public function destroy(Subject $subject)
     {
         $subject->delete();
+
         return response()->json(['success' => true]);
     }
 }
