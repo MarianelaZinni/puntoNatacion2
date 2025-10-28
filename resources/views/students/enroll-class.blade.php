@@ -22,7 +22,7 @@
 
         <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
             <p class="mb-4 text-sm text-gray-600 dark:text-gray-300">
-                Seleccioná la materia (primer nivel), luego elegí el día y por último el horario. Al hacer clic en un horario se abrirá el diálogo para confirmar la inscripción.
+                Seleccioná la clase (primer nivel), luego elegí el día y por último el horario. Al hacer clic en un horario se abrirá el diálogo para confirmar la inscripción.
             </p>
 
             {{-- Accordion: subjectType -> day -> time slots --}}
