@@ -10,9 +10,9 @@
                 <input type="hidden" name="id" id="id">
 
                 <div>
-                    <label for="subject_type_id" class="block font-medium mb-1">Materia</label>
+                    <label for="subject_type_id" class="block font-medium mb-1">Clase</label>
                     <select name="subject_type_id" id="subject_type_id" class="w-full rounded border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100" required>
-                        <option value="">Seleccionar materia</option>
+                        <option value="">Seleccionar clase</option>
                         @foreach($subjectTypes as $subjectType)
                             <option value="{{ $subjectType->id }}">{{ $subjectType->description ?? $subjectType->value ?? $subjectType->name }}</option>
                         @endforeach
@@ -350,8 +350,57 @@
                 },
             });
 
-            calendar.render();
-            window._subjectsCalendar = calendar;
+            // --- Deferred render: only render when #calendar is visible/have size ---
+            function ensureCalendarRendered() {
+                if (calendar._rendered) return;
+                try {
+                    calendar.render();
+                    calendar._rendered = true;
+                    // attach to global reference once rendered
+                    window._subjectsCalendar = calendar;
+                    // force a size update if available
+                    if (typeof calendar.updateSize === 'function') calendar.updateSize();
+                } catch (err) {
+                    console.warn('Error al renderizar calendario, reintentando:', err);
+                    setTimeout(() => {
+                        try {
+                            calendar.render();
+                            calendar._rendered = true;
+                            window._subjectsCalendar = calendar;
+                            if (typeof calendar.updateSize === 'function') calendar.updateSize();
+                        } catch (e) {
+                            console.error('Segundo intento de render falló', e);
+                        }
+                    }, 200);
+                }
+            }
+
+            // If the element already has size, render now; otherwise observe
+            const rect = calendarEl.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0 && window.getComputedStyle(calendarEl).display !== 'none') {
+                ensureCalendarRendered();
+            } else if ('IntersectionObserver' in window) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            ensureCalendarRendered();
+                            try { io.disconnect(); } catch(e) {}
+                        }
+                    });
+                }, { root: null, threshold: 0.01 });
+                io.observe(calendarEl);
+            } else {
+                // fallback poll
+                let attempts = 0;
+                const interval = setInterval(() => {
+                    attempts++;
+                    const r = calendarEl.getBoundingClientRect();
+                    if ((r.width > 0 && r.height > 0 && window.getComputedStyle(calendarEl).display !== 'none') || attempts >= 25) {
+                        clearInterval(interval);
+                        ensureCalendarRendered();
+                    }
+                }, 200);
+            }
         }; // end initSubjectsCalendar
 
         // Call on standard DOMContentLoaded
