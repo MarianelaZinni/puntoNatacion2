@@ -92,33 +92,57 @@
         flex-direction: column;
         min-width: 0; /* for ellipsis to work */
     }
-    .fc-custom-time {
-        font-size: 0.78rem;
-        opacity: 0.95;
-        color: rgba(255,255,255,0.95);
-        margin-bottom: 2px;
-    }
+    /* We will render time inline with title; allow wrapping if needed */
     .fc-custom-title {
         font-weight: 600;
         font-size: 0.95rem;
         color: inherit;
-        white-space: nowrap;
+        white-space: normal;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
-    /* Avoid clipping by common wrappers */
-    .fc .fc-timegrid-event {
+    /*
+      IMPORTANT: Force internal FullCalendar scrollers to expand instead of scrolling internally.
+      This removes calendar internal vertical scrollbar; the page will scroll instead.
+    */
+    .fc .fc-scroller {
         overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
     }
+    .fc .fc-timegrid-body, .fc .fc-timegrid-slots, .fc .fc-timegrid {
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+    }
+
+    /* Ensure the #calendar container expands to fit content */
+    #calendar {
+        height: auto !important;
+        min-height: 460px;
+    }
+
+    /* Keep event contents readable and reserve a bit of right padding */
     .fc .fc-timegrid-event .fc-event-main-frame {
-        padding: 6px 10px;
         box-sizing: border-box;
+        padding-right: 80px;
+    }
+
+    /* Remove top white stripe and force transparency in FullCalendar internal wrappers */
+    #calendar,
+    .fc,
+    .fc .fc-scrollgrid,
+    .fc .fc-scroller,
+    .fc .fc-timegrid {
+      background: transparent !important;
+      box-shadow: none !important;
     }
     </style>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    (function () {
+        // Idempotent initializer for the calendar so it works on client-side navigation
         const eventsUrl = "{{ url('/subjects/events') }}";
         const baseUrl = "{{ url('/subjects') }}";
         const subjectColors = @json($subjectColors);
@@ -132,7 +156,6 @@
             }
         }
 
-        // helper: add minutes to a Date and return HH:MM
         function addMinutesToTime(date, minutes) {
             const d = new Date(date.getTime());
             d.setMinutes(d.getMinutes() + minutes);
@@ -141,14 +164,12 @@
             return `${hh}:${mm}`;
         }
 
-        // parse "HH:MM" to minutes count
         function timeToMinutes(t) {
             if (!t) return null;
             const [hh, mm] = t.split(':').map(Number);
             return hh * 60 + mm;
         }
 
-        // Frontend validation: start < end
         function validateTimes(startTime, endTime) {
             if (!startTime || !endTime) return false;
             const s = timeToMinutes(startTime);
@@ -156,14 +177,8 @@
             return s < e;
         }
 
-        // show modal and set form values
-        function showModal() {
-            document.getElementById('class-modal').classList.remove('hidden');
-        }
-        function hideModal() {
-            document.getElementById('class-modal').classList.add('hidden');
-            setFormValues({});
-        }
+        function showModal() { document.getElementById('class-modal').classList.remove('hidden'); }
+        function hideModal() { document.getElementById('class-modal').classList.add('hidden'); setFormValues({}); }
 
         function setFormValues(data) {
             ['id','subject_type_id','capacity','day','start_time','end_time'].forEach(function(field){
@@ -172,160 +187,221 @@
             });
         }
 
-        var calendarEl = document.getElementById('calendar');
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'timeGridDay',
-            locale: 'es',
-            firstDay: 1,            // semana empieza el LUNES
-            allDaySlot: false,
-            slotMinTime: '07:00:00',
-            slotMaxTime: '22:00:00',
-
-            buttonText: {
-                today: 'Hoy',
-                day: 'Día',
-                week: 'Semana',
-                month: 'Mes',
-                list: 'Agenda'
-            },
-
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'timeGridDay,timeGridWeek'
-            },
-
-            events: {
-                url: eventsUrl,
-                method: 'GET',
-                failure: function() {
-                    console.error('No se pudieron cargar las clases desde', eventsUrl);
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar las clases. Revisa la consola.'});
-                }
-            },
-
-            // Permite crear arrastrando (select) y también al hacer click en un espacio vacío (dateClick)
-            selectable: true,
-            select: function(info) {
-                // si se seleccionó un rango, usamos start y end
-                const start = info.start;
-                const end = info.end;
-                showModal();
-                setFormValues({
-                    day: getDayName(start),
-                    start_time: String(start.getHours()).padStart(2,'0') + ':' + String(start.getMinutes()).padStart(2,'0'),
-                    // end viene como el límite (excluyente). Ajustamos para mostrar el minuto anterior como hora de fin si queremos precisión visual.
-                    end_time: String(new Date(end.getTime() - 1).getHours()).padStart(2,'0') + ':' + String(new Date(end.getTime() - 1).getMinutes()).padStart(2,'0')
-                });
-                document.getElementById('modal-title').textContent = 'Nueva Clase';
-                document.getElementById('delete-btn').classList.add('hidden');
-            },
-
-            // dateClick: click en espacio vacío crea una nueva clase con duración por defecto (50 min)
-            dateClick: function(info) {
-                const clicked = info.date; // Date
-                showModal();
-                const defaultEnd = addMinutesToTime(clicked, 50);
-                const startTime = String(clicked.getHours()).padStart(2,'0') + ':' + String(clicked.getMinutes()).padStart(2,'0');
-                setFormValues({
-                    day: getDayName(clicked),
-                    start_time: startTime,
-                    end_time: defaultEnd
-                });
-                document.getElementById('modal-title').textContent = 'Nueva Clase';
-                document.getElementById('delete-btn').classList.add('hidden');
-            },
-
-            // render content: time + title (title viene del backend con cupos si los concatenaste)
-            eventContent: function(arg) {
-                const ev = arg.event;
-                const container = document.createElement('div');
-                container.className = 'fc-custom-event';
-
-                const left = document.createElement('div');
-                left.className = 'fc-custom-left';
-                const timeEl = document.createElement('div');
-                timeEl.className = 'fc-custom-time';
-                timeEl.textContent = arg.timeText || (ev.start ? formatTimeFromDate(ev.start) : '');
-                const titleEl = document.createElement('div');
-                titleEl.className = 'fc-custom-title';
-                titleEl.textContent = ev.title || '';
-
-                left.appendChild(timeEl);
-                left.appendChild(titleEl);
-
-                container.appendChild(left);
-                return { domNodes: [container] };
-            },
-
-            eventDidMount: function(info) {
-                try {
-                    const ev = info.event;
-                    const color = subjectColors[ev.extendedProps.subject_type_id] || ev.extendedProps.color || '#29b1dc';
-                    info.el.style.backgroundColor = color;
-                    info.el.style.borderColor = color;
-                    info.el.style.overflow = 'visible';
-                } catch (e) {
-                    console.warn('eventDidMount warning', e);
-                }
-            },
-
-            eventClick: function(info) {
-                // editar clase existente
-                showModal();
-                setFormValues({
-                    id: info.event.id,
-                    subject_type_id: info.event.extendedProps.subject_type_id,
-                    capacity: info.event.extendedProps.capacity,
-                    day: info.event.extendedProps.day,
-                    start_time: info.event.start ? formatTimeFromDate(info.event.start) : (info.event.extendedProps.startTime || ''),
-                    end_time: info.event.end ? formatTimeFromDate(info.event.end) : (info.event.extendedProps.endTime || ''),
-                });
-                document.getElementById('modal-title').textContent = 'Editar Clase';
-                document.getElementById('delete-btn').classList.remove('hidden');
-            },
-
-            // Drag & drop: mover clase a otro día/hora
-            editable: true,
-            eventDrop: function(info) {
-                const event = info.event;
-                const newDay = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][event.start.getDay()];
-                fetch(baseUrl + '/' + event.id + '/move', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                    body: JSON.stringify({
-                        day: newDay,
-                        start_time: event.start.toTimeString().substring(0,5),
-                        end_time: event.end.toTimeString().substring(0,5),
-                    })
-                })
-                .then(r => {
-                    if (!r.ok) throw new Error('Network response was not ok');
-                    return r.json();
-                })
-                .then(() => calendar.refetchEvents())
-                .catch(err => {
-                    console.error('Error al mover la clase:', err);
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo mover la clase. Revisa la consola.'});
-                    calendar.refetchEvents();
-                });
-            },
-        });
-
-        calendar.render();
-
-        // Helpers
         function getDayName(date) {
             return ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][date.getDay()];
         }
 
-        // Modal handlers
-        document.getElementById('cancel-btn').onclick = hideModal;
+        // main init function (idempotent)
+        window.initSubjectsCalendar = function initSubjectsCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            if (!calendarEl) return;
+
+            // destroy previous instance if exists
+            if (window._subjectsCalendar) {
+                try { window._subjectsCalendar.destroy(); } catch (e) { /* ignore */ }
+                window._subjectsCalendar = null;
+            }
+
+            // Ensure container is auto height so internal scrollers won't appear
+            calendarEl.style.height = 'auto';
+
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridDay',
+                locale: 'es',
+                firstDay: 1,
+                allDaySlot: false,
+                slotMinTime: '07:00:00',
+                slotMaxTime: '22:00:00',
+
+                // let FullCalendar size itself by content (no internal scroller)
+                height: 'auto',
+
+                buttonText: {
+                    today: 'Hoy',
+                    day: 'Día',
+                    week: 'Semana',
+                    month: 'Mes',
+                    list: 'Agenda'
+                },
+
+                views: {
+                    timeGridDay: { titleFormat: { year: 'numeric', month: 'long', day: 'numeric' } },
+                    timeGridWeek: { titleFormat: { year: 'numeric', month: 'short', day: 'numeric' } }
+                },
+
+                events: {
+                    url: eventsUrl,
+                    method: 'GET',
+                    failure: function() {
+                        console.error('No se pudieron cargar las clases desde', eventsUrl);
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudieron cargar las clases. Revisa la consola.'});
+                    }
+                },
+
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'timeGridDay,timeGridWeek'
+                },
+
+                selectable: true,
+                editable: true,
+
+                /* IMPORTANT CHANGE:
+                   Render the time inline with the title so the time text is never hidden by internal layout.
+                   This solves the issue where arg.timeText disappears in some stacked/column layouts.
+                */
+                eventContent: function(arg) {
+                    const ev = arg.event;
+                    const container = document.createElement('div');
+                    container.className = 'fc-custom-event';
+
+                    const left = document.createElement('div');
+                    left.className = 'fc-custom-left';
+
+                    const titleEl = document.createElement('div');
+                    titleEl.className = 'fc-custom-title';
+
+                    // Put the time text inline before the title so it is always visible
+                    const timePrefix = arg.timeText ? arg.timeText + ' — ' : '';
+                    // Use the event title (which already may include "Cupo: ..." from backend)
+                    titleEl.textContent = timePrefix + (ev.title || '');
+
+                    left.appendChild(titleEl);
+                    container.appendChild(left);
+                    return { domNodes: [container] };
+                },
+
+                eventDidMount: function(info) {
+                    try {
+                        const ev = info.event;
+                        const color = subjectColors[ev.extendedProps.subject_type_id] || ev.extendedProps.color || '#29b1dc';
+                        info.el.style.backgroundColor = color;
+                        info.el.style.borderColor = color;
+                        info.el.style.overflow = 'visible';
+                    } catch (e) {
+                        console.warn('eventDidMount warning', e);
+                    }
+                },
+
+                select: function(info) {
+                    const start = info.start;
+                    const end = info.end;
+                    showModal();
+                    setFormValues({
+                        day: getDayName(start),
+                        start_time: String(start.getHours()).padStart(2,'0') + ':' + String(start.getMinutes()).padStart(2,'0'),
+                        end_time: String(new Date(end.getTime() - 1).getHours()).padStart(2,'0') + ':' + String(new Date(end.getTime() - 1).getMinutes()).padStart(2,'0')
+                    });
+                    document.getElementById('modal-title').textContent = 'Nueva Clase';
+                    document.getElementById('delete-btn').classList.add('hidden');
+                },
+
+                dateClick: function(info) {
+                    const clicked = info.date;
+                    showModal();
+                    const defaultEnd = addMinutesToTime(clicked, 50);
+                    const startTime = String(clicked.getHours()).padStart(2,'0') + ':' + String(clicked.getMinutes()).padStart(2,'0');
+                    setFormValues({
+                        day: getDayName(clicked),
+                        start_time: startTime,
+                        end_time: defaultEnd
+                    });
+                    document.getElementById('modal-title').textContent = 'Nueva Clase';
+                    document.getElementById('delete-btn').classList.add('hidden');
+                },
+
+                eventClick: function(info) {
+                    showModal();
+                    setFormValues({
+                        id: info.event.id,
+                        subject_type_id: info.event.extendedProps.subject_type_id,
+                        capacity: info.event.extendedProps.capacity,
+                        day: info.event.extendedProps.day,
+                        start_time: info.event.start ? formatTimeFromDate(info.event.start) : (info.event.extendedProps.startTime || ''),
+                        end_time: info.event.end ? formatTimeFromDate(info.event.end) : (info.event.extendedProps.endTime || ''),
+                    });
+                    document.getElementById('modal-title').textContent = 'Editar Clase';
+                    document.getElementById('delete-btn').classList.remove('hidden');
+                },
+
+                eventDrop: function(info) {
+                    const event = info.event;
+                    const newDay = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][event.start.getDay()];
+                    fetch(baseUrl + '/' + event.id + '/move', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                        body: JSON.stringify({
+                            day: newDay,
+                            start_time: event.start.toTimeString().substring(0,5),
+                            end_time: event.end.toTimeString().substring(0,5),
+                        })
+                    })
+                    .then(r => {
+                        if (!r.ok) throw new Error('Network response was not ok');
+                        return r.json();
+                    })
+                    .then(() => window._subjectsCalendar.refetchEvents())
+                    .catch(err => {
+                        console.error('Error al mover la clase:', err);
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo mover la clase. Revisa la consola.'});
+                        window._subjectsCalendar.refetchEvents();
+                    });
+                },
+            });
+
+            calendar.render();
+            window._subjectsCalendar = calendar;
+        }; // end initSubjectsCalendar
+
+        // Call on standard DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', function () {
+            window.initSubjectsCalendar();
+        });
+
+        // Also call immediately if document already parsed (client-side nav might inject view after DOMContentLoaded)
+        if (document.readyState === 'interactive' || document.readyState === 'complete') {
+            setTimeout(() => window.initSubjectsCalendar(), 0);
+        }
+
+        // Listen to common PJAX/Turbo/Flux navigation events so the calendar is initialized on client-side navigation.
+        [
+            'turbo:load',
+            'turbolinks:load',
+            'pjax:complete',
+            'flux:navigate',
+            'flux:content:loaded',
+            'load'
+        ].forEach(evt => {
+            document.addEventListener(evt, () => {
+                // small delay to let the new content be mounted
+                setTimeout(() => window.initSubjectsCalendar(), 50);
+            });
+        });
+
+        // MutationObserver fallback: if #calendar is added dynamically, init calendar
+        const mo = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                for (const n of m.addedNodes) {
+                    if (n instanceof HTMLElement) {
+                        if (n.id === 'calendar' || n.querySelector && n.querySelector('#calendar')) {
+                            setTimeout(() => window.initSubjectsCalendar(), 20);
+                            return;
+                        }
+                    }
+                }
+            }
+        });
+        mo.observe(document.body, { childList: true, subtree: true });
+
+        // Modal handlers and form submit (unchanged)
+        document.addEventListener('click', function(e){
+            if (e.target && e.target.id === 'cancel-btn') hideModal();
+        });
         window.onclick = function(e) {
             if (e.target == document.getElementById('class-modal')) hideModal();
         };
 
-        // Guardar (crear/editar) con validación en frontend
         document.getElementById('class-form').onsubmit = function(e) {
             e.preventDefault();
 
@@ -336,7 +412,6 @@
             const start_time = document.getElementById('start_time').value;
             const end_time = document.getElementById('end_time').value;
 
-            // Frontend validation: start < end
             if (!validateTimes(start_time, end_time)) {
                 Swal.fire({ icon: 'warning', title: 'Horas inválidas', text: 'La hora de inicio debe ser menor que la hora de fin.'});
                 return;
@@ -362,7 +437,7 @@
             })
             .then(data => {
                 hideModal();
-                calendar.refetchEvents();
+                if (window._subjectsCalendar) window._subjectsCalendar.refetchEvents();
                 Swal.fire({ icon: 'success', title: 'Listo', text: 'Clase guardada correctamente.'});
             })
             .catch(err => {
@@ -371,7 +446,6 @@
             });
         };
 
-        // Eliminar con SweetAlert confirm
         document.getElementById('delete-btn').onclick = function() {
             const id = document.getElementById('id').value;
             if (!id) return;
@@ -397,7 +471,7 @@
                     })
                     .then(data => {
                         hideModal();
-                        calendar.refetchEvents();
+                        if (window._subjectsCalendar) window._subjectsCalendar.refetchEvents();
                         Swal.fire({ icon: 'success', title: 'Eliminado', text: 'La clase fue eliminada.'});
                     })
                     .catch(err => {
@@ -407,6 +481,6 @@
                 }
             });
         };
-    });
+    })();
     </script>
 </x-layouts.app>

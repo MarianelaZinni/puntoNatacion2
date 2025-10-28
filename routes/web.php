@@ -33,9 +33,16 @@ Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy']);
 
 
 // Extra: Anotar a clase y registrar pago
-Route::get('/students/{student}/enroll-class', [StudentController::class, 'enrollClassForm'])->name('students.enrollClassForm');
-Route::post('/students/{student}/enroll-class', [StudentController::class, 'enrollClass'])->name('students.enrollClass');
-//Route::get('/students/{student}/register-payment', [StudentController::class, 'registerPaymentForm'])->name('students.registerPaymentForm');
+Route::get('students/{student}/enroll', [StudentController::class, 'enrollClassForm'])
+    ->name('students.enrollClassForm');
+
+Route::post('students/{student}/enroll', [StudentController::class, 'enrollClass'])
+    ->name('students.enroll');
+
+Route::post('students/{student}/unenroll', [StudentController::class, 'unenrollClass'])
+    ->name('students.unenroll');
+    
+    //Route::get('/students/{student}/register-payment', [StudentController::class, 'registerPaymentForm'])->name('students.registerPaymentForm');
 //Route::post('/students/{student}/register-payment', [StudentController::class, 'registerPayment'])->name('students.registerPayment');
 
 Route::middleware(['auth'])->group(function () {

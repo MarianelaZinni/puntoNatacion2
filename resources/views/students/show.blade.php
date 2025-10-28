@@ -43,7 +43,6 @@
 
         {{-- Detalles --}}
         <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
-            <!-- Increased vertical spacing between rows (gap-y-8) and larger spacing between dt/dd (dd mt-3) -->
             <dl class="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-6 text-base">
                 <div>
                     <dt class="text-base font-medium text-gray-700 dark:text-gray-300">ID</dt>
@@ -70,14 +69,10 @@
                     <dd class="mt-3 text-gray-900 dark:text-gray-100 font-medium leading-relaxed">{{ $student->phone ?? '-' }}</dd>
                 </div>
 
-                
-
                 <div class="sm:col-span-2">
                     <dt class="text-base font-medium text-gray-700 dark:text-gray-300">Dirección</dt>
                     <dd class="mt-3 text-gray-900 dark:text-gray-100 font-medium leading-relaxed">{{ $student->address ?? '-' }}</dd>
                 </div>
-
-               
 
                 <div>
                     <dt class="text-base font-medium text-gray-700 dark:text-gray-300">Creado</dt>
@@ -90,7 +85,53 @@
                 </div>
             </dl>
 
-            {{-- Actions (below details, same style as edit) --}}
+            
+
+            {{-- Clases inscritas --}}
+            <div class="mt-8">
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Clases inscritas</h2>
+
+                @if($student->subjects->isEmpty())
+                    <div class="p-4 bg-gray-50 dark:bg-zinc-900/40 rounded border border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-gray-200">
+                        El alumno no está inscripto en ninguna clase.
+                    </div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead>
+                                <tr class="text-xs text-gray-500 uppercase">
+                                    <th class="px-3 py-2">Materia</th>
+                                    <th class="px-3 py-2">Día</th>
+                                    <th class="px-3 py-2">Horario</th>
+                                    <th class="px-3 py-2">Cupo</th>
+                                    <th class="px-3 py-2">Inscriptos</th>
+                                    <th class="px-3 py-2">Libre</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($student->subjects as $subject)
+                                    @php
+                                        $subjectType = $subject->subjectType;
+                                        $title = $subjectType->description ?? $subjectType->value ?? 'Sin materia';
+                                        $enrolled = $subject->students_count ?? ($subject->students ? $subject->students->count() : 0);
+                                        $free = max(0, ($subject->capacity ?? 0) - $enrolled);
+                                    @endphp
+                                    <tr class="border-t">
+                                        <td class="px-3 py-3 font-medium text-gray-800 dark:text-gray-100">{{ $title }}</td>
+                                        <td class="px-3 py-3 text-gray-600 dark:text-gray-200">{{ $subject->day }}</td>
+                                        <td class="px-3 py-3 text-gray-600 dark:text-gray-200">{{ ($subject->start_time ?? '') . ' - ' . ($subject->end_time ?? '') }}</td>
+                                        <td class="px-3 py-3 text-gray-600 dark:text-gray-200">{{ $subject->capacity ?? '-' }}</td>
+                                        <td class="px-3 py-3 text-gray-600 dark:text-gray-200">{{ $enrolled }}</td>
+                                        <td class="px-3 py-3 text-gray-600 dark:text-gray-200">{{ $free }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+
+            {{-- Actions --}}
             <div class="mt-6 pt-3 flex flex-wrap items-center justify-end gap-3">
                 <a href="{{ route('students.index') }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition text-base">
                     Volver
