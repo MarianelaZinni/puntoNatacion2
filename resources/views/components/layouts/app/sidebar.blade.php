@@ -23,6 +23,7 @@
 
 
             <!-- Desktop User Menu -->
+             @auth
             <flux:dropdown class="hidden lg:block" position="bottom" align="start">
                 <flux:profile
                     :name="auth()->user()->name"
@@ -67,6 +68,12 @@
                     </form>
                 </flux:menu>
             </flux:dropdown>
+             @else
+                {{-- Guest: redirigir automáticamente al login (cliente-side) para evitar errores por auth()->user() null --}}
+                <script>
+                    window.location.href = "{{ route('login') }}";
+                </script>
+            @endauth
         </flux:sidebar>
 
         <!-- Mobile User Menu -->
@@ -74,7 +81,7 @@
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
             <flux:spacer />
-
+@auth
             <flux:dropdown position="top" align="end">
                 <flux:profile
                     :initials="auth()->user()->initials()"
@@ -117,6 +124,12 @@
                     </form>
                 </flux:menu>
             </flux:dropdown>
+            @else
+                    {{-- Guest (mobile): redirigir al login --}}
+                    <script>
+                        window.location.href = "{{ route('login') }}";
+                    </script>
+                @endauth
         </flux:header>
 
         {{ $slot }}

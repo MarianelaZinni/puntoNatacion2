@@ -35,6 +35,13 @@ new class extends Component {
      */
     public function mount(DisableTwoFactorAuthentication $disableTwoFactorAuthentication): void
     {
+
+         // Si no hay usuario autenticado redirigimos al login (server-side)
+        if (! \Illuminate\Support\Facades\Auth::check()) {
+            redirect()->route('login')->send();
+            return;
+        }
+        
         abort_unless(Features::enabled(Features::twoFactorAuthentication()), Response::HTTP_FORBIDDEN);
 
         if (Fortify::confirmsTwoFactorAuthentication() && is_null(auth()->user()->two_factor_confirmed_at)) {

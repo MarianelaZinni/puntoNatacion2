@@ -15,6 +15,11 @@ new class extends Component {
      */
     public function mount(): void
     {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if (! $user) {
+            redirect()->route('login')->send();
+            return;
+        }
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
     }

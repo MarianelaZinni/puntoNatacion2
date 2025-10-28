@@ -44,6 +44,7 @@
             </flux:navbar>
 
             <!-- Desktop User Menu -->
+            @auth
             <flux:dropdown position="top" align="end">
                 <flux:profile
                     class="cursor-pointer"
@@ -86,6 +87,13 @@
                     </form>
                 </flux:menu>
             </flux:dropdown>
+            @else
+    {{-- Si el usuario no está autenticado, redirigimos directamente al login --}}
+    <script>
+        // redirección cliente-side al login
+        window.location.href = "{{ route('login') }}";
+    </script>
+@endauth
         </flux:header>
 
         <!-- Mobile Menu -->
