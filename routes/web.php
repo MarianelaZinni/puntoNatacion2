@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Volt;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\SubjectPriceController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -56,4 +57,9 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');
 });
 
+Route::middleware(['web'])->group(function () {
+    // Página para ver/editar precios por defecto (con profesor / sin profesor)
+    Route::get('/subject-prices', [SubjectPriceController::class, 'index'])->name('subject-prices.index');
+    Route::post('/subject-prices', [SubjectPriceController::class, 'update'])->name('subject-prices.update');
+});
 require __DIR__.'/auth.php';
