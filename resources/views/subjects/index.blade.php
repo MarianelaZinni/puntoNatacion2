@@ -32,9 +32,7 @@
 
                 <div>
                     <label for="capacity" class="block font-medium mb-1">Cupo</label>
-                    <input type="number" name="capacity" id="capacity" min="1"
-                           class="w-full rounded border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100"
-                           required>
+                    <input type="number" name="capacity" id="capacity" min="1" class="w-full rounded border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100" required>
                     <div id="capacity-hint" class="text-xs text-gray-500 dark:text-gray-400 mt-1" style="display:none;"></div>
                 </div>
 
@@ -80,12 +78,10 @@
     @push('scripts')
     <script>
     (function () {
-        // Data injected from controller
         const subjects = @json($subjectsForJs);
         const subjectTypes = @json($subjectTypesForJs);
         const subjectColors = @json($subjectColors);
 
-        // Config
         const days = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
         const slotMinutes = 50;
         const startHour = { h:7, m:0 };
@@ -107,7 +103,6 @@
         const slots = generateSlots();
 
         function addMinutesToTime(timeStr, minutes) {
-            // timeStr "HH:MM"
             const [hh, mm] = (timeStr || '07:00').split(':').map(Number);
             const d = new Date(2025,0,1, hh, mm, 0);
             d.setMinutes(d.getMinutes() + minutes);
@@ -116,17 +111,19 @@
             return `${H}:${M}`;
         }
 
-        // Build schedule map
-        const scheduleMap = {};
-        for (const d of days) {
-            scheduleMap[d] = {};
-            for (const s of slots) scheduleMap[d][s] = [];
-        }
-        for (const s of subjects) {
-            if (!s || !s.day || !s.start_time) continue;
-            if (!scheduleMap[s.day]) continue;
-            scheduleMap[s.day][s.start_time] = scheduleMap[s.day][s.start_time] || [];
-            scheduleMap[s.day][s.start_time].push(s);
+        function buildScheduleMap() {
+            const map = {};
+            for (const d of days) {
+                map[d] = {};
+                for (const s of slots) map[d][s] = [];
+            }
+            for (const s of subjects) {
+                if (!s || !s.day || !s.start_time) continue;
+                if (!map[s.day]) continue;
+                map[s.day][s.start_time] = map[s.day][s.start_time] || [];
+                map[s.day][s.start_time].push(s);
+            }
+            return map;
         }
 
         function hexToRgba(hex, alpha) {
@@ -146,12 +143,10 @@
             });
         }
 
-        // Render grid
-        function renderGrid() {
-            const wrapper = document.getElementById('timetable-grid');
+        function renderGridInto(container) {
+            const scheduleMap = buildScheduleMap();
             let html = '<div class="overflow-auto border border-gray-200 dark:border-gray-700 rounded">';
 
-            // Header
             html += '<div class="grid grid-cols-6 gap-0 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">';
             for (let i=0;i<days.length;i++) {
                 html += `<div class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 text-center">${days[i]}</div>`;
@@ -170,7 +165,6 @@
                         for (const subj of cellSubjects) {
                             const color = subjectColors[subj.subject_type_id] || '#29b1dc';
                             const enrolled = subj.students ? subj.students.length : 0;
-                            const free = Math.max(0, (subj.capacity || 0) - enrolled);
                             const title = subj.subject_type ? (subj.subject_type.description || subj.subject_type.value || 'Materia') : 'Materia';
                             cellInner += `
                                 <button
@@ -197,10 +191,10 @@
             html += '</div>';
 
             html += '</div>';
-            wrapper.innerHTML = html;
+            container.innerHTML = html;
 
-            // Attach click handlers for slot cards
-            document.querySelectorAll('.slot-card').forEach(btn => {
+            // attach handlers
+            container.querySelectorAll('.slot-card').forEach(btn => {
                 btn.addEventListener('click', function () {
                     const subjStr = btn.dataset.subject;
                     let subj;
@@ -210,7 +204,7 @@
             });
         }
 
-        // Modal logic
+        // Modal logic (existing code kept, omitted here for brevity in comment)
         const modal = document.getElementById('class-modal');
         const form = document.getElementById('class-form');
         const modalStudents = document.getElementById('modal-students');
@@ -218,7 +212,6 @@
         const capacityHint = document.getElementById('capacity-hint');
 
         function openEditModal(subj) {
-            // fill form
             document.getElementById('id').value = subj.id || '';
             document.getElementById('subject_type_id').value = subj.subject_type_id || '';
             capacityInput.value = subj.capacity || '';
@@ -227,7 +220,6 @@
             document.getElementById('start_time').value = subj.start_time || '';
             document.getElementById('end_time').value = subj.end_time || '';
 
-            // capacity hint: show current enrolled count
             const enrolledCount = subj.students ? subj.students.length : 0;
             if (enrolledCount > 0) {
                 capacityHint.style.display = 'block';
@@ -237,7 +229,6 @@
                 capacityHint.textContent = '';
             }
 
-            // students list
             modalStudents.innerHTML = '';
             if (subj.students && subj.students.length) {
                 subj.students.forEach(st => {
@@ -270,7 +261,7 @@
             if (e.target === modal) hideModal();
         });
 
-        // Create new class button
+        // new-class button
         document.getElementById('new-class-btn').addEventListener('click', function () {
             const defaultStart = slots[0];
             const defaultEnd = addMinutesToTime(defaultStart, slotMinutes);
@@ -285,10 +276,10 @@
             });
         });
 
-        // Save (create/update) with client-side capacity check
+        // form submit / delete handlers (same as before)...
         form.addEventListener('submit', function (e) {
             e.preventDefault();
-
+            // ... validation & fetch (identical to previous implementation)
             const id = document.getElementById('id').value;
             const subject_type_id = document.getElementById('subject_type_id').value;
             const capacity = parseInt(capacityInput.value || '0', 10);
@@ -302,7 +293,6 @@
                 return;
             }
 
-            // If editing, validate capacity >= enrolled
             if (id && !isNaN(enrolled) && capacity < enrolled) {
                 Swal.fire({
                     icon: 'warning',
@@ -333,7 +323,6 @@
                 window.location.reload();
             })
             .catch(err => {
-                // If server returned a 422 JSON message, show it
                 try {
                     const parsed = JSON.parse(err.message);
                     if (parsed && parsed.message) {
@@ -346,7 +335,6 @@
             });
         });
 
-        // Delete
         document.getElementById('delete-btn').addEventListener('click', function () {
             const id = document.getElementById('id').value;
             if (!id) return;
@@ -380,10 +368,48 @@
             });
         });
 
-        // Inicial render
-        document.addEventListener('DOMContentLoaded', function () {
-            renderGrid();
+        // initializer identical pattern as dashboard (idempotent)
+        function initTimetableGrid() {
+            const container = document.getElementById('timetable-grid');
+            if (!container) return;
+            if (container.dataset._rendered === '1') return;
+            function ensureRender() {
+                try { renderGridInto(container); container.dataset._rendered = '1'; } catch (e) { setTimeout(() => { try { renderGridInto(container); container.dataset._rendered = '1'; } catch (_) {} }, 200); }
+            }
+            const rect = container.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0 && window.getComputedStyle(container).display !== 'none') { ensureRender(); return; }
+            if ('IntersectionObserver' in window) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => { if (entry.isIntersecting) { ensureRender(); try { io.disconnect(); } catch(e) {} } }); }, { root: null, threshold: 0.01 });
+                io.observe(container); return;
+            }
+            const mo = new MutationObserver((mutations, observer) => {
+                const r = container.getBoundingClientRect();
+                if (r.width > 0 && r.height > 0) { ensureRender(); try { observer.disconnect(); } catch(e) {} }
+            });
+            mo.observe(container, { attributes: true, childList: true, subtree: true });
+        }
+
+        ['DOMContentLoaded','load','turbo:load','turbolinks:load','pjax:complete','flux:navigate','flux:content:loaded'].forEach(evt => {
+            document.addEventListener(evt, () => { setTimeout(initTimetableGrid, 20); });
         });
+
+        const bodyMo = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                for (const n of m.addedNodes) {
+                    if (n instanceof HTMLElement) {
+                        if (n.querySelector && n.querySelector('#timetable-grid')) {
+                            setTimeout(initTimetableGrid, 20);
+                            return;
+                        }
+                    }
+                }
+            }
+        });
+        bodyMo.observe(document.body, { childList: true, subtree: true });
+
+        setTimeout(initTimetableGrid, 50);
+        window.initTimetableGrid = initTimetableGrid;
 
     })();
     </script>

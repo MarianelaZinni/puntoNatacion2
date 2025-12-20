@@ -40,8 +40,23 @@
             <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Horario semanal</h2>
 
             <div id="timetable-wrapper" class="overflow-auto">
-                <!-- grid renderizado por JS -->
                 <div id="timetable-grid" class="min-w-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- students modal (used by grid) -->
+    <div id="students-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+        <div class="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+                <h3 id="students-modal-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">Inscriptos</h3>
+                <button id="students-modal-close" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 p-1">✕</button>
+            </div>
+            <div class="p-4">
+                <div id="students-modal-body" class="space-y-2 text-sm text-gray-700 dark:text-gray-200"></div>
+            </div>
+            <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
+                <button id="students-modal-close-2" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded">Cerrar</button>
             </div>
         </div>
     </div>
@@ -49,12 +64,12 @@
     @push('scripts')
     <script>
     (function () {
-        // Datos inyectados desde el servidor (ya serializados en el controlador)
+        // Data from server
         const subjects = @json($subjectsForJs);
         const subjectColors = @json($subjectColors);
         const subjectPrices = @json($subjectPricesForJs);
 
-        // Configuración de la grilla
+        // Config
         const days = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
         const slotMinutes = 50;
         const startHour = { h:7, m:0 };
@@ -73,24 +88,22 @@
             }
             return slots;
         }
-
         const slots = generateSlots();
 
-        // Construye un map(day -> startTime -> [subjects])
-        const scheduleMap = {};
-        for (const d of days) {
-            scheduleMap[d] = {};
-            for (const s of slots) scheduleMap[d][s] = [];
-        }
-        for (const s of subjects) {
-            if (!s || !s.day || !s.start_time) continue;
-            if (!scheduleMap[s.day]) continue;
-            if (scheduleMap[s.day][s.start_time] !== undefined) {
-                scheduleMap[s.day][s.start_time].push(s);
-            } else {
-                scheduleMap[s.day][s.start_time] = scheduleMap[s.day][s.start_time] || [];
-                scheduleMap[s.day][s.start_time].push(s);
+        // build scheduleMap
+        function buildScheduleMap() {
+            const map = {};
+            for (const d of days) {
+                map[d] = {};
+                for (const s of slots) map[d][s] = [];
             }
+            for (const s of subjects) {
+                if (!s || !s.day || !s.start_time) continue;
+                if (!map[s.day]) continue;
+                map[s.day][s.start_time] = map[s.day][s.start_time] || [];
+                map[s.day][s.start_time].push(s);
+            }
+            return map;
         }
 
         function hexToRgba(hex, alpha) {
@@ -110,19 +123,19 @@
             });
         }
 
-        function renderGrid() {
-            const wrapper = document.getElementById('timetable-grid');
-            // construye tabla simple con header días y primera columna horarios
+        // render function
+        function renderGridInto(container) {
+            const scheduleMap = buildScheduleMap();
             let html = '<div class="overflow-auto border border-gray-200 dark:border-gray-700 rounded">';
 
-            // Header
+            // header
             html += '<div class="grid grid-cols-6 gap-0 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">';
             for (let i=0;i<days.length;i++) {
                 html += `<div class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 text-center">${days[i]}</div>`;
             }
             html += '</div>';
 
-            // Rows for each slot
+            // rows
             html += '<div class="flex flex-col">';
             slots.forEach(slot => {
                 html += `<div class="grid grid-cols-6 gap-0 border-b border-gray-100 dark:border-gray-800 min-h-[64px]">`;
@@ -135,26 +148,20 @@
                         for (const subj of cellSubjects) {
                             const color = subjectColors[subj.subject_type_id] || '#29b1dc';
                             const enrolled = subj.students ? subj.students.length : 0;
-                            const free = Math.max(0, subj.capacity ? subj.capacity - enrolled : 0);
                             const title = subj.subject_type ? (subj.subject_type.description || subj.subject_type.value || 'Materia') : 'Materia';
                             cellInner += `
                                 <button
                                     type="button"
                                     data-subject-id="${subj.id}"
-                                    data-subject-title="${escapeHtml(title)}"
+                                    data-subject='${escapeHtml(JSON.stringify(subj))}'
                                     class="w-full text-left block mb-1 p-2 rounded shadow-sm cursor-pointer"
                                     style="background: linear-gradient(90deg, ${hexToRgba(color,0.18)}, ${hexToRgba(color,0.06)}); border-left:4px solid ${color};"
-                                    onclick="openStudentsModal(${subj.id})"
                                 >
                                     <div class="flex items-center justify-between">
                                         <div class="text-sm font-semibold text-gray-800 dark:text-gray-100">${escapeHtml(title)}</div>
                                     </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-300 mt-1">
-                                        ${escapeHtml(subj.start_time)} — ${escapeHtml(subj.end_time)}
-                                    </div>
-                                    <div class="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                                        ${enrolled}/${subj.capacity ?? '—'}
-                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-300 mt-1">${escapeHtml(subj.start_time)} — ${escapeHtml(subj.end_time)}</div>
+                                    <div class="text-xs text-gray-600 dark:text-gray-300 mt-1">${enrolled}/${subj.capacity ?? '—'}</div>
                                 </button>
                             `;
                         }
@@ -164,19 +171,29 @@
                 });
                 html += `</div>`;
             });
-            html += '</div>'; // end flex col
+            html += '</div>';
+            html += '</div>';
 
-            html += '</div>'; // end wrapper
+            container.innerHTML = html;
 
-            wrapper.innerHTML = html;
+            // attach click handlers
+            container.querySelectorAll('[data-subject-id]').forEach(btn => {
+                btn.addEventListener('click', async function () {
+                    const subjStr = btn.getAttribute('data-subject');
+                    let subj;
+                    try { subj = JSON.parse(subjStr); } catch(e) { console.error(e); return; }
+                    await openStudentsModal(subj.id);
+                });
+            });
         }
 
-        // Modal logic (reuse students-modal from previous implementations)
-        const modal = document.getElementById('students-modal');
-        const modalTitle = modal ? document.getElementById('students-modal-title') : null;
-        const modalBody = modal ? document.getElementById('students-modal-body') : null;
+        // Modal logic (uses #students-modal in DOM)
+        const modalEl = document.getElementById('students-modal');
+        const modalTitle = document.getElementById('students-modal-title');
+        const modalBody = document.getElementById('students-modal-body');
+        document.getElementById('students-modal-close')?.addEventListener('click', () => { modalEl.classList.add('hidden'); });
+        document.getElementById('students-modal-close-2')?.addEventListener('click', () => { modalEl.classList.add('hidden'); });
 
-        // fetch students for subject when opening modal (to ensure fresh data)
         async function openStudentsModal(subjectId) {
             try {
                 const res = await fetch(`/subjects/${subjectId}`);
@@ -185,43 +202,104 @@
                 const subj = json.subject;
                 if (!subj) return;
                 const title = subj.subject_type ? (subj.subject_type.description || subj.subject_type.value || 'Materia') : 'Materia';
-                if (modalTitle) modalTitle.textContent = `${title} — ${subj.end_time} / ${subj.day}`;
-                if (modalBody) {
-                    if (subj.students && subj.students.length) {
-                        modalBody.innerHTML = '';
-                        subj.students.forEach(st => {
-                            const el = document.createElement('div');
-                            el.className = 'flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700';
-                            el.innerHTML = `<div class="text-sm font-medium text-gray-900 dark:text-gray-100">${escapeHtml(st.name)}</div>
-                                            <div class="text-xs text-gray-500 dark:text-gray-300">${escapeHtml(st.email || '')}</div>`;
-                            modalBody.appendChild(el);
-                        });
-                    } else {
-                        modalBody.innerHTML = `<div class="text-sm text-gray-600 dark:text-gray-400">No hay alumnos inscriptos.</div>`;
-                    }
+                modalTitle.textContent = `${title}`;
+                modalBody.innerHTML = '';
+                const students = subj.students || [];
+                if (students.length) {
+                    students.forEach(st => {
+                        const el = document.createElement('div');
+                        el.className = 'flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700';
+                        el.innerHTML = `<div class="text-sm font-medium text-gray-900 dark:text-gray-100">${escapeHtml(st.name)}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-300">${escapeHtml(st.email || '')}</div>`;
+                        modalBody.appendChild(el);
+                    });
+                } else {
+                    modalBody.innerHTML = `<div class="text-sm text-gray-600 dark:text-gray-400">No hay alumnos inscriptos.</div>`;
                 }
-                if (modal) {
-                    modal.classList.remove('hidden');
-                    modal.classList.add('flex');
-                }
+                modalEl.classList.remove('hidden');
             } catch (err) {
                 console.error(err);
                 Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la información de la clase.' });
             }
         }
 
-        function closeStudentsModal() {
-            if (!modal) return;
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+        // Idempotent initializer that renders the grid when #timetable-grid is visible
+        function initTimetableGrid() {
+            const container = document.getElementById('timetable-grid');
+            if (!container) return;
+
+            // avoid double render
+            if (container.dataset._rendered === '1') return;
+
+            function ensureRender() {
+                try {
+                    renderGridInto(container);
+                    container.dataset._rendered = '1';
+                } catch (e) {
+                    console.error('Render grid failed, retrying...', e);
+                    setTimeout(() => {
+                        try { renderGridInto(container); container.dataset._rendered = '1'; } catch (err) { console.error(err); }
+                    }, 200);
+                }
+            }
+
+            // If container is visible and has size, render now
+            const rect = container.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0 && window.getComputedStyle(container).display !== 'none') {
+                ensureRender();
+                return;
+            }
+
+            // Otherwise observe intersection
+            if ('IntersectionObserver' in window) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            ensureRender();
+                            try { io.disconnect(); } catch(e) {}
+                        }
+                    });
+                }, { root: null, threshold: 0.01 });
+                io.observe(container);
+                return;
+            }
+
+            // Fallback: MutationObserver to wait for container being added/shown
+            const mo = new MutationObserver((mutations, observer) => {
+                const r = container.getBoundingClientRect();
+                if (r.width > 0 && r.height > 0) {
+                    ensureRender();
+                    try { observer.disconnect(); } catch(e) {}
+                }
+            });
+            mo.observe(container, { attributes: true, childList: true, subtree: true });
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            renderGrid();
+        // Wire navigation events for client-side nav systems
+        ['DOMContentLoaded','load','turbo:load','turbolinks:load','pjax:complete','flux:navigate','flux:content:loaded'].forEach(evt => {
+            document.addEventListener(evt, () => {
+                setTimeout(initTimetableGrid, 20);
+            });
         });
 
-        window.openStudentsModal = openStudentsModal;
-        window.closeStudentsModal = closeStudentsModal;
+        // Also observe if #timetable-wrapper inserted dynamically
+        const bodyMo = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                for (const n of m.addedNodes) {
+                    if (n instanceof HTMLElement) {
+                        if (n.querySelector && n.querySelector('#timetable-grid')) {
+                            setTimeout(initTimetableGrid, 20);
+                            return;
+                        }
+                    }
+                }
+            }
+        });
+        bodyMo.observe(document.body, { childList: true, subtree: true });
+
+        // Try to init immediately
+        setTimeout(initTimetableGrid, 50);
+        window.initTimetableGrid = initTimetableGrid;
     })();
     </script>
     @endpush
