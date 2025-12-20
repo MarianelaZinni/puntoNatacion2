@@ -16,6 +16,7 @@
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
                     <flux:navlist.item icon="user-group"  :href="route('students.index')"  :current="request()->routeIs('students.*')" wire:navigate> {{ __('Alumnos') }}</flux:navlist.item>
                     <flux:navlist.item icon="calendar-days" :href="route('subjects.index')" :current="request()->routeIs('subjects.*')" wire:navigate> {{ __('Clases') }}</flux:navlist.item>
+                 <flux:navlist.item icon="credit-card" :href="route('payment_methods.index')" :current="request()->routeIs('payment_methods.*')" wire:navigate> {{ __('Tipos de pago') }} </flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 
