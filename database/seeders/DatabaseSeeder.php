@@ -16,7 +16,10 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SubjectTypeSeeder::class,
             SubjectSeeder::class,
-            StudentSeeder::class
+            StudentSeeder::class,
+            PaymentMethodSeeder::class,
+            SubjectPriceSeeder::class,
+            MarkPiletaLibreHasTeacherSeeder::class
         ]);
 
         User::factory()->create([
