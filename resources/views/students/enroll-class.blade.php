@@ -2,7 +2,6 @@
     <div class="max-w-3xl mx-auto py-8 px-4">
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Anotar a {{ $student->name }}</h1>
-            <!-- Volver a la lista de alumnos, con el estilo pedido -->
             <a href="{{ route('students.index') }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition">
                 Volver
             </a>
@@ -21,24 +20,27 @@
         @endif
 
         <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
-            <p class="mb-4 text-sm text-gray-600 dark:text-gray-300">
-                Seleccioná la clase (primer nivel), luego elegí el día y por último el horario. Al hacer clic en un horario se abrirá el diálogo para confirmar la inscripción.
-            </p>
+            <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2">
+                    <p class="mb-4 text-sm text-gray-600 dark:text-gray-300">
+                        Seleccioná la clase (primer nivel), luego elegí el día y por último el horario. Al hacer clic en un horario se abrirá el diálogo para confirmar la inscripción.
+                    </p>
+                </div>
+
+                <!-- Resumen: SOLO total -->
+                <div class="bg-gray-50 dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded p-3 flex flex-col items-start">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Valor cuota</h3>
+                    <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100" id="summary-total-price">—</div>
+                </div>
+            </div>
 
             {{-- Accordion: subjectType -> day -> time slots --}}
             <div id="accordion-root" class="space-y-3">
                 @php
-                    // Agrupar por tipo de materia (subject_type_id)
                     $groupedByType = $subjects->groupBy(function($s){ return $s->subject_type_id ?: 0; });
-
-                    // Orden preferido (normalizado) para los días en el segundo nivel
-                    // He incluido "viernes" en el orden para que aparezca antes de sábado.
                     $preferredDayOrderNormalized = ['lunes','martes','miercoles','jueves','viernes','sabado'];
-
-                    // Helper para normalizar nombres (quitar tildes y pasar a minúsculas)
                     $normalize = function($str) {
                         if ($str === null) return '';
-                        // \Illuminate\Support\Str::ascii convierte acentos a ASCII, luego pasamos a minúsculas y limpiamos espacios
                         return strtolower(trim(\Illuminate\Support\Str::ascii($str)));
                     };
                 @endphp
@@ -48,16 +50,12 @@
                         $subjectType = $subs->first()->subjectType;
                         $typeLabel = $subjectType ? ($subjectType->description ?? $subjectType->value ?? $subjectType->name) : 'Sin materia';
                         $outerId = 'type-' . ($typeId ?: 'none');
-
-                        // Agrupar por día pero creando un map normalizado => ['label' => originalLabel, 'items' => collection]
                         $byDayRaw = $subs->groupBy('day');
                         $byDay = [];
                         foreach ($byDayRaw as $dayLabel => $collection) {
                             $norm = $normalize($dayLabel);
                             $byDay[$norm] = ['label' => $dayLabel, 'items' => $collection];
                         }
-
-                        // días presentes (normalizados)
                         $presentDaysNormalized = array_keys($byDay);
                         $handledDays = [];
                     @endphp
@@ -73,7 +71,7 @@
                         </button>
 
                         <div id="{{ $outerId }}" class="px-4 py-3 hidden bg-white dark:bg-zinc-900">
-                            {{-- Primero renderizamos los días según el orden preferido (solo si existen) --}}
+                            {{-- Días en orden preferido --}}
                             @foreach($preferredDayOrderNormalized as $dayNorm)
                                 @if(isset($byDay[$dayNorm]) && !empty($byDay[$dayNorm]['items']))
                                     @php
@@ -101,6 +99,7 @@
                                                         $free = max(0, ($sub->capacity ?? 0) - $enrolled);
                                                         $isFull = ($sub->capacity !== null) && ($enrolled >= $sub->capacity);
                                                         $isAlready = $student->subjects->contains('id', $sub->id);
+                                                        $hasTeacher = $sub->subjectType->has_teacher ?? true;
                                                         $btnClasses = $isAlready
                                                             ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-800 text-yellow-900'
                                                             : ($isFull
@@ -118,6 +117,7 @@
                                                         data-enrolled="{{ $enrolled }}"
                                                         data-is-full="{{ $isFull ? '1' : '0' }}"
                                                         data-is-already="{{ $isAlready ? '1' : '0' }}"
+                                                        data-has-teacher="{{ $hasTeacher ? '1' : '0' }}"
                                                         @if($isFull || $isAlready) disabled @endif
                                                     >
                                                         <div>
@@ -146,7 +146,7 @@
                                 @endif
                             @endforeach
 
-                            {{-- Luego renderizamos los demás días que no están en la lista preferida, manteniendo su orden original --}}
+                            {{-- Otros días --}}
                             @php
                                 $otherDays = collect($presentDaysNormalized)->reject(function($d) use ($handledDays) {
                                     return in_array($d, $handledDays);
@@ -178,6 +178,7 @@
                                                     $free = max(0, ($sub->capacity ?? 0) - $enrolled);
                                                     $isFull = ($sub->capacity !== null) && ($enrolled >= $sub->capacity);
                                                     $isAlready = $student->subjects->contains('id', $sub->id);
+                                                    $hasTeacher = $sub->subjectType->has_teacher ?? true;
                                                     $btnClasses = $isAlready
                                                         ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-800 text-yellow-900'
                                                         : ($isFull
@@ -195,6 +196,7 @@
                                                     data-enrolled="{{ $enrolled }}"
                                                     data-is-full="{{ $isFull ? '1' : '0' }}"
                                                     data-is-already="{{ $isAlready ? '1' : '0' }}"
+                                                    data-has-teacher="{{ $hasTeacher ? '1' : '0' }}"
                                                     @if($isFull || $isAlready) disabled @endif
                                                 >
                                                     <div>
@@ -230,6 +232,24 @@
         </div>
     </div>
 
+    <!-- Modal: lista de alumnos (sin cambios) -->
+    <div id="students-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+        <div class="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+                <h3 id="students-modal-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">Inscriptos</h3>
+                <button id="students-modal-close" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 p-1">✕</button>
+            </div>
+            <div class="p-4">
+                <div id="students-modal-body" class="space-y-2 text-sm text-gray-700 dark:text-gray-200">
+                    <!-- listado inyectado por JS -->
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
+                <button id="students-modal-close-2" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -238,7 +258,46 @@
         const csrfToken = '{{ csrf_token() }}';
         const enrollUrl = '{{ route("students.enroll", $student) }}';
 
-        // Accordion utility (works for nested accordions)
+        // Prices from server (defaults for has_teacher true/false)
+        const subjectPrices = @json($subjectPricesForJs); // { teacher: {1:33000,...}, no_teacher: {1:26000,...} }
+        // Initial price summary computed server-side
+        let priceSummary = @json($priceSummary);
+
+        function formatMoney(v) {
+            if (v === null || v === undefined) return '—';
+            return Number(v).toLocaleString('es-AR');
+        }
+
+        // Render only total
+        function renderPriceSummary(summary) {
+            const el = document.getElementById('summary-total-price');
+            if (!el) return;
+            el.textContent = (summary && summary.total) ? formatMoney(summary.total) : '—';
+        }
+
+        // Preview price following backend rule:
+        // if newTeacherCount > 0 => appliedCount = min(newTeacherCount + newNoTeacherCount, 5) and use teacher prices
+        // else => appliedCount = min(newNoTeacherCount, 5) and use no_teacher prices
+        function previewPriceAdding(hasTeacher) {
+            const teacherCount = (priceSummary.teacher_count || 0) + (hasTeacher ? 1 : 0);
+            const noTeacherCount = (priceSummary.no_teacher_count || 0) + (hasTeacher ? 0 : 1);
+
+            let appliedCount, appliedPrice;
+            if (teacherCount > 0) {
+                appliedCount = Math.min(teacherCount + noTeacherCount, 5);
+                appliedPrice = (subjectPrices.teacher && subjectPrices.teacher[appliedCount] !== undefined) ? Number(subjectPrices.teacher[appliedCount]) : null;
+            } else {
+                appliedCount = Math.min(noTeacherCount, 5);
+                appliedPrice = (subjectPrices.no_teacher && subjectPrices.no_teacher[appliedCount] !== undefined) ? Number(subjectPrices.no_teacher[appliedCount]) : null;
+            }
+
+            return {
+                total: appliedPrice,
+                appliedCount,
+            };
+        }
+
+        // Accordion utility
         function setupAccordions(rootSelector = document) {
             rootSelector.querySelectorAll('[data-accordion-toggle]').forEach(btn => {
                 if (btn._accordionAttached) return;
@@ -260,30 +319,27 @@
             });
         }
 
-        // POST enroll using fetch + formdata
+        // POST enroll using fetch + formdata (returns JSON when called via AJAX)
         async function postEnroll(subjectId) {
             const formData = new FormData();
             formData.append('_token', csrfToken);
             formData.append('subject_id', subjectId);
 
-            const res = await fetch(enrollUrl, { method: 'POST', body: formData });
+            const res = await fetch(enrollUrl, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             if (!res.ok) {
                 const text = await res.text();
                 throw new Error(text || 'Network response not ok');
             }
-            // return parsed json if any, else null
-            try { return await res.json(); } catch (e) { return null; }
+            return await res.json();
         }
 
-        // Update buttons and counters in-place after successful enrollment (no page reload)
+        // Update slot UI after enroll (unchanged)
         function markEnrolled(subjectId) {
             const btns = document.querySelectorAll(`[data-subject-id="${subjectId}"]`);
             btns.forEach(btn => {
-                // set state attributes
                 btn.setAttribute('data-is-already', '1');
                 btn.disabled = true;
 
-                // update enrolled count and free seats
                 const capacityAttr = btn.getAttribute('data-capacity') || '';
                 const capacity = capacityAttr !== '' ? parseInt(capacityAttr, 10) : null;
                 let enrolled = parseInt(btn.getAttribute('data-enrolled') || '0', 10);
@@ -295,20 +351,16 @@
                     free = Math.max(0, capacity - enrolled);
                 }
 
-                // update meta text (Cupo / Libre)
                 const metaEl = btn.querySelector('.slot-meta');
                 if (metaEl) {
                     metaEl.textContent = `Cupo: ${capacity !== null ? capacity : '—'} • Libre: ${free}`;
                 }
 
-                // update right-side action label
                 const actionEl = btn.querySelector('.slot-action-label');
                 if (actionEl) actionEl.textContent = 'Inscripto';
 
-                // swap classes to "inscripto" style (yellow)
                 btn.classList.remove('bg-green-50','dark:bg-green-900/10','border-green-200','dark:border-green-800','text-green-900');
                 btn.classList.remove('bg-red-50','dark:bg-red-900/20','border-red-300','dark:border-red-800','text-red-900');
-                // add yellow classes
                 btn.classList.add('bg-yellow-50','dark:bg-yellow-900/20','border-yellow-300','dark:border-yellow-800','text-yellow-900');
             });
         }
@@ -318,8 +370,21 @@
             document.querySelectorAll('.js-slot-btn').forEach(btn => {
                 if (btn._slotHandler) return;
                 btn._slotHandler = true;
+
+                // preview on mouseenter
+                btn.addEventListener('mouseenter', (e) => {
+                    if (btn.disabled) return;
+                    const hasTeacher = btn.getAttribute('data-has-teacher') === '1';
+                    const preview = previewPriceAdding(hasTeacher);
+                    renderPriceSummary({ total: preview.total });
+                });
+
+                // restore current summary on mouseleave
+                btn.addEventListener('mouseleave', (e) => {
+                    renderPriceSummary(priceSummary);
+                });
+
                 btn.addEventListener('click', async (e) => {
-                    // ignore disabled buttons
                     if (btn.disabled) return;
 
                     const subjectId = btn.getAttribute('data-subject-id');
@@ -328,10 +393,17 @@
                     const day = btn.getAttribute('data-day');
                     const capacity = btn.getAttribute('data-capacity') || '—';
                     const enrolled = btn.getAttribute('data-enrolled') || 0;
+                    const hasTeacher = btn.getAttribute('data-has-teacher') === '1';
+
+                    const preview = previewPriceAdding(hasTeacher);
+
+                    let html = `<div class="text-left">Día: <strong>${day}</strong><br>Horario: <strong>${start} - ${end}</strong><br>Cupo: <strong>${capacity}</strong><br>Inscriptos: <strong>${enrolled}</strong></div>`;
+                    html += `<hr class="my-2">`;
+                    html += `<div class="text-left text-sm">Total estimado si se anota: <strong>${preview.total ? formatMoney(preview.total) : '—'}</strong></div>`;
 
                     const result = await Swal.fire({
                         title: `Confirmar inscripción`,
-                        html: `<div class="text-left">Día: <strong>${day}</strong><br>Horario: <strong>${start} - ${end}</strong><br>Cupo: <strong>${capacity}</strong><br>Inscriptos: <strong>${enrolled}</strong></div>`,
+                        html: html,
                         icon: 'question',
                         showCancelButton: true,
                         confirmButtonText: 'Sí, anotar',
@@ -340,10 +412,28 @@
 
                     if (result.isConfirmed) {
                         try {
-                            await postEnroll(subjectId);
-                            // update UI in-place
-                            markEnrolled(subjectId);
-                            Swal.fire({ icon: 'success', title: 'Anotado', text: 'El alumno fue anotado correctamente.' });
+                            const json = await postEnroll(subjectId);
+                            if (json && json.success) {
+                                markEnrolled(subjectId);
+
+                                if (json.priceSummary) {
+                                    priceSummary = json.priceSummary;
+                                } else {
+                                    // If server didn't return new summary, recalc locally conservatively:
+                                    // increment teacher/noTeacher counts and then request total via preview logic
+                                    priceSummary.teacher_count = (priceSummary.teacher_count || 0) + (hasTeacher ? 1 : 0);
+                                    priceSummary.no_teacher_count = (priceSummary.no_teacher_count || 0) + (hasTeacher ? 0 : 1);
+                                    // compute local total using previewPriceAdding logic:
+                                    const p = previewPriceAdding(false); // this uses current priceSummary; but we already adjusted above
+                                    priceSummary.total = p.total;
+                                }
+
+                                renderPriceSummary(priceSummary);
+
+                                Swal.fire({ icon: 'success', title: 'Anotado', text: 'El alumno fue anotado correctamente.' });
+                            } else {
+                                Swal.fire({ icon: 'error', title: 'Error', text: json && json.message ? json.message : 'No se pudo anotar.' });
+                            }
                         } catch (err) {
                             console.error(err);
                             Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo anotar. Revisa la consola.' });
@@ -357,12 +447,13 @@
         document.addEventListener('DOMContentLoaded', function () {
             setupAccordions(document);
             setupSlotButtons();
+            renderPriceSummary(priceSummary);
         });
 
-        // If the view is injected client-side, initialize shortly after
         setTimeout(() => {
             setupAccordions(document);
             setupSlotButtons();
+            renderPriceSummary(priceSummary);
         }, 50);
     })();
     </script>

@@ -29,8 +29,7 @@
             </div>
         @endif
 
-        {{-- Student edit form (fields only). We close the form before rendering enroll/unenroll forms to avoid nested forms.
-             The final "Guardar cambios" button is outside and will submit this form via JS. --}}
+        {{-- Student edit form --}}
         <form action="{{ route('students.update', $student) }}" method="POST" id="student-form" class="space-y-8 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
             @csrf
             @method('PUT')
@@ -134,7 +133,28 @@
 
         {{-- Classes management section (enroll / list enrolled with unenroll action) --}}
         <div class="mt-8 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
-            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Clases inscritas</h2>
+            <div class="flex items-start justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Clases inscritas</h2>
+
+                {{-- Cuota mensual (solo total) --}}
+                <div class="bg-gray-50 dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded p-3 text-right">
+                    <div class="text-sm font-bold text-gray-700 dark:text-gray-200">Cuota mensual</div>
+                    <div id="summary-total-price" class="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
+                        @php $total = $priceSummary['total'] ?? null; @endphp
+                        {{ $total !== null ? number_format($total, 0, ',', '.') : '—' }}
+                    </div>
+
+                    @if(!empty($priceSummary['details']))
+                        <div id="summary-details" class="mt-2 text-xs text-red-600 dark:text-red-300">
+                            @foreach($priceSummary['details'] as $d)
+                                <div>{{ $d }}</div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div id="summary-details" class="mt-2 text-xs text-red-600 dark:text-red-300" style="display:none;"></div>
+                    @endif
+                </div>
+            </div>
 
             {{-- Table of enrolled classes with "Desinscribir" button --}}
             @if($student->subjects->isEmpty())
@@ -162,8 +182,9 @@
                                     $title = $subjectType->description ?? $subjectType->value ?? 'Sin materia';
                                     $enrolled = $subject->students_count ?? ($subject->students ? $subject->students->count() : 0);
                                     $free = max(0, ($subject->capacity ?? 0) - $enrolled);
+                                    $hasTeacher = $subjectType->has_teacher ?? true;
                                 @endphp
-                                <tr class="border-t">
+                                <tr class="border-t" data-subject-id="{{ $subject->id }}" data-has-teacher="{{ $hasTeacher ? '1' : '0' }}">
                                     <td class="px-3 py-3 font-medium text-gray-800 dark:text-gray-100">{{ $title }}</td>
                                     <td class="px-3 py-3 text-gray-600 dark:text-gray-200">{{ $subject->day }}</td>
                                     <td class="px-3 py-3 text-gray-600 dark:text-gray-200">{{ ($subject->start_time ?? '') . ' - ' . ($subject->end_time ?? '') }}</td>
@@ -186,7 +207,7 @@
         </div>
         {{-- end classes section --}}
 
-        {{-- Actions (moved below classes). The Save button submits the student-form via JS. --}}
+        {{-- Actions --}}
         <div class="mt-6 flex items-center justify-end gap-3">
             <a href="{{ route('students.index') }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition">
                 Cancelar
@@ -215,13 +236,39 @@
         const form = document.getElementById('student-form');
         const saveBtn = document.getElementById('save-btn');
         const saveSpinner = document.getElementById('save-spinner');
+        const csrfToken = '{{ csrf_token() }}';
+
+        // Initial price summary passed from server
+        let priceSummary = @json($priceSummary ?? []);
+
+        // Prices defaults mapping (optional, used only for local preview fallback)
+        const subjectPrices = @json($subjectPricesForJs ?? ['teacher'=>[], 'no_teacher'=>[]]);
+
+        // Helper to format money
+        function formatMoney(v) {
+            if (v === null || v === undefined) return '—';
+            return Number(v).toLocaleString('es-AR');
+        }
+
+        function renderPriceSummary(summary) {
+            const el = document.getElementById('summary-total-price');
+            const detailsEl = document.getElementById('summary-details');
+            if (!el) return;
+            el.textContent = (summary && summary.total) ? formatMoney(summary.total) : '—';
+            if (detailsEl) {
+                if (summary && summary.details && summary.details.length) {
+                    detailsEl.style.display = 'block';
+                    detailsEl.innerHTML = summary.details.map(d => `<div>${d}</div>`).join('');
+                } else {
+                    detailsEl.style.display = 'none';
+                    detailsEl.innerHTML = '';
+                }
+            }
+        }
 
         // Submit the student form when the external save button is clicked
         saveBtn.addEventListener('click', function (e) {
-            // Basic HTML5 validity check before submitting
             if (!form.checkValidity()) {
-                // Let browser show validation messages: trigger native reporting
-                // by focusing the first invalid element
                 const firstInvalid = form.querySelector(':invalid');
                 if (firstInvalid) {
                     firstInvalid.reportValidity();
@@ -229,32 +276,24 @@
                 }
                 return;
             }
-            // Disable button and show spinner immediately to avoid double submissions
             saveBtn.disabled = true;
             saveSpinner.classList.remove('hidden');
             form.submit();
         });
 
-        // If there are server side errors, highlight the first invalid field and scroll to it
-        @if ($errors->any())
-            (function () {
-                const firstErrorEl = document.querySelector('.ring-2.ring-red-400, [aria-invalid="true"]');
-                if (firstErrorEl) {
-                    firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    firstErrorEl.focus();
-                }
-            })();
-        @endif
-
         // Flash close handlers
         document.getElementById('flash-success-close')?.addEventListener('click', function(){ this.closest('[id^=flash-]')?.remove(); });
         document.getElementById('flash-error-close')?.addEventListener('click', function(){ this.closest('[id^=flash-]')?.remove(); });
 
-        // Confirm unenroll with SweetAlert (used by the onsubmit handler of the unenroll forms)
+        // Confirm unenroll and use AJAX to perform unenroll and refresh quota
         window.confirmUnenroll = function(e, formEl) {
             e.preventDefault();
             if (typeof Swal === 'undefined') {
-                return confirm('¿Seguro que querés desinscribir al alumno de esta clase?');
+                // fallback to native confirm + submit (full page)
+                if (confirm('¿Seguro que querés desinscribir al alumno de esta clase?')) {
+                    formEl.submit();
+                }
+                return false;
             }
 
             Swal.fire({
@@ -266,14 +305,92 @@
                 cancelButtonColor: '#6B7280',
                 confirmButtonText: 'Sí, desinscribir',
                 cancelButtonText: 'Cancelar'
-            }).then(result => {
-                if (result.isConfirmed) {
-                    formEl.submit();
+            }).then(async (result) => {
+                if (!result.isConfirmed) return;
+                try {
+                    // Build form data (includes CSRF token hidden input already)
+                    const formData = new FormData(formEl);
+                    // Send as AJAX
+                    const res = await fetch(formEl.action, {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: formData
+                    });
+
+                    if (!res.ok) {
+                        const text = await res.text();
+                        throw new Error(text || 'Error en la petición');
+                    }
+
+                    const json = await res.json();
+
+                    if (json && json.success) {
+                        // Remove the table row for that subject
+                        const subjectId = json.subject_id || formEl.querySelector('input[name="subject_id"]').value;
+                        const row = document.querySelector(`tr[data-subject-id="${subjectId}"]`);
+                        if (row) row.remove();
+
+                        // Update local priceSummary with server value if provided
+                        if (json.priceSummary) {
+                            priceSummary = json.priceSummary;
+                        } else {
+                            // fallback: try decrement locally (best-effort)
+                            // If the detached subject had data-has-teacher, decrement accordingly.
+                            const detachedRow = document.querySelector(`tr[data-subject-id="${subjectId}"]`);
+                            if (detachedRow) {
+                                const wasTeacher = detachedRow.dataset.hasTeacher === '1';
+                                if (wasTeacher) {
+                                    priceSummary.teacher_count = Math.max(0, (priceSummary.teacher_count || 0) - 1);
+                                } else {
+                                    priceSummary.no_teacher_count = Math.max(0, (priceSummary.no_teacher_count || 0) - 1);
+                                }
+                                // recompute total using server price mapping (best-effort)
+                                if ((priceSummary.teacher_count || 0) + (priceSummary.no_teacher_count || 0) > 0) {
+                                    let appliedCount, appliedPrice;
+                                    if ((priceSummary.teacher_count || 0) > 0) {
+                                        appliedCount = Math.min((priceSummary.teacher_count || 0) + (priceSummary.no_teacher_count || 0), 5);
+                                        appliedPrice = (subjectPrices.teacher && subjectPrices.teacher[appliedCount] !== undefined) ? Number(subjectPrices.teacher[appliedCount]) : null;
+                                    } else {
+                                        appliedCount = Math.min(priceSummary.no_teacher_count || 0, 5);
+                                        appliedPrice = (subjectPrices.no_teacher && subjectPrices.no_teacher[appliedCount] !== undefined) ? Number(subjectPrices.no_teacher[appliedCount]) : null;
+                                    }
+                                    priceSummary.total = appliedPrice;
+                                } else {
+                                    priceSummary.total = 0;
+                                }
+                            }
+                        }
+
+                        renderPriceSummary(priceSummary);
+
+                        Swal.fire({ icon: 'success', title: 'Desinscripto', text: json.message || 'Alumno desinscripto correctamente.' });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: json && json.message ? json.message : 'No se pudo desinscribir.' });
+                    }
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al desinscribir. Revisa la consola.' });
                 }
             });
 
             return false;
         };
+
+        // On load render initial summary
+        document.addEventListener('DOMContentLoaded', function () {
+            renderPriceSummary(priceSummary);
+        });
+
+        // If server-side validation errors exist, focus first invalid field
+        @if ($errors->any())
+            (function () {
+                const firstErrorEl = document.querySelector('.ring-2.ring-red-400, [aria-invalid="true"]');
+                if (firstErrorEl) {
+                    firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstErrorEl.focus();
+                }
+            })();
+        @endif
     })();
     </script>
     @endpush

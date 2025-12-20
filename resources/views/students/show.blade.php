@@ -85,7 +85,26 @@
                 </div>
             </dl>
 
-            
+            {{-- COSTO ESTIMADO --}}
+            <div class="mt-6">
+                <div class="bg-gray-50 dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded p-4 inline-block">
+                    <div class="text-lg font-bold text-gray-700 dark:text-gray-200">Cuota mensual</div>
+                    <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mt-2">
+                        @php
+                            $total = $priceSummary['total'] ?? null;
+                        @endphp
+                        {{ $total !== null ? number_format($total, 0, ',', '.') : '—' }}
+                    </div>
+
+                    @if(!empty($priceSummary['details']))
+                        <div class="mt-2 text-xs text-red-600 dark:text-red-300">
+                            @foreach($priceSummary['details'] as $d)
+                                <div>{{ $d }}</div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
 
             {{-- Clases inscritas --}}
             <div class="mt-8">
