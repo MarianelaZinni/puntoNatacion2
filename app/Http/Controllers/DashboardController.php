@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subject;
+use App\Models\SubjectPrice;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -40,11 +41,11 @@ class DashboardController extends Controller
                     'id' => $s->subjectType->id,
                     'value' => $s->subjectType->value ?? null,
                     'description' => $s->subjectType->description ?? null,
+                    'has_teacher' => $s->subjectType->has_teacher ?? true,
                 ] : null,
                 'students' => $s->students->map(function ($st) {
                     return [
                         'id' => $st->id,
-                        // adapta el campo nombre/email según tu modelo (name / nombre)
                         'name' => $st->name ?? $st->nombre ?? null,
                         'email' => $st->email ?? null,
                     ];
@@ -52,10 +53,24 @@ class DashboardController extends Controller
             ];
         })->values()->toArray();
 
+        // Obtener precios por defecto (subject_type_id = null) para inyectar y mostrar
+        $defaults = SubjectPrice::whereNull('subject_type_id')->get();
+        $subjectPricesForJs = [
+            'teacher' => [],
+            'no_teacher' => [],
+        ];
+        foreach ($defaults as $row) {
+            if ($row->has_teacher) {
+                $subjectPricesForJs['teacher'][(int)$row->times_per_week] = (float)$row->price;
+            } else {
+                $subjectPricesForJs['no_teacher'][(int)$row->times_per_week] = (float)$row->price;
+            }
+        }
+
         return view('dashboard', [
-            'subjects' => $subjects,
             'subjectsForJs' => $subjectsForJs,
             'subjectColors' => $subjectColors,
+            'subjectPricesForJs' => $subjectPricesForJs,
         ]);
     }
 }

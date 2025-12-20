@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 class SubjectController extends Controller
 {
     /**
-     * Página del calendario
+     * Página del calendario (ahora usa grilla semanal).
      */
     public function index()
     {
@@ -22,13 +22,51 @@ class SubjectController extends Controller
             3 => '#f59e42',
             4 => '#ed64a6',
             5 => '#a78bfa',
+            6 => '#60a5fa',
+            7 => '#f472b6',
+            8 => '#f97316',
         ];
 
-        return view('subjects.index', compact('subjectTypes', 'subjectColors'));
+        // Cargamos las clases y preparamos un array serializable para inyectar en JS
+        $subjects = Subject::with(['subjectType', 'students'])->get();
+
+        $subjectsForJs = $subjects->map(function ($s) {
+            return [
+                'id' => $s->id,
+                'subject_type_id' => $s->subject_type_id,
+                'capacity' => $s->capacity,
+                'day' => $s->day,
+                'start_time' => substr($s->start_time, 0, 5),
+                'end_time' => substr($s->end_time, 0, 5),
+                'subject_type' => $s->subjectType ? [
+                    'id' => $s->subjectType->id,
+                    'value' => $s->subjectType->value ?? null,
+                    'description' => $s->subjectType->description ?? null,
+                    'has_teacher' => $s->subjectType->has_teacher ?? true,
+                ] : null,
+                'students' => $s->students->map(function ($st) {
+                    return [
+                        'id' => $st->id,
+                        'name' => $st->name ?? $st->nombre ?? null,
+                        'email' => $st->email ?? null,
+                    ];
+                })->values()->toArray(),
+            ];
+        })->values()->toArray();
+
+        // Serializamos subjectTypes para JS sin closures (preparado en controlador)
+        $subjectTypesForJs = $subjectTypes->map(function ($t) {
+            return [
+                'id' => $t->id,
+                'label' => $t->description ?? $t->value ?? $t->name,
+            ];
+        })->values()->toArray();
+
+        return view('subjects.index', compact('subjectTypes', 'subjectColors', 'subjectsForJs', 'subjectTypesForJs'));
     }
 
     /**
-     * Devuelve los eventos en formato FullCalendar (recurrentes semanalmente)
+     * Devuelve los eventos en formato FullCalendar (mantenido para compatibilidad).
      */
     public function events()
     {
@@ -62,12 +100,10 @@ class SubjectController extends Controller
             $enrolled = $subject->students ? $subject->students->count() : 0;
             $free_capacity = $subject->capacity - $enrolled;
 
-            // Usa description de subjectType como base del título; fallback a value o 'Sin materia'
             $baseTitle = optional($subject->subjectType)->description
                 ?? optional($subject->subjectType)->value
                 ?? 'Sin materia';
 
-            // Concatenamos cupos al título para que FullCalendar lo muestre directamente
             $titleWithCapacity = sprintf('%s — Cupo: %d | Libre: %d', $baseTitle, $subject->capacity, $free_capacity);
 
             $events[] = [
@@ -119,6 +155,20 @@ class SubjectController extends Controller
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
         ]);
+
+        // Verificar que el nuevo cupo no sea menor que la cantidad de alumnos ya inscriptos
+        $enrolled = $subject->students()->count();
+        if (isset($data['capacity']) && $data['capacity'] < $enrolled) {
+            $message = "No se puede reducir el cupo por debajo de los inscriptos actuales ({$enrolled}).";
+
+            // Si la petición es AJAX, devolvemos JSON con error
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+
+            // Si es una petición normal, redirigimos con error
+            return redirect()->back()->withInput()->with('error', $message);
+        }
 
         $subject->update($data);
 
