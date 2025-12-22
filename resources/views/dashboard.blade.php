@@ -46,20 +46,20 @@
     </div>
 
     <!-- students modal (used by grid) -->
-    <div id="students-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
-        <div class="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-            <div class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
-                <h3 id="students-modal-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">Inscriptos</h3>
-                <button id="students-modal-close" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 p-1">✕</button>
-            </div>
-            <div class="p-4">
-                <div id="students-modal-body" class="space-y-2 text-sm text-gray-700 dark:text-gray-200"></div>
-            </div>
-            <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
-                <button id="students-modal-close-2" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded">Cerrar</button>
-            </div>
+<div id="students-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/40 p-4">
+    <div class="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mx-auto max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+            <h3 id="students-modal-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">Inscriptos</h3>
+            <button id="students-modal-close" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 p-1">✕</button>
+        </div>
+        <div class="p-4 overflow-y-auto" style="min-height: 6rem;" id="students-modal-body-wrapper">
+            <div id="students-modal-body" class="space-y-2 text-sm text-gray-700 dark:text-gray-200"></div>
+        </div>
+        <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
+            <button id="students-modal-close-2" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded">Cerrar</button>
         </div>
     </div>
+</div>
 
     @push('scripts')
     <script>
@@ -153,8 +153,7 @@
                                 <button
                                     type="button"
                                     data-subject-id="${subj.id}"
-                                    data-subject='${escapeHtml(JSON.stringify(subj))}'
-                                    class="w-full text-left block mb-1 p-2 rounded shadow-sm cursor-pointer"
+                                    class="w-full text-left block mb-1 p-2 rounded shadow-sm cursor-pointer subject-card"
                                     style="background: linear-gradient(90deg, ${hexToRgba(color,0.18)}, ${hexToRgba(color,0.06)}); border-left:4px solid ${color};"
                                 >
                                     <div class="flex items-center justify-between">
@@ -176,13 +175,18 @@
 
             container.innerHTML = html;
 
-            // attach click handlers
+            // attach click handlers (use subjects array already injected to lookup by id)
             container.querySelectorAll('[data-subject-id]').forEach(btn => {
-                btn.addEventListener('click', async function () {
-                    const subjStr = btn.getAttribute('data-subject');
-                    let subj;
-                    try { subj = JSON.parse(subjStr); } catch(e) { console.error(e); return; }
-                    await openStudentsModal(subj.id);
+                btn.addEventListener('click', function () {
+                    const subjId = btn.getAttribute('data-subject-id');
+                    // find in preloaded subjects
+                    const subj = subjects.find(s => String(s.id) === String(subjId));
+                    if (subj) {
+                        openStudentsModalFromData(subj);
+                    } else {
+                        // fallback: fetch from server if not preloaded
+                        openStudentsModal(subjId);
+                    }
                 });
             });
         }
@@ -194,6 +198,34 @@
         document.getElementById('students-modal-close')?.addEventListener('click', () => { modalEl.classList.add('hidden'); });
         document.getElementById('students-modal-close-2')?.addEventListener('click', () => { modalEl.classList.add('hidden'); });
 
+        // Use the preloaded subject object to populate modal (no network)
+        function openStudentsModalFromData(subj) {
+            try {
+                const title = subj.subject_type ? (subj.subject_type.description || subj.subject_type.value || 'Materia') : 'Materia';
+                modalTitle.textContent = `${title}`;
+                modalBody.innerHTML = '';
+                const studentsList = subj.students || [];
+                if (studentsList.length) {
+                    studentsList.forEach(st => {
+                        const el = document.createElement('div');
+                        el.className = 'flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700';
+                        el.innerHTML = `<div class="text-sm font-medium text-gray-900 dark:text-gray-100">${escapeHtml(st.name)}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-300">${escapeHtml(st.email || '')}</div>`;
+                        modalBody.appendChild(el);
+                    });
+                } else {
+                    modalBody.innerHTML = `<div class="text-sm text-gray-600 dark:text-gray-400">No hay alumnos inscriptos.</div>`;
+                }
+                modalEl.classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo mostrar la información.' });
+                }
+            }
+        }
+
+        // Fallback: fetch subject details from server (kept for compatibility)
         async function openStudentsModal(subjectId) {
             try {
                 const res = await fetch(`/subjects/${subjectId}`);
@@ -219,7 +251,9 @@
                 modalEl.classList.remove('hidden');
             } catch (err) {
                 console.error(err);
-                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la información de la clase.' });
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la información de la clase.' });
+                }
             }
         }
 
