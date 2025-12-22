@@ -23,7 +23,7 @@ class StudentController extends Controller
 
        $query = Student::query();
 
-       // eager load subjects (with subjectType) and payments to compute deuda y paid_this_month
+       // eager load subjects (with subjectType) and payments to compute deuda
        $query->with([
            'subjects' => function ($q) {
                $q->with('subjectType')->withCount('students')->orderBy('start_time');
@@ -45,40 +45,33 @@ class StudentController extends Controller
            $students = $query->paginate($perPage)->withQueryString();
 
            // calcular deuda y bandera paid_this_month para cada alumno en la colección paginada
-           $calculator = new PriceCalculator();
-           $nowYm = Carbon::now()->format('Y-m');
-           $students->getCollection()->transform(function ($student) use ($calculator, $nowYm) {
-               // PriceCalculator espera la colección de subjects
-               $summary = $calculator->calculate($student->subjects ?? collect());
-               $totalDue = isset($summary['total']) && $summary['total'] !== null ? (float) $summary['total'] : 0.0;
+           $students->getCollection()->transform(function ($student) {
+               // Usar el helper del modelo que calcula la deuda desde la creación usando el monto mensual actual.
+               $calc = $student->calculateDebtFromCreationUsingCurrentMonthly();
 
-               // detectar pago en el mes actual en la colección payments ya cargada
-               $paidThisMonth = false;
-               if ($student->relationLoaded('payments') && $student->payments) {
-                   foreach ($student->payments as $p) {
-                       try {
-                           $d = $p->payment_date;
-                           $ym = $d instanceof \Carbon\Carbon ? $d->format('Y-m') : Carbon::parse($d)->format('Y-m');
-                           if ($ym === $nowYm) {
-                               $paidThisMonth = true;
-                               break;
-                           }
-                       } catch (\Throwable $e) {
-                           // en caso de fecha inválida seguimos
-                           continue;
+               $student->debt = $calc['debt'];
+               $student->monthly_amount = $calc['monthly_amount'];
+               $student->unpaid_periods = $calc['unpaid_periods'];
+               $student->next_unpaid_period = $calc['next_unpaid_period'];
+               $student->has_debt = ($calc['debt'] > 0);
+
+               // También indicamos si ya pagó el mes actual en su totalidad
+               $student->paid_this_month = false;
+               if (!empty($student->monthly_amount)) {
+                   $nowYm = Carbon::now()->format('Y-m');
+                   $paidThisMonth = collect($student->payments)->reduce(function ($carry, $p) use ($nowYm) {
+                       $pPeriod = null;
+                       if (!empty($p->payment_period)) {
+                           try { $pPeriod = Carbon::parse($p->payment_period)->format('Y-m'); } catch (\Throwable $e) { $pPeriod = null; }
+                       } else {
+                           try { $pPeriod = Carbon::parse($p->payment_date)->format('Y-m'); } catch (\Throwable $e) { $pPeriod = null; }
                        }
-                   }
-               } else {
-                   // fallback: consulta rápida (poco probable porque eager loaded)
-                   $paidThisMonth = $student->payments()->whereYear('payment_date', Carbon::now()->year)
-                       ->whereMonth('payment_date', Carbon::now()->month)
-                       ->exists();
-               }
+                       if ($pPeriod === $nowYm) return $carry + (float)$p->amount;
+                       return $carry;
+                   }, 0.0);
 
-               // Exponer atributos dinámicos usados por la vista
-               $student->debt = $paidThisMonth ? 0.0 : $totalDue;
-               $student->paid_this_month = $paidThisMonth;
-               $student->price_summary = $summary;
+                   $student->paid_this_month = ($paidThisMonth >= $student->monthly_amount && $student->monthly_amount > 0);
+               }
 
                return $student;
            });

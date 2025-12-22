@@ -156,11 +156,35 @@
                     <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Historial de pagos</h2>
 
                     <div class="flex items-center gap-3">
+                        {{-- Cálculo de deuda y periodos impagos usando helper del modelo --}}
+                        @php
+                            // Intentamos usar el helper del modelo; si no existe, fall back a valores simples.
+                            if (method_exists($student, 'calculateDebtFromCreationUsingCurrentMonthly')) {
+                                $debtSummary = $student->calculateDebtFromCreationUsingCurrentMonthly();
+                            } else {
+                                $debtSummary = [
+                                    'debt' => 0.0,
+                                    'monthly_amount' => $priceSummary['total'] ?? 0.0,
+                                    'unpaid_periods' => [],
+                                    'selectable_periods' => [],
+                                    'next_unpaid_period' => null,
+                                ];
+                            }
+
+                            $debtAmount = $debtSummary['debt'] ?? 0.0;
+                            $unpaidPeriods = $debtSummary['unpaid_periods'] ?? [];
+                            $selectable = $debtSummary['selectable_periods'] ?? [];
+                            $nextUnpaid = $debtSummary['next_unpaid_period'] ?? null;
+
+                            // lógica para habilitar el botón Registrar pago:
+                            // habilitar si tiene deuda (debtAmount > 0) o si existen selectable periods (por ej. pagar mes actual)
+                            $canRegisterPayment = ($debtAmount > 0) || (!empty($selectable) && count($selectable) > 0);
+                        @endphp
+
                         {{-- Botón para registrar pago preseleccionando el alumno --}}
-                        @php $paidThisMonth = !empty($student->paid_this_month); @endphp
                         <a href="{{ route('payments.index', ['student_id' => $student->id]) }}"
                            class="inline-flex items-center gap-2 px-4 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none"
-                           @if($paidThisMonth) aria-disabled="true" onclick="event.preventDefault();" style="opacity:0.6;pointer-events:none;" @endif>
+                           @unless($canRegisterPayment) aria-disabled="true" onclick="event.preventDefault();" style="opacity:0.6;pointer-events:none;" @endunless>
                             <flux:icon name="currency-dollar" class="h-4 w-4" />
                             Registrar pago
                         </a>
@@ -171,15 +195,59 @@
                     </div>
                 </div>
 
+                {{-- Banner de deuda --}}
+                <div class="mb-4">
+                    @if($debtAmount > 0)
+                        <div class="p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800 text-red-800 dark:text-red-200 flex items-start gap-4">
+                            <div class="flex-1">
+                                <div class="text-sm">
+                                    <strong>El alumno posee deuda:</strong>
+                                    <span class="ml-2 font-semibold">${{ number_format($debtAmount, 2, ',', '.') }}</span>
+                                </div>
+                                @if($nextUnpaid)
+                                    <div class="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                                        Próximo periodo impago: <span class="font-medium">{{ $nextUnpaid }}</span>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="text-sm font-medium text-red-800 dark:text-red-200">Adeuda</div>
+                        </div>
+                    @else
+                        <div class="p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800 text-green-800 dark:text-green-200 flex items-start gap-4">
+                            <div class="flex-1">
+                                <div class="text-sm">
+                                    <strong>No posee deuda:</strong>
+                                    <span class="ml-2 text-sm">Total abonado: <span class="font-semibold">${{ number_format($student->total_paid ?? 0, 2, ',', '.') }}</span></span>
+                                </div>
+                            </div>
+                            <div class="text-sm font-medium text-green-800 dark:text-green-200">Al día</div>
+                        </div>
+                    @endif
+                </div>
+
                 <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-4">
                     <div class="mb-3 text-sm text-gray-700 dark:text-gray-200 flex items-center justify-between">
                         <div>
                             Total abonado: <span class="font-semibold">${{ number_format($student->total_paid ?? 0, 2, ',', '.') }}</span>
                         </div>
-                        @if($paidThisMonth)
+                        @if($student->paid_this_month)
                             <div class="text-sm text-green-700 dark:text-green-200 font-medium">Pagó este mes</div>
                         @endif
                     </div>
+
+                    {{-- Mostrar listados de periodos impagos (detalle) --}}
+                    @if(!empty($unpaidPeriods))
+                        <div class="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-800 rounded text-sm text-yellow-800 dark:text-yellow-200">
+                            <div class="font-medium mb-2">Periodos adeudados</div>
+                            <ul class="list-inside list-disc space-y-1">
+                                @foreach($unpaidPeriods as $up)
+                                    <li>
+                                        {{ $up['period'] ?? '-' }} — Pagado: ${{ number_format($up['paid'] ?? 0, 2, ',', '.') }} — Falta: <span class="font-semibold">${{ number_format($up['deficit'] ?? 0, 2, ',', '.') }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
 
                     @if($student->payments->isEmpty())
                         <div class="p-4 bg-gray-50 dark:bg-zinc-900/40 rounded border border-gray-100 dark:border-zinc-700 text-gray-700 dark:text-gray-200">
@@ -191,6 +259,7 @@
                                 <thead>
                                     <tr class="text-xs text-gray-500 uppercase">
                                         <th class="px-3 py-2 text-left">Fecha</th>
+                                        <th class="px-3 py-2 text-left">Periodo</th>
                                         <th class="px-3 py-2 text-left">Método</th>
                                         <th class="px-3 py-2 text-right">Monto (AR$)</th>
                                         <th class="px-3 py-2 text-left">Notas</th>
@@ -198,10 +267,25 @@
                                 </thead>
                                 <tbody>
                                     @foreach($student->payments as $payment)
+                                        @php
+                                            // Resolvemos el periodo a mostrar: preferimos payment_period, si no existe usamos payment_date.
+                                            $periodSource = $payment->payment_period ?? $payment->payment_date;
+                                            try {
+                                                $periodLabel = $periodSource ? \Carbon\Carbon::parse($periodSource)->format('m/Y') : '-';
+                                            } catch (\Throwable $e) {
+                                                $periodLabel = '-';
+                                            }
+                                        @endphp
                                         <tr class="border-t hover:bg-gray-50 dark:hover:bg-zinc-800">
                                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-200">
                                                 {{ $payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y') : '-' }}
                                             </td>
+
+                                            {{-- Columna: Periodo --}}
+                                            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-200">
+                                                {{ $periodLabel }}
+                                            </td>
+
                                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-200">
                                                 {{ $payment->paymentMethod->name ?? 'N/A' }}
                                             </td>
@@ -251,17 +335,20 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Confirm delete helper (ya lo tenías)
+        // Confirm delete helper: asks confirm via SweetAlert2, then submits the closest form
         window.confirmDelete = function (btn) {
+            // find closest form
             const form = btn.closest('form');
             if (!form) return;
+
+            // Use SweetAlert2 if available
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     title: '¿Estás seguro?',
                     text: 'Esta acción no se puede deshacer.',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#e53e3e',
+                    confirmButtonColor: '#e53e3e', // rojo para eliminar
                     cancelButtonColor: '#6B7280',
                     confirmButtonText: 'Sí, eliminar',
                     cancelButtonText: 'Cancelar',
@@ -273,26 +360,40 @@
                 });
                 return;
             }
+
+            // Fallback to native confirm
             if (confirm('¿Seguro que querés eliminar este alumno? Esta acción no se puede deshacer.')) {
                 form.submit();
             }
         };
 
-        // Flash auto-dismiss helpers
+        // Reusable flash init (auto-dismiss + close)
         function initFlash(id, closeId) {
             const el = document.getElementById(id);
             if (!el) return;
+
             const timeout = parseInt(el.dataset.timeout || 5000, 10);
+
             const dismiss = () => {
                 el.classList.add('opacity-0', 'transition-opacity', 'duration-500');
-                setTimeout(() => { if (el && el.parentNode) el.parentNode.removeChild(el); }, 500);
+                setTimeout(() => {
+                    if (el && el.parentNode) el.parentNode.removeChild(el);
+                }, 500);
             };
+
             const timer = setTimeout(dismiss, timeout);
+
             const closeBtn = document.getElementById(closeId);
             if (closeBtn) {
-                closeBtn.addEventListener('click', function () { clearTimeout(timer); dismiss(); });
+                closeBtn.addEventListener('click', function () {
+                    clearTimeout(timer);
+                    dismiss();
+                });
             }
-            el.addEventListener('focusin', function () { clearTimeout(timer); });
+
+            el.addEventListener('focusin', function () {
+                clearTimeout(timer);
+            });
         }
 
         initFlash('flash-success', 'flash-success-close');

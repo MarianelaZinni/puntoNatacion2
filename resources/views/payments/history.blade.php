@@ -14,6 +14,8 @@
                     @endforeach
                 </select>
 
+                <input type="text" name="search" value="{{ $searchName ?? '' }}" placeholder="Buscar por nombre" class="rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-2">
+
                 <button type="submit" class="px-3 py-2 rounded bg-[#29b1dc] text-white hover:bg-[#24a8cf]">Filtrar</button>
 
                 @if(!empty($studentId))
@@ -21,6 +23,38 @@
                 @endif
             </form>
         </div>
+
+        {{-- Banner indicador de deuda para el alumno seleccionado --}}
+        @if(!empty($selectedStudent) && is_array($debtSummary))
+            @php
+                $debtAmount = $debtSummary['debt'] ?? 0.0;
+                $monthlyAmount = $debtSummary['monthly_amount'] ?? 0.0;
+                $nextPeriod = $debtSummary['next_unpaid_period'] ?? null;
+            @endphp
+
+            <div class="mb-4">
+                @if($debtAmount > 0)
+                    <div class="p-3 rounded border border-red-200 bg-red-50 text-red-800 flex items-center justify-between">
+                        <div>
+                            <strong>El alumno posee deuda:</strong>
+                            <span class="ml-2 font-semibold">${{ number_format($debtAmount, 2, ',', '.') }}</span>
+                            @if($nextPeriod)
+                                <span class="ml-3 text-sm">Próximo periodo impago: <span class="font-medium">{{ $nextPeriod }}</span></span>
+                            @endif
+                        </div>
+                        <div class="text-sm text-red-800">Alumno: <span class="font-medium">{{ $selectedStudent->name }}</span></div>
+                    </div>
+                @else
+                    <div class="p-3 rounded border border-green-200 bg-green-50 text-green-800 flex items-center justify-between">
+                        <div>
+                            <strong>No posee deuda:</strong>
+                            <span class="ml-2 text-sm">Total abonado: <span class="font-semibold">${{ number_format($debtSummary['total_paid'] ?? 0, 2, ',', '.') }}</span></span>
+                        </div>
+                        <div class="text-sm text-green-800">Alumno: <span class="font-medium">{{ $selectedStudent->name }}</span></div>
+                    </div>
+                @endif
+            </div>
+        @endif
 
         <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
             @if($payments->isEmpty())
@@ -34,6 +68,7 @@
                         <tr class="border-b border-gray-200 dark:border-zinc-700">
                             <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Alumno</th>
                             <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Fecha</th>
+                            <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Periodo</th>
                             <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Método</th>
                             <th class="text-right text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Monto (AR$)</th>
                             <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Notas</th>
@@ -41,6 +76,15 @@
                         </thead>
                         <tbody>
                         @foreach($payments as $payment)
+                            @php
+                                // Resolvemos el periodo a mostrar: preferimos payment_period, si no existe usamos payment_date.
+                                $periodSource = $payment->payment_period ?? $payment->payment_date;
+                                try {
+                                    $periodLabel = $periodSource ? \Carbon\Carbon::parse($periodSource)->format('m/Y') : '-';
+                                } catch (\Throwable $e) {
+                                    $periodLabel = '-';
+                                }
+                            @endphp
                             <tr class="border-b border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800">
                                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
                                     {{ $payment->student->name ?? '-' }}
@@ -48,6 +92,12 @@
                                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
                                     {{ $payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y') : '-' }}
                                 </td>
+
+                                {{-- Nueva columna: Periodo --}}
+                                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
+                                    {{ $periodLabel }}
+                                </td>
+
                                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
                                     {{ $payment->paymentMethod->name ?? 'N/A' }}
                                 </td>
@@ -63,9 +113,12 @@
                     </table>
                 </div>
 
-                <div class="mt-4">
-                    {{ $payments->withQueryString()->links() }}
-                </div>
+                {{-- Paginación --}}
+                @if(method_exists($payments, 'links'))
+                    <div class="mt-4">
+                        {{ $payments->withQueryString()->links() }}
+                    </div>
+                @endif
             @endif
         </div>
     </div>

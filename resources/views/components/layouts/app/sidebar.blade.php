@@ -13,13 +13,71 @@
 
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
-                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
-                    <flux:navlist.item icon="user-group"  :href="route('students.index')"  :current="request()->routeIs('students.*')" wire:navigate> {{ __('Alumnos') }}</flux:navlist.item>
-                    <flux:navlist.item icon="calendar-days" :href="route('subjects.index')" :current="request()->routeIs('subjects.*')" wire:navigate> {{ __('Clases') }}</flux:navlist.item>
-                    <flux:navlist.item icon="credit-card" :href="route('payment_methods.index')" :current="request()->routeIs('payment_methods.*')" wire:navigate> {{ __('Tipos de pago') }} </flux:navlist.item>
-                    <flux:navlist.item icon="currency-dollar" :href="route('subject-prices.index')" :current="request()->routeIs('subject-prices.*')" wire:navigate> {{ __('Valores de las clases') }} </flux:navlist.item>
-                    <flux:navlist.item icon="banknotes" :href="route('payments.index')" :current="request()->routeIs('payments.*')" wire:navigate> {{ __('Pagos') }} </flux:navlist.item>                
-                    <flux:navlist.item icon="clock" :href="route('payments.history')" :current="request()->routeIs('payments.history')" wire:navigate> {{ __('Historial de pagos') }} </flux:navlist.item>                
+                    <flux:navlist.item
+                        icon="home"
+                        :href="route('dashboard')"
+                        :current="request()->routeIs('dashboard')"
+                        wire:navigate
+                    >
+                        {{ __('Dashboard') }}
+                    </flux:navlist.item>
+
+                    <flux:navlist.item
+                        icon="user-group"
+                        :href="route('students.index')"
+                        :current="request()->routeIs('students.*')"
+                        wire:navigate
+                    >
+                         {{ __('Alumnos') }}
+                    </flux:navlist.item>
+
+                    <flux:navlist.item
+                        icon="calendar-days"
+                        :href="route('subjects.index')"
+                        :current="request()->routeIs('subjects.*')"
+                        wire:navigate
+                    >
+                        {{ __('Clases') }}
+                    </flux:navlist.item>
+
+                    <flux:navlist.item
+                        icon="credit-card"
+                        :href="route('payment_methods.index')"
+                        :current="request()->routeIs('payment_methods.*')"
+                        wire:navigate
+                    >
+                        {{ __('Tipos de pago') }}
+                    </flux:navlist.item>
+
+                    <flux:navlist.item
+                        icon="currency-dollar"
+                        :href="route('subject-prices.index')"
+                        :current="request()->routeIs('subject-prices.*')"
+                        wire:navigate
+                    >
+                        {{ __('Valores de las clases') }}
+                    </flux:navlist.item>
+
+                    {{-- Pagos: consideramos como "current" solo las rutas relacionadas con el formulario/listado de pagos,
+                        excluyendo la ruta payments.history para que no resalte al mostrar el historial --}}
+                    <flux:navlist.item
+                        icon="banknotes"
+                        :href="route('payments.index')"
+                        :current="(request()->routeIs('payments.*') && !request()->routeIs('payments.history'))"
+                        wire:navigate
+                    >
+                        {{ __('Pagos') }}
+                    </flux:navlist.item>
+
+                    {{-- Historial de pagos: activo únicamente para la ruta payments.history --}}
+                    <flux:navlist.item
+                        icon="clock"
+                        :href="route('payments.history')"
+                        :current="request()->routeIs('payments.history')"
+                        wire:navigate
+                    >
+                        {{ __('Historial de pagos') }}
+                    </flux:navlist.item>
 
                 </flux:navlist.group>
             </flux:navlist>

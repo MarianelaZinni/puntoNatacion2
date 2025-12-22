@@ -51,19 +51,24 @@
 
             <!-- Registrar pago (currency-dollar) -->
             @php
-                $debt = isset($student->debt) ? (float)$student->debt : null;
+                $debt = isset($student->debt) ? (float)$student->debt : 0.0;
                 $paidThisMonth = !empty($student->paid_this_month);
+                // comprobar si tiene periodos impagos
+                $hasUnpaid = !empty($student->unpaid_periods) && is_array($student->unpaid_periods) && count($student->unpaid_periods) > 0;
             @endphp
 
-            @if($paidThisMonth)
+            @if($paidThisMonth && !$hasUnpaid)
+                {{-- Si pagó este mes y NO tiene periodos impagos, inhabilitar --}}
                 <span title="Ya pagó este mes" class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-green-100 text-green-800" aria-label="Pagó este mes">
                     <flux:icon name="currency-dollar" class="h-5 w-5" />
                 </span>
-            @elseif(is_null($debt) || $debt <= 0)
+            @elseif($debt <= 0 && !$hasUnpaid)
+                {{-- Sin deuda y sin periodos impagos --}}
                 <button disabled title="Sin deuda" aria-label="Sin deuda" class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-gray-200 dark:bg-zinc-700 text-gray-500">
                     <flux:icon name="currency-dollar" class="h-5 w-5" />
                 </button>
             @else
+                {{-- Si tiene deuda total o periodos impagos, permitimos registrar pago --}}
                 <a href="{{ route('payments.index', ['student_id' => $student->id]) }}"
                    title="Registrar pago de {{ $student->name }}"
                    aria-label="Registrar pago de {{ $student->name }}"
@@ -72,6 +77,15 @@
                     <flux:icon name="currency-dollar" class="h-5 w-5" />
                 </a>
             @endif
+
+            <!-- Historial de pagos (new action) -->
+            <a href="{{ route('payments.history', ['student_id' => $student->id]) }}"
+               title="Historial de pagos de {{ $student->name }}"
+               aria-label="Historial de pagos de {{ $student->name }}"
+               class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-600 dark:text-indigo-300">
+                <span class="sr-only">Historial de pagos</span>
+                <flux:icon name="clock" class="h-5 w-5" />
+            </a>
 
         </div>
     </td>
