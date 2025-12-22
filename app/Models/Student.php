@@ -15,4 +15,16 @@ class Student extends Model
     {
         return $this->belongsToMany(Subject::class)->withTimestamps();
     }
+
+        use HasFactory;
+
+    // ... tus propiedades y relaciones existentes ...
+
+    /**
+     * Pagos realizados por el alumno.
+     */
+    public function payments()
+    {
+        return $this->hasMany(\App\Models\Payment::class);
+    }
 }

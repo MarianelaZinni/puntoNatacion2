@@ -150,6 +150,76 @@
                 @endif
             </div>
 
+            {{-- HISTORIAL DE PAGOS --}}
+            <div class="mt-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Historial de pagos</h2>
+
+                    <div class="flex items-center gap-3">
+                        {{-- Botón para registrar pago preseleccionando el alumno --}}
+                        @php $paidThisMonth = !empty($student->paid_this_month); @endphp
+                        <a href="{{ route('payments.index', ['student_id' => $student->id]) }}"
+                           class="inline-flex items-center gap-2 px-4 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none"
+                           @if($paidThisMonth) aria-disabled="true" onclick="event.preventDefault();" style="opacity:0.6;pointer-events:none;" @endif>
+                            <flux:icon name="currency-dollar" class="h-4 w-4" />
+                            Registrar pago
+                        </a>
+
+                        <a href="{{ route('payments.history', ['search' => $student->name]) }}" class="text-sm text-gray-600 dark:text-gray-300 underline">
+                            Ver historial completo
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-4">
+                    <div class="mb-3 text-sm text-gray-700 dark:text-gray-200 flex items-center justify-between">
+                        <div>
+                            Total abonado: <span class="font-semibold">${{ number_format($student->total_paid ?? 0, 2, ',', '.') }}</span>
+                        </div>
+                        @if($paidThisMonth)
+                            <div class="text-sm text-green-700 dark:text-green-200 font-medium">Pagó este mes</div>
+                        @endif
+                    </div>
+
+                    @if($student->payments->isEmpty())
+                        <div class="p-4 bg-gray-50 dark:bg-zinc-900/40 rounded border border-gray-100 dark:border-zinc-700 text-gray-700 dark:text-gray-200">
+                            No se encontraron pagos para este alumno.
+                        </div>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-xs text-gray-500 uppercase">
+                                        <th class="px-3 py-2 text-left">Fecha</th>
+                                        <th class="px-3 py-2 text-left">Método</th>
+                                        <th class="px-3 py-2 text-right">Monto (AR$)</th>
+                                        <th class="px-3 py-2 text-left">Notas</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($student->payments as $payment)
+                                        <tr class="border-t hover:bg-gray-50 dark:hover:bg-zinc-800">
+                                            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-200">
+                                                {{ $payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y') : '-' }}
+                                            </td>
+                                            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-200">
+                                                {{ $payment->paymentMethod->name ?? 'N/A' }}
+                                            </td>
+                                            <td class="px-3 py-3 text-sm text-right text-gray-900 dark:text-gray-100">
+                                                {{ number_format($payment->amount, 2, ',', '.') }}
+                                            </td>
+                                            <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-200">
+                                                {{ $payment->notes ?? '-' }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
             {{-- Actions --}}
             <div class="mt-6 pt-3 flex flex-wrap items-center justify-end gap-3">
                 <a href="{{ route('students.index') }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition text-base">
@@ -181,20 +251,17 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Confirm delete helper: asks confirm via SweetAlert2, then submits the closest form
+        // Confirm delete helper (ya lo tenías)
         window.confirmDelete = function (btn) {
-            // find closest form
             const form = btn.closest('form');
             if (!form) return;
-
-            // Use SweetAlert2 if available
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     title: '¿Estás seguro?',
                     text: 'Esta acción no se puede deshacer.',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#e53e3e', // rojo para eliminar
+                    confirmButtonColor: '#e53e3e',
                     cancelButtonColor: '#6B7280',
                     confirmButtonText: 'Sí, eliminar',
                     cancelButtonText: 'Cancelar',
@@ -206,40 +273,26 @@
                 });
                 return;
             }
-
-            // Fallback to native confirm
             if (confirm('¿Seguro que querés eliminar este alumno? Esta acción no se puede deshacer.')) {
                 form.submit();
             }
         };
 
-        // Reusable flash init (auto-dismiss + close)
+        // Flash auto-dismiss helpers
         function initFlash(id, closeId) {
             const el = document.getElementById(id);
             if (!el) return;
-
             const timeout = parseInt(el.dataset.timeout || 5000, 10);
-
             const dismiss = () => {
                 el.classList.add('opacity-0', 'transition-opacity', 'duration-500');
-                setTimeout(() => {
-                    if (el && el.parentNode) el.parentNode.removeChild(el);
-                }, 500);
+                setTimeout(() => { if (el && el.parentNode) el.parentNode.removeChild(el); }, 500);
             };
-
             const timer = setTimeout(dismiss, timeout);
-
             const closeBtn = document.getElementById(closeId);
             if (closeBtn) {
-                closeBtn.addEventListener('click', function () {
-                    clearTimeout(timer);
-                    dismiss();
-                });
+                closeBtn.addEventListener('click', function () { clearTimeout(timer); dismiss(); });
             }
-
-            el.addEventListener('focusin', function () {
-                clearTimeout(timer);
-            });
+            el.addEventListener('focusin', function () { clearTimeout(timer); });
         }
 
         initFlash('flash-success', 'flash-success-close');

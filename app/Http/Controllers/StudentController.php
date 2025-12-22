@@ -9,6 +9,7 @@ use App\Services\PriceCalculator;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class StudentController extends Controller
 {
@@ -22,6 +23,14 @@ class StudentController extends Controller
 
        $query = Student::query();
 
+       // eager load subjects (with subjectType) and payments to compute deuda y paid_this_month
+       $query->with([
+           'subjects' => function ($q) {
+               $q->with('subjectType')->withCount('students')->orderBy('start_time');
+           },
+           'payments'
+       ]);
+
        if ($search) {
            $query->where(function ($q) use ($search) {
                $q->where('name', 'like', "%{$search}%")
@@ -34,6 +43,45 @@ class StudentController extends Controller
 
        try {
            $students = $query->paginate($perPage)->withQueryString();
+
+           // calcular deuda y bandera paid_this_month para cada alumno en la colección paginada
+           $calculator = new PriceCalculator();
+           $nowYm = Carbon::now()->format('Y-m');
+           $students->getCollection()->transform(function ($student) use ($calculator, $nowYm) {
+               // PriceCalculator espera la colección de subjects
+               $summary = $calculator->calculate($student->subjects ?? collect());
+               $totalDue = isset($summary['total']) && $summary['total'] !== null ? (float) $summary['total'] : 0.0;
+
+               // detectar pago en el mes actual en la colección payments ya cargada
+               $paidThisMonth = false;
+               if ($student->relationLoaded('payments') && $student->payments) {
+                   foreach ($student->payments as $p) {
+                       try {
+                           $d = $p->payment_date;
+                           $ym = $d instanceof \Carbon\Carbon ? $d->format('Y-m') : Carbon::parse($d)->format('Y-m');
+                           if ($ym === $nowYm) {
+                               $paidThisMonth = true;
+                               break;
+                           }
+                       } catch (\Throwable $e) {
+                           // en caso de fecha inválida seguimos
+                           continue;
+                       }
+                   }
+               } else {
+                   // fallback: consulta rápida (poco probable porque eager loaded)
+                   $paidThisMonth = $student->payments()->whereYear('payment_date', Carbon::now()->year)
+                       ->whereMonth('payment_date', Carbon::now()->month)
+                       ->exists();
+               }
+
+               // Exponer atributos dinámicos usados por la vista
+               $student->debt = $paidThisMonth ? 0.0 : $totalDue;
+               $student->paid_this_month = $paidThisMonth;
+               $student->price_summary = $summary;
+
+               return $student;
+           });
 
            if ($request->ajax() || $request->wantsJson()) {
                $rowsHtml = view('students.partials.rows', compact('students'))->render();
@@ -83,18 +131,45 @@ class StudentController extends Controller
         return redirect()->route('students.index')->with('success', 'Alumno creado correctamente.');
     }
 
-    /**
-     * Show (modificado para incluir el costo estimado según las clases inscritas).
+     /**
+     * Show (modificado para incluir el costo estimado según las clases inscritas
+     * y el historial de pagos del alumno).
      */
     public function show(Student $student)
     {
         // Cargar subjects del alumno con su subjectType y students_count
-        $student->load(['subjects' => function ($q) {
-            $q->with('subjectType')->withCount('students')->orderBy('start_time');
-        }]);
+        $student->load([
+            'subjects' => function ($q) {
+                $q->with('subjectType')->withCount('students')->orderBy('start_time');
+            },
+            // Cargamos payments con paymentMethod ordenados por fecha descendente
+            'payments' => function ($q) {
+                $q->with('paymentMethod')->orderByDesc('payment_date');
+            }
+        ]);
 
         // Calculamos el resumen de precios usando el servicio PriceCalculator
         $priceSummary = (new PriceCalculator())->calculate($student->subjects);
+
+        // Comprobamos si el alumno ya tiene al menos un pago en el mes en curso
+        $nowYm = Carbon::now()->format('Y-m');
+        $paidThisMonth = $student->payments->first(function ($p) use ($nowYm) {
+            $d = $p->payment_date;
+            if ($d instanceof \Carbon\Carbon) {
+                $ym = $d->format('Y-m');
+            } else {
+                try {
+                    $ym = Carbon::parse($d)->format('Y-m');
+                } catch (\Throwable $e) {
+                    return false;
+                }
+            }
+            return $ym === $nowYm;
+        }) !== null;
+
+        // Exponer info adicional en el objeto student para la vista
+        $student->paid_this_month = $paidThisMonth;
+        $student->total_paid = $student->payments->sum('amount');
 
         // También preparamos el mapping de precios por defecto para JS/uso futuro (opcional)
         $subjectPricesForJs = [

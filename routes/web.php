@@ -8,6 +8,7 @@ use Livewire\Volt\Volt;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\SubjectPriceController;
+use App\Http\Controllers\PaymentController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -62,4 +63,12 @@ Route::middleware(['web'])->group(function () {
     Route::get('/subject-prices', [SubjectPriceController::class, 'index'])->name('subject-prices.index');
     Route::post('/subject-prices', [SubjectPriceController::class, 'update'])->name('subject-prices.update');
 });
+
+Route::middleware(['web'])->group(function () {
+    Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
+    Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
+});
+Route::get('/payments/history', [PaymentController::class, 'history'])->name('payments.history');
+
+
 require __DIR__.'/auth.php';
