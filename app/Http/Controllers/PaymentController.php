@@ -28,30 +28,18 @@ class PaymentController extends Controller
         foreach ($students as $student) {
             // PriceCalculator espera una colección de subjects
             $summary = $calculator->calculate($student->subjects);
-            $totalDue = isset($summary['total']) && $summary['total'] !== null ? (float) $summary['total'] : 0.0;
+            $monthlyTotal = isset($summary['total']) && $summary['total'] !== null ? (float) $summary['total'] : 0.0;
 
-            // Detectar si existe al menos un pago en el mes en curso (en la colección cargada)
-            $paidThisMonth = $student->payments->first(function ($p) use ($nowYm) {
-                // payment_date puede ser string o Carbon, normalizamos
-                $d = $p->payment_date;
-                if ($d instanceof \Carbon\Carbon) {
-                    $ym = $d->format('Y-m');
-                } else {
-                    $ym = Carbon::parse($d)->format('Y-m');
-                }
+            // Suma de pagos para el periodo actual (payment_period)
+            $paidThisPeriod = $student->payments->filter(function ($p) use ($nowYm) {
+                if (!$p->payment_period) return false;
+                $ym = Carbon::parse($p->payment_period)->format('Y-m');
                 return $ym === $nowYm;
-            }) !== null;
+            })->sum('amount');
 
-            // Si ya pagó este mes, mostramos deuda 0 y marcamos la bandera
-            if ($paidThisMonth) {
-                $student->debt = 0.0;
-                $student->paid_this_month = true;
-            } else {
-                $student->debt = $totalDue;
-                $student->paid_this_month = false;
-            }
-
-            // Exponemos el summary completo por si la vista necesita detalle
+            $debt = max(0, $monthlyTotal - $paidThisPeriod);
+            $student->debt = $debt;
+            $student->paid_this_month = ($paidThisPeriod >= $monthlyTotal && $monthlyTotal > 0);
             $student->price_summary = $summary;
         }
 
@@ -74,32 +62,29 @@ class PaymentController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'payment_date' => 'required|date',
             'payment_method_id' => 'nullable|exists:payment_methods,id',
+            // recibimos el periodo como 'YYYY-MM' vía input type="month"
+            'payment_period' => ['nullable','regex:/^\d{4}-\d{2}$/'],
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        // Opción: prevenir pagos si ya existe pago en mes en curso (doble protección backend)
-        $student = Student::findOrFail($data['student_id']);
-        $paymentMonth = Carbon::parse($data['payment_date'])->format('Y-m');
-        $alreadyPaid = $student->payments->first(function ($p) use ($paymentMonth) {
-            $d = $p->payment_date;
-            if ($d instanceof \Carbon\Carbon) {
-                $ym = $d->format('Y-m');
-            } else {
-                $ym = Carbon::parse($d)->format('Y-m');
+        // Normalizar payment_period: si vino como YYYY-MM, lo convertimos a YYYY-MM-01 para almacenar
+        if (!empty($data['payment_period'])) {
+            try {
+                $periodCarbon = Carbon::createFromFormat('Y-m', $data['payment_period'])->startOfMonth();
+            } catch (\Throwable $e) {
+                return redirect()->back()->withInput()->with('error', 'Período inválido.');
             }
-            return $ym === $paymentMonth;
-        });
-
-        if ($alreadyPaid) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'El alumno ya registra un pago en el mes seleccionado; no se permite registrar otro pago desde aquí.');
+        } else {
+            // si no viene payment_period, lo deducimos desde payment_date
+            $periodCarbon = Carbon::parse($data['payment_date'])->startOfMonth();
         }
 
+        // Guardar el pago (permitimos pagos parciales por periodo)
         Payment::create([
             'student_id' => $data['student_id'],
             'amount' => $data['amount'],
             'payment_date' => $data['payment_date'],
+            'payment_period' => $periodCarbon->toDateString(),
             'payment_method_id' => $data['payment_method_id'] ?? null,
             'notes' => $data['notes'] ?? null,
         ]);
@@ -108,6 +93,10 @@ class PaymentController extends Controller
             ->with('success', 'Pago registrado correctamente.');
     }
 
+    /**
+     * Historial de pagos (filtrable por student_id).
+     * Devuelve $payments (paginados) y $students (para el select).
+     */
     public function history(Request $request)
     {
         $studentId = $request->input('student_id');

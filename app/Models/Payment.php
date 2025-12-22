@@ -14,11 +14,13 @@ class Payment extends Model
         'payment_method_id',
         'amount',
         'payment_date',
+        'payment_period',
         'notes',
     ];
 
     protected $casts = [
         'payment_date' => 'date',
+        'payment_period' => 'date',
         'amount' => 'decimal:2',
     ];
 

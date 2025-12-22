@@ -2,22 +2,38 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Subject extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['subject_type_id', 'capacity', 'day', 'start_time', 'end_time'];
+    protected $fillable = [
+        'subject_type_id',
+        'day',
+        'start_time',
+        'end_time',
+        'capacity',
+        // ...
+    ];
 
-    public function students()
-    {
-        return $this->belongsToMany(Student::class)->withTimestamps();
-    }
-
+    /**
+     * Relación con el tipo de materia (subject type).
+     * Ajustá si tu proyecto usa otro nombre de modelo.
+     */
     public function subjectType()
     {
-        return $this->belongsTo(SubjectType::class);
+        return $this->belongsTo(\App\Models\SubjectType::class, 'subject_type_id');
+    }
+
+    /**
+     * Relación many-to-many con Student.
+     * Especificamos el nombre correcto de la tabla pivot: 'student_subject'.
+     */
+    public function students()
+    {
+        return $this->belongsToMany(\App\Models\Student::class, 'student_subject', 'subject_id', 'student_id')
+                    ->withTimestamps();
     }
 }
