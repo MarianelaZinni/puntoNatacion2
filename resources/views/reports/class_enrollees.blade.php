@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8"/>
-    <title>Todos los alumnos</title>
+    <title>Inscriptos por clase</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; color:#111; margin:20px; }
@@ -12,12 +12,23 @@
         th, td { padding:8px; border:1px solid #ddd; text-align:left; vertical-align:middle; }
         th { background:#f5f5f5; font-weight:600; }
         .no-data { padding:12px; background:#fff6f6; border:1px solid #ffd6d6; color:#800; }
+        .class-info { margin-bottom:12px; }
     </style>
 </head>
 <body>
-    <h1>{{ $company ?? 'Mi Escuela' }} — Todos los alumnos</h1>
+    <h1>{{ $company ?? 'Mi Escuela' }} — Inscriptos por clase</h1>
     <div class="meta">Generado: {{ ($generated_at ?? \Carbon\Carbon::now())->format('d/m/Y H:i') }}</div>
 
-    @include('reports.partials._students_table', ['printMode' => true])
+    @if(empty($subject))
+        <div class="no-data">No se seleccionó ninguna clase.</div>
+    @else
+        <div class="class-info">
+            <strong>{{ $subject->subjectType->description ?? 'Clase' }}</strong><br>
+            {{ $subject->day }} — {{ $subject->start_time }}{{ $subject->end_time ? ' - ' . $subject->end_time : '' }}<br>
+            Inscriptos: {{ $students->count() }}
+        </div>
+
+        @include('reports.partials._class_enrollees_table', ['printMode' => true])
+    @endif
 </body>
 </html>

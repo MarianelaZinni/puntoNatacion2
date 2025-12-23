@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8"/>
-    <title>Todos los alumnos</title>
+    <title>Alumnos deudores</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; color:#111; margin:20px; }
@@ -15,9 +15,12 @@
     </style>
 </head>
 <body>
-    <h1>{{ $company ?? 'Mi Escuela' }} — Todos los alumnos</h1>
-    <div class="meta">Generado: {{ ($generated_at ?? \Carbon\Carbon::now())->format('d/m/Y H:i') }}</div>
+    <h1>{{ $company ?? 'Mi Escuela' }} — Alumnos Deudores</h1>
+    <div class="meta">
+        Generado: {{ ($generated_at ?? \Carbon\Carbon::now())->format('d/m/Y H:i') }}<br>
+        Filtro monto mínimo: ${{ number_format($min_debt ?? 0, 2, ',', '.') }}
+    </div>
 
-    @include('reports.partials._students_table', ['printMode' => true])
+    @include('reports.partials._debtors_table', ['printMode' => true])
 </body>
 </html>

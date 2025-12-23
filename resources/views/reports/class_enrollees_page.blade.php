@@ -37,32 +37,7 @@
                 </div>
 
                 <div class="overflow-x-auto mt-4">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="text-xs text-gray-500 uppercase">
-                                <th class="px-3 py-2">#</th>
-                                <th class="px-3 py-2">Nombre</th>
-                                <th class="px-3 py-2">DNI</th>
-                                <th class="px-3 py-2">Email</th>
-                                <th class="px-3 py-2">Teléfono</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($students as $i => $st)
-                                <tr class="border-t hover:bg-gray-50 dark:hover:bg-zinc-800">
-                                    <td class="px-3 py-3">{{ $i + 1 }}</td>
-                                    <td class="px-3 py-3">{{ $st->name }}</td>
-                                    <td class="px-3 py-3">{{ $st->dni ?? '-' }}</td>
-                                    <td class="px-3 py-3">{{ $st->email ?? '-' }}</td>
-                                    <td class="px-3 py-3">{{ $st->phone ?? '-' }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="px-3 py-6 text-center text-gray-500">No hay inscriptos en esta clase.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                    @include('reports.partials._class_enrollees_table', ['printMode' => false])
                 </div>
             </div>
         @endif
