@@ -9,6 +9,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\SubjectPriceController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ReportController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -44,9 +45,6 @@ Route::post('students/{student}/enroll', [StudentController::class, 'enrollClass
 Route::post('students/{student}/unenroll', [StudentController::class, 'unenrollClass'])
     ->name('students.unenroll');
     
-    //Route::get('/students/{student}/register-payment', [StudentController::class, 'registerPaymentForm'])->name('students.registerPaymentForm');
-//Route::post('/students/{student}/register-payment', [StudentController::class, 'registerPayment'])->name('students.registerPayment');
-
 // Rutas para tipos de pago (ABM)
 Route::resource('payment_methods', PaymentMethodController::class)->except(['show'])->middleware(['auth', 'verified']);
 
@@ -70,5 +68,47 @@ Route::middleware(['web'])->group(function () {
 });
 Route::get('/payments/history', [PaymentController::class, 'history'])->name('payments.history');
 
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
+    // Inscritos por clase
+    Route::get('/reports/class-enrollees', [ReportController::class, 'classEnrolleesForm'])->name('reports.class_enrollees.form');
+    Route::get('/reports/class-enrollees/print', [ReportController::class, 'classEnrollees'])->name('reports.class_enrollees.print'); // imprime / pdf (param via query)
+    Route::get('/reports/class-enrollees/pdf', [ReportController::class, 'classEnrolleesPdf'])->name('reports.class_enrollees.pdf');
+
+    // Alumnos deudores
+    Route::get('/reports/debtors', [ReportController::class, 'debtorsForm'])->name('reports.debtors.form');
+    Route::get('/reports/debtors/print', [ReportController::class, 'debtors'])->name('reports.debtors.print');
+    Route::get('/reports/debtors/pdf', [ReportController::class, 'debtorsPdf'])->name('reports.debtors.pdf');
+
+    // Pagos por alumno
+    Route::get('/reports/payments-by-student', [ReportController::class, 'paymentsByStudentForm'])->name('reports.payments_by_student.form');
+    Route::get('/reports/payments-by-student/print', [ReportController::class, 'paymentsByStudent'])->name('reports.payments_by_student.print');
+    Route::get('/reports/payments-by-student/pdf', [ReportController::class, 'paymentsByStudentPdf'])->name('reports.payments_by_student.pdf');
+
+    // Todos los alumnos
+    Route::get('/reports/all-students/print', [ReportController::class, 'allStudents'])->name('reports.all_students.print');
+    Route::get('/reports/all-students/pdf', [ReportController::class, 'allStudentsPdf'])->name('reports.all_students.pdf');
+});
+
+Route::middleware(['web', 'auth'])->group(function () {
+    // ... otras rutas de reportes ...
+    Route::get('/reports/class-enrollees/view', [ReportController::class, 'classEnrolleesPage'])->name('reports.class_enrollees.view');
+});
+
+Route::middleware(['web', 'auth'])->group(function () {
+    // ... otras rutas ...
+    Route::get('/reports/debtors/view', [ReportController::class, 'debtorsPage'])->name('reports.debtors.view');
+});
+
+Route::middleware(['web', 'auth'])->group(function () {
+    // ... otras rutas ...
+    Route::get('/reports/payments-by-student/view', [ReportController::class, 'paymentsByStudentPage'])->name('reports.payments_by_student.view');
+});
+
+// name=routes/web.php
+Route::middleware(['web', 'auth'])->group(function () {
+    // ... otras rutas de reportes ...
+    Route::get('/reports/all-students/view', [\App\Http\Controllers\ReportController::class, 'allStudentsPage'])->name('reports.all_students.view');
+});
 require __DIR__.'/auth.php';

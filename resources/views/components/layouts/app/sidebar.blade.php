@@ -68,7 +68,14 @@
                             {{ __('Valores de las clases') }}
                         </flux:navlist.item>
 
-                        
+                        <flux:navlist.item
+                            icon="credit-card"
+                            :href="route('payment_methods.index')"
+                            :current="request()->routeIs('payment_methods.*')"
+                            wire:navigate
+                        >
+                            {{ __('Tipos de pago') }}
+                        </flux:navlist.item>
                     </flux:navlist.group>
                 </div>
 
@@ -78,15 +85,6 @@
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Pagos</div>
                     <flux:navlist.group>
-                        <flux:navlist.item
-                            icon="credit-card"
-                            :href="route('payment_methods.index')"
-                            :current="request()->routeIs('payment_methods.*')"
-                            wire:navigate
-                        >
-                            {{ __('Tipos de pago') }}
-                        </flux:navlist.item>
-                        
                         <flux:navlist.item
                             icon="banknotes"
                             :href="route('payments.index')"
@@ -104,6 +102,25 @@
                         >
                             {{ __('Historial de pagos') }}
                         </flux:navlist.item>
+                    </flux:navlist.group>
+                </div>
+
+                <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
+
+                {{-- Group: Reportes --}}
+                <div class="mt-2 mb-3 px-1">
+                    <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Reportes</div>
+                    <flux:navlist.group>
+                        <flux:navlist.item
+                            icon="chart-bar"
+                            :href="route('reports.index')"
+                            :current="request()->routeIs('reports.index')"
+                            wire:navigate
+                        >
+                            {{ __('Panel de reportes') }}
+                        </flux:navlist.item>
+
+                       
                     </flux:navlist.group>
                 </div>
             </flux:navlist>
