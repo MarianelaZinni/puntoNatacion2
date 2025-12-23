@@ -93,6 +93,10 @@
         <span class="sort-indicator text-gray-400 dark:text-gray-500 text-xs" data-field="email"></span>
     </button>
 </th>
+
+                        <!-- Nueva columna Estado -->
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>

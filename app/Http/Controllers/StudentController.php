@@ -52,6 +52,7 @@ class StudentController extends Controller
                $student->debt = $calc['debt'];
                $student->monthly_amount = $calc['monthly_amount'];
                $student->unpaid_periods = $calc['unpaid_periods'];
+               $student->selectable_periods = $calc['selectable_periods'] ?? [];
                $student->next_unpaid_period = $calc['next_unpaid_period'];
                $student->has_debt = ($calc['debt'] > 0);
 
@@ -71,6 +72,36 @@ class StudentController extends Controller
                    }, 0.0);
 
                    $student->paid_this_month = ($paidThisMonth >= $student->monthly_amount && $student->monthly_amount > 0);
+               }
+
+               // Determinar estado (status) según las reglas:
+               // - "deudor"   => si debe algún mes anterior OR (estamos > dia 10 y no pagó el mes en curso)
+               // - "pendiente"=> si estamos <= dia 10 y no pagó el mes en curso y no debe meses anteriores
+               // - "al_dia"   => si pagó todos los periodos anteriores y el mes actual
+               //
+               // Regla simplificada aplicada:
+               // 1) Si monthly_amount <= 0 => 'al_dia' (no corresponde deuda)
+               // 2) else if has previous unpaid months => 'deudor'
+               // 3) else if paid_this_month => 'al_dia'
+               // 4) else if today > 10 => 'deudor' (mes actual vencido)
+               // 5) else => 'pendiente' (antes del día 11, sin deuda previa)
+               $nowYm = Carbon::now()->format('Y-m');
+               $unpaidPeriods = is_array($student->unpaid_periods) ? $student->unpaid_periods : [];
+               $hasPreviousUnpaid = collect($unpaidPeriods)->contains(function ($p) use ($nowYm) {
+                   return ($p['period'] ?? '') !== $nowYm;
+               });
+               $todayDay = Carbon::now()->day;
+
+               if (empty($student->monthly_amount) || (float)$student->monthly_amount <= 0) {
+                   $student->payment_status = 'al_dia';
+               } elseif ($hasPreviousUnpaid) {
+                   $student->payment_status = 'deudor';
+               } elseif ($student->paid_this_month) {
+                   $student->payment_status = 'al_dia';
+               } elseif ($todayDay > 10) {
+                   $student->payment_status = 'deudor';
+               } else {
+                   $student->payment_status = 'pendiente';
                }
 
                return $student;
@@ -239,6 +270,7 @@ class StudentController extends Controller
             return redirect()->route('students.index')->with('error', 'Ocurrió un error al intentar eliminar.');
         }
     }
+
 
     /**
      * Show enroll form for a student (GET).

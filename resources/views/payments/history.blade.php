@@ -14,11 +14,20 @@
                     @endforeach
                 </select>
 
-                <input type="text" name="search" value="{{ $searchName ?? '' }}" placeholder="Buscar por nombre" class="rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-2">
+                {{-- Period filter: desde / hasta (type="month") --}}
+                <label for="period_from" class="sr-only">Periodo desde</label>
+                <input type="month" id="period_from" name="period_from" value="{{ request('period_from') ?? '' }}"
+                       class="rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                       title="Periodo desde (YYYY-MM)">
+
+                <label for="period_to" class="sr-only">Periodo hasta</label>
+                <input type="month" id="period_to" name="period_to" value="{{ request('period_to') ?? '' }}"
+                       class="rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                       title="Periodo hasta (YYYY-MM)">
 
                 <button type="submit" class="px-3 py-2 rounded bg-[#29b1dc] text-white hover:bg-[#24a8cf]">Filtrar</button>
 
-                @if(!empty($studentId))
+                @if(!empty($studentId) || request()->hasAny(['period_from','period_to']))
                     <a href="{{ route('payments.history') }}" class="text-sm text-gray-600 dark:text-gray-300 underline ml-2">Quitar filtro</a>
                 @endif
             </form>
@@ -93,7 +102,7 @@
                                     {{ $payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date)->format('d/m/Y') : '-' }}
                                 </td>
 
-                                {{-- Nueva columna: Periodo --}}
+                                {{-- Columna: Periodo --}}
                                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
                                     {{ $periodLabel }}
                                 </td>

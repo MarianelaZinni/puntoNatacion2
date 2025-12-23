@@ -5,6 +5,27 @@
     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{{ $student->name }}</td>
     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{{ $student->email }}</td>
 
+    <!-- Estado column -->
+    @php
+        // payment_status values: 'deudor', 'pendiente', 'al_dia'
+        $status = $student->payment_status ?? 'al_dia';
+    @endphp
+    <td class="px-4 py-3 text-center">
+        @if($status === 'deudor')
+            <span title="Deudor" class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-100 text-red-700" aria-label="Deudor">
+                <flux:icon name="x-circle" class="h-5 w-5" />
+            </span>
+        @elseif($status === 'pendiente')
+            <span title="Pago pendiente" class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-amber-100 text-amber-700" aria-label="Pago pendiente">
+                <flux:icon name="exclamation-circle" class="h-5 w-5" />
+            </span>
+        @else
+            <span title="Al día" class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-700" aria-label="Al día">
+                <flux:icon name="check-circle" class="h-5 w-5" />
+            </span>
+        @endif
+    </td>
+
     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
         <div class="flex flex-wrap items-center justify-center gap-2">
 
@@ -92,7 +113,7 @@
 </tr>
 @empty
 <tr>
-    <td colspan="5" class="px-4 py-6 text-center text-gray-600 dark:text-gray-400">
+    <td colspan="6" class="px-4 py-6 text-center text-gray-600 dark:text-gray-400">
         No hay alumnos registrados.
     </td>
 </tr>

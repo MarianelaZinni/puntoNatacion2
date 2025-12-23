@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\PaymentMethod;
-use App\Services\PriceCalculator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class PaymentController extends Controller
@@ -23,17 +23,22 @@ class PaymentController extends Controller
 
         // Calculamos deuda (resumen de precio) para cada alumno usando el helper del modelo
         foreach ($students as $student) {
-            $calc = $student->calculateDebtFromCreationUsingCurrentMonthly();
-            $student->debt = $calc['debt'];
-            $student->monthly_amount = $calc['monthly_amount'];
-            $student->unpaid_periods = $calc['unpaid_periods'];
-            $student->selectable_periods = $calc['selectable_periods'];
-            $student->next_unpaid_period = $calc['next_unpaid_period'];
-            $student->has_debt = ($calc['debt'] > 0);
-
-            // marca si pagó este mes completamente (usa la lógica que considera monthly_amount > 0)
-            $nowYm = Carbon::now()->format('Y-m');
-            $student->paid_this_month = $student->isPeriodFullyPaid($nowYm, $student->monthly_amount);
+            if (method_exists($student, 'calculateDebtFromCreationUsingCurrentMonthly')) {
+                $calc = $student->calculateDebtFromCreationUsingCurrentMonthly();
+                $student->debt = $calc['debt'];
+                $student->monthly_amount = $calc['monthly_amount'];
+                $student->unpaid_periods = $calc['unpaid_periods'];
+                $student->next_unpaid_period = $calc['next_unpaid_period'];
+                $student->has_debt = ($calc['debt'] > 0);
+                $student->paid_this_month = $student->isPeriodFullyPaid(Carbon::now()->format('Y-m'), $student->monthly_amount);
+            } else {
+                $student->debt = 0;
+                $student->monthly_amount = 0;
+                $student->unpaid_periods = [];
+                $student->next_unpaid_period = null;
+                $student->has_debt = false;
+                $student->paid_this_month = false;
+            }
         }
 
         // Métodos de pago para el select
@@ -82,19 +87,27 @@ class PaymentController extends Controller
     }
 
     /**
-     * Historial de pagos (filtrable por student_id).
-     * Devuelve $payments (paginados), $students (para el select) y, si se seleccionó un alumno,
-     * su resumen de deuda calculado con Student::calculateDebtFromCreationUsingCurrentMonthly().
+     * Historial de pagos (filtrable por student_id y por rango de periodos).
+     *
+     * El filtrado por periodo usa payment_period si existe; si payment_period es NULL
+     * usa el primer día del mes de payment_date para comparar.
+     *
+     * Recibe:
+     * - student_id (opcional)
+     * - period_from (opcional) formato YYYY-MM
+     * - period_to   (opcional) formato YYYY-MM
      */
     public function history(Request $request)
     {
         $studentId = $request->input('student_id');
-        $searchName = $request->input('search'); // opcional
+        $periodFrom = $request->input('period_from'); // expected YYYY-MM
+        $periodTo = $request->input('period_to');     // expected YYYY-MM
+        $searchName = $request->input('search'); // no longer used in UI but kept for compatibility
 
         // Lista de alumnos para el select
         $students = Student::orderBy('name')->get();
 
-        // Query de pagos
+        // Base query
         $paymentsQuery = Payment::with(['student', 'paymentMethod'])->latest('payment_date');
 
         // Filtrar por student_id si está presente
@@ -102,27 +115,56 @@ class PaymentController extends Controller
             $paymentsQuery->where('student_id', $studentId);
         }
 
-        // Filtro adicional por nombre (si se usa)
+        // Si el usuario envió periodos, normalizarlos a rango de fechas (primer día - último día)
+        $fromDate = null;
+        $toDate = null;
+        try {
+            if ($periodFrom && preg_match('/^\d{4}-\d{2}$/', $periodFrom)) {
+                $fromDate = Carbon::createFromFormat('Y-m', $periodFrom)->startOfMonth()->toDateString(); // YYYY-MM-01
+            }
+            if ($periodTo && preg_match('/^\d{4}-\d{2}$/', $periodTo)) {
+                $toDate = Carbon::createFromFormat('Y-m', $periodTo)->endOfMonth()->toDateString(); // YYYY-MM-31
+            }
+        } catch (\Throwable $e) {
+            // ignore parse errors; we'll not apply period filter
+            $fromDate = null;
+            $toDate = null;
+        }
+
+        if ($fromDate || $toDate) {
+            // Build a safe SQL expression that normalizes each payment to a "period date"
+            // using COALESCE(payment_period, DATE_FORMAT(payment_date, '%Y-%m-01')).
+            // Esto requiere MySQL DATE_FORMAT; asumimos MySQL según el proyecto.
+            $periodExpr = "COALESCE(payment_period, DATE_FORMAT(payment_date, '%Y-%m-01'))";
+
+            if ($fromDate && $toDate) {
+                $paymentsQuery->whereRaw("$periodExpr BETWEEN ? AND ?", [$fromDate, $toDate]);
+            } elseif ($fromDate) {
+                $paymentsQuery->whereRaw("$periodExpr >= ?", [$fromDate]);
+            } elseif ($toDate) {
+                $paymentsQuery->whereRaw("$periodExpr <= ?", [$toDate]);
+            }
+        }
+
+        // Opción adicional: mantener búsqueda por nombre (si el usuario quiere)
         if ($searchName) {
             $paymentsQuery->whereHas('student', function ($q) use ($searchName) {
                 $q->where('name', 'like', '%' . $searchName . '%');
             });
         }
 
-        // Paginamos
+        // Paginamos (ajusta el número por página si querés)
         $payments = $paymentsQuery->paginate(25)->withQueryString();
 
-        // Si se pidió un alumno concreto, cargamos su summary de deuda para mostrar el banner
+        // Si se pidió un alumno concreto, cargamos su resumen de deuda para mostrar el banner
         $selectedStudent = null;
         $debtSummary = null;
         if ($studentId) {
             $selectedStudent = Student::with(['subjects.subjectType', 'payments'])->find($studentId);
             if ($selectedStudent) {
-                // Usa el helper del modelo que calcula deuda desde la creación usando la cuota actual
                 if (method_exists($selectedStudent, 'calculateDebtFromCreationUsingCurrentMonthly')) {
                     $debtSummary = $selectedStudent->calculateDebtFromCreationUsingCurrentMonthly();
                 } else {
-                    // Fallback simple: sumar pagos y setear debt 0 (no queremos romper la vista)
                     $totalPaid = $selectedStudent->payments()->sum('amount');
                     $debtSummary = [
                         'debt' => 0.0,
@@ -130,8 +172,8 @@ class PaymentController extends Controller
                         'unpaid_periods' => [],
                         'selectable_periods' => [],
                         'next_unpaid_period' => null,
+                        'total_paid' => (float)$totalPaid,
                     ];
-                    $debtSummary['total_paid'] = (float)$totalPaid;
                 }
             }
         }
