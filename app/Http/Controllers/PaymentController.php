@@ -17,38 +17,73 @@ class PaymentController extends Controller
      * Opcionalmente acepta ?student_id= para preseleccionar un alumno en el formulario.
      */
     public function index(Request $request)
-    {
-        // Cargamos alumnos con sus subjects y payments (evita N+1)
-        $students = Student::with(['subjects.subjectType', 'payments'])->orderBy('name')->get();
+{
+    // Cargamos alumnos con sus subjects y payments (evita N+1)
+    $students = Student::with(['subjects.subjectType', 'payments'])->orderBy('name')->get();
 
-        // Calculamos deuda (resumen de precio) para cada alumno usando el helper del modelo
-        foreach ($students as $student) {
-            if (method_exists($student, 'calculateDebtFromCreationUsingCurrentMonthly')) {
-                $calc = $student->calculateDebtFromCreationUsingCurrentMonthly();
-                $student->debt = $calc['debt'];
-                $student->monthly_amount = $calc['monthly_amount'];
-                $student->unpaid_periods = $calc['unpaid_periods'];
-                $student->next_unpaid_period = $calc['next_unpaid_period'];
-                $student->has_debt = ($calc['debt'] > 0);
-                $student->paid_this_month = $student->isPeriodFullyPaid(Carbon::now()->format('Y-m'), $student->monthly_amount);
-            } else {
-                $student->debt = 0;
-                $student->monthly_amount = 0;
-                $student->unpaid_periods = [];
-                $student->next_unpaid_period = null;
-                $student->has_debt = false;
-                $student->paid_this_month = false;
+    // Fecha actual YYYY-MM para comparaciones
+    $todayYm = Carbon::now()->format('Y-m');
+
+    // Calculamos deuda (resumen de precio) para cada alumno usando el helper del modelo
+    foreach ($students as $student) {
+        if (method_exists($student, 'calculateDebtFromCreationUsingCurrentMonthly')) {
+            $calc = $student->calculateDebtFromCreationUsingCurrentMonthly();
+            $student->debt = $calc['debt'];
+            $student->monthly_amount = $calc['monthly_amount'];
+            $student->unpaid_periods = $calc['unpaid_periods'];
+            $student->next_unpaid_period = $calc['next_unpaid_period'];
+            $student->has_debt = ($calc['debt'] > 0);
+            $student->paid_this_month = $student->isPeriodFullyPaid($todayYm, $student->monthly_amount);
+
+            // Construir selectable_periods esperado por el frontend:
+            // transformamos unpaid_periods a {period, paid, deficit}
+            $selectable = [];
+            if (!empty($calc['unpaid_periods']) && is_array($calc['unpaid_periods'])) {
+                foreach ($calc['unpaid_periods'] as $up) {
+                    // suponemos que $up tiene keys 'period' (YYYY-MM) y 'deficit' (numeric)
+                    $selectable[] = [
+                        'period'  => $up['period'] ?? null,
+                        'paid'    => false,
+                        'deficit' => isset($up['deficit']) ? (float)$up['deficit'] : 0.0,
+                    ];
+                }
             }
+
+            // Si el mes actual no está en la lista y el mes actual no está totalmente pagado,
+            // añadimos el periodo actual como opción (con deficit 0, el JS usará monthly_amount si corresponde).
+            $hasCurrent = collect($selectable)->contains(function ($item) use ($todayYm) {
+                return isset($item['period']) && $item['period'] === $todayYm;
+            });
+
+            if (!$hasCurrent && !$student->paid_this_month) {
+                array_unshift($selectable, [
+                    'period'  => $todayYm,
+                    'paid'    => false,
+                    'deficit' => 0.0,
+                ]);
+            }
+
+            // Guardamos para que la vista lo utilice en data-selectable
+            $student->selectable_periods = $selectable;
+        } else {
+            $student->debt = 0;
+            $student->monthly_amount = 0;
+            $student->unpaid_periods = [];
+            $student->next_unpaid_period = null;
+            $student->has_debt = false;
+            $student->paid_this_month = false;
+            $student->selectable_periods = [];
         }
-
-        // Métodos de pago para el select
-        $paymentMethods = PaymentMethod::orderBy('name')->get();
-
-        // student_id pasado por query (al venir desde students.index)
-        $selectedStudentId = $request->query('student_id');
-
-        return view('payments.index', compact('students', 'paymentMethods', 'selectedStudentId'));
     }
+
+    // Métodos de pago para el select
+    $paymentMethods = PaymentMethod::orderBy('name')->get();
+
+    // student_id pasado por query (al venir desde students.index)
+    $selectedStudentId = $request->query('student_id');
+
+    return view('payments.index', compact('students', 'paymentMethods', 'selectedStudentId'));
+}
 
     /**
      * Guarda un nuevo pago.
