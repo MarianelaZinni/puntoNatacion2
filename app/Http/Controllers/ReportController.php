@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Subject;
 use App\Models\Student;
 use App\Models\Payment;
-use App\Services\PriceCalculator;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf; // barryvdh/laravel-dompdf facade
