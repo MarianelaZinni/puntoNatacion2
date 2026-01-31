@@ -145,14 +145,20 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'dni' => 'required|unique:students,dni',
-            'name' => 'required',
-            'email' => 'nullable|email',
-            'address' => 'nullable',
-            'phone' => 'nullable',
-        ]);
-        Student::create($request->only('dni', 'name', 'email', 'address', 'phone'));
-        return redirect()->route('students.index')->with('success', 'Alumno creado correctamente.');
+        'dni' => 'required|unique:students,dni',
+        'name' => 'required',
+        'email' => 'nullable|email',
+        'address' => 'nullable',
+        'phone' => 'nullable',
+    ]);
+
+    // Crear el estudiante
+    $student = Student::create($request->only('dni', 'name', 'email', 'address', 'phone'));
+
+    // Redireccionar a la página de inscripción de clases
+    return redirect()->route('students.enrollClassForm', ['student' => $student->id])
+                     ->with('success', 'Alumno creado correctamente. Ahora puedes inscribirlo a clases.');
+
     }
 
      /**
