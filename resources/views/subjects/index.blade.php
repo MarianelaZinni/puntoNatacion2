@@ -39,7 +39,7 @@
                 <div>
                     <label for="day" class="block font-medium mb-1">Día</label>
                     <select name="day" id="day" class="w-full rounded border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100" required>
-                        @foreach(['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'] as $d)
+                        @foreach(['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'] as $d)
                             <option value="{{ $d }}">{{ $d }}</option>
                         @endforeach
                     </select>
