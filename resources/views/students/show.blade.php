@@ -74,6 +74,12 @@
                     <dd class="mt-3 text-gray-900 dark:text-gray-100 font-medium leading-relaxed">{{ $student->address ?? '-' }}</dd>
                 </div>
 
+             
+                <div class="sm:col-span-2">
+                    <dt class="text-base font-medium text-gray-700 dark:text-gray-300">Observaciones</dt>
+                    <dd class="mt-3 text-gray-900 dark:text-gray-100 font-medium leading-relaxed whitespace-pre-line">{{ $student->observations ?? '-' }}</dd>
+                </div>
+              
                 <div>
                     <dt class="text-base font-medium text-gray-700 dark:text-gray-300">Creado</dt>
                     <dd class="mt-3 text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{{ $student->created_at ? $student->created_at->diffForHumans() . ' — ' . $student->created_at->format('d/m/Y H:i') : '-' }}</dd>

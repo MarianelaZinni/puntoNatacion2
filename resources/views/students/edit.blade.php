@@ -127,6 +127,24 @@
                     <p id="address-error" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                 @enderror
             </div>
+
+             {{-- Observaciones --}}
+            <div class="sm:col-span-2">
+                <label for="observations" class="block text-base font-medium text-gray-700 dark:text-gray-300">Observaciones</label>
+                <textarea
+                    id="observations"
+                    name="observations"
+                    rows="3"
+                    placeholder="Notas adicionales sobre el alumno..."
+                    class="mt-2 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-[#29b1dc] focus:border-[#29b1dc] text-base leading-relaxed @error('observations') ring-2 ring-red-400 @enderror"
+                    aria-invalid="{{ $errors->has('observations') ? 'true' : 'false' }}"
+                    aria-describedby="{{ $errors->has('observations') ? 'observations-error' : '' }}"
+                >{{ old('observations', $student->observations) }}</textarea>
+                @error('observations')
+                    <p id="observations-error" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
         </form>
         {{-- end student update form --}}
 

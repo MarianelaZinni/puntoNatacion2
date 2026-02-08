@@ -18,7 +18,7 @@ class Student extends Authenticatable
         'email',
         'address',
         'phone',
-        // ...
+        'observations'
     ];
 
     protected $dates = [
