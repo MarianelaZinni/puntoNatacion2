@@ -10,6 +10,7 @@ use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\SubjectPriceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\BackupController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -67,6 +68,12 @@ Route::middleware(['web'])->group(function () {
     Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
 });
 Route::get('/payments/history', [PaymentController::class, 'history'])->name('payments.history');
+
+// Ruta para backup de base de datos  
+Route::middleware(['auth'])->group(function () {
+    Route::get('/backup/download', [BackupController::class, 'download'])->name('backup.download');
+});
+
 
 Route::middleware(['web', 'auth'])->prefix('reports')->name('reports.')->group(function () {
     Route::get('/', [ReportController::class, 'index'])->name('index');

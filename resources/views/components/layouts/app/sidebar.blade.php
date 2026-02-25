@@ -123,6 +123,19 @@
                        
                     </flux:navlist.group>
                 </div>
+
+                {{-- Group: Sistema --}}
+                <div class="mt-2 mb-3 px-1">
+                    <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Sistema</div>
+                    <flux:navlist.group>
+                        <flux:navlist.item
+                            icon="arrow-down-tray"
+                            href="{{ route('backup.download') }}"
+                        >
+                            {{ __('Backup de Base de Datos') }}
+                        </flux:navlist.item>
+                    </flux:navlist.group>
+                </div>
             </flux:navlist>
 
             <flux:spacer />
