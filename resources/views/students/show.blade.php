@@ -69,6 +69,24 @@
                     <dd class="mt-3 text-gray-900 dark:text-gray-100 font-medium leading-relaxed">{{ $student->phone ?? '-' }}</dd>
                 </div>
 
+                <div>
+                    <dt class="text-base font-medium text-gray-700 dark:text-gray-300">Fecha de Nacimiento</dt>
+                    <dd class="mt-3 text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                        {{ $student->birth_date ? $student->birth_date->format('d/m/Y') : '-' }}
+                    </dd>
+                </div>
+
+                <div>
+                    <dt class="text-base font-medium text-gray-700 dark:text-gray-300">Edad</dt>
+                    <dd class="mt-3 text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
+                        @if($student->birth_date && isset($student->age))
+                            {{ $student->age }} {{ $student->age === 1 ? 'año' : 'años' }}
+                        @else
+                            -
+                        @endif
+                    </dd>
+                </div>
+
                 <div class="sm:col-span-2">
                     <dt class="text-base font-medium text-gray-700 dark:text-gray-300">Dirección</dt>
                     <dd class="mt-3 text-gray-900 dark:text-gray-100 font-medium leading-relaxed">{{ $student->address ?? '-' }}</dd>
