@@ -150,11 +150,12 @@ class StudentController extends Controller
         'email' => 'nullable|email',
         'address' => 'nullable',
         'phone' => 'nullable',
-        'observations' => 'nullable|string|max:1000'
+        'observations' => 'nullable|string|max:1000',
+        'birth_date' => 'nullable|date|before:today',
     ]);
 
     // Crear el estudiante
-    $student = Student::create($request->only('dni', 'name', 'email', 'address', 'phone', 'observations'));
+    $student = Student::create($request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date'));
 
     // Redireccionar a la página de inscripción de clases
     return redirect()->route('students.enrollClassForm', ['student' => $student->id])
@@ -261,9 +262,10 @@ class StudentController extends Controller
             'email' => 'nullable|email',
             'address' => 'nullable',
             'phone' => 'nullable',
-            'observations' => 'nullable|string|max:1000'
+            'observations' => 'nullable|string|max:1000',
+             'birth_date' => 'nullable|date|before:today',
         ]);
-        $student->update($request->only('dni', 'name', 'email', 'address', 'phone', 'observations'));
+        $student->update($request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date'));
         return redirect()->route('students.index')->with('success', 'Alumno actualizado correctamente.');
     }
 

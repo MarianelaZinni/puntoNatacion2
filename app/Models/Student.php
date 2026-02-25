@@ -18,13 +18,18 @@ class Student extends Authenticatable
         'email',
         'address',
         'phone',
-        'observations'
+        'observations',
+        'birth_date'
     ];
 
     protected $dates = [
         'created_at',
-        'updated_at',
+        'updated_at'
     ];
+
+    protected $casts = [
+    'birth_date' => 'date',
+];
 
     /**************
      * Relaciones *
@@ -280,5 +285,17 @@ class Student extends Authenticatable
         }
 
         return Carbon::parse($period)->startOfMonth();
+    }
+
+    /**
+    * Calcula la edad del estudiante basándose en su fecha de nacimiento.
+    * Retorna null si no tiene fecha de nacimiento.
+    */
+    public function getAgeAttribute(): ?int
+    {
+        if (!$this->birth_date) {
+            return null;
+        }
+        return Carbon::parse($this->birth_date)->age;
     }
 }

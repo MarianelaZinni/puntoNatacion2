@@ -106,7 +106,40 @@
                         <p id="phone-error" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
-           
+           {{-- Fecha de Nacimiento --}}
+<div>
+    <label for="birth_date" class="block text-base font-medium text-gray-700 dark:text-gray-300">Fecha de Nacimiento</label>
+    <input
+        id="birth_date"
+        name="birth_date"
+        type="date"
+        value="{{ old('birth_date') }}"
+        max="{{ date('Y-m-d') }}"
+        class="mt-2 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-[#29b1dc] focus:border-[#29b1dc] text-base leading-relaxed @error('birth_date') ring-2 ring-red-400 @enderror"
+        aria-invalid="{{ $errors->has('birth_date') ? 'true' : 'false' }}"
+        aria-describedby="{{ $errors->has('birth_date') ? 'birth_date-error' : '' }}"
+        onchange="calculateAge()"
+    >
+    @error('birth_date')
+        <p id="birth_date-error" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+    @enderror
+</div>
+
+{{-- Edad (calculada automáticamente, solo lectura) --}}
+<div>
+    <label for="age" class="block text-base font-medium text-gray-700 dark:text-gray-300">Edad</label>
+    <input
+        id="age"
+        name="age"
+        type="text"
+        readonly
+        value=""
+        placeholder="Se calcula automáticamente"
+        class="mt-2 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-900 text-gray-900 dark:text-gray-100 shadow-sm text-base leading-relaxed cursor-not-allowed"
+        tabindex="-1"
+    >
+    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">La edad se calcula automáticamente según la fecha de nacimiento</p>
+</div>
 
             {{-- Dirección --}}
             <div>
@@ -199,5 +232,62 @@
         @endif
     })();
     </script>
+    <script>
+        (function () {
+    const form = document.getElementById('student-form');
+    const saveBtn = document.getElementById('save-btn');
+    const saveSpinner = document.getElementById('save-spinner');
+
+    // Función para calcular la edad
+    window.calculateAge = function() {
+        const birthDateInput = document.getElementById('birth_date');
+        const ageInput = document.getElementById('age');
+        
+        if (birthDateInput && birthDateInput.value) {
+            const birthDate = new Date(birthDateInput.value);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            
+            // Ajustar si aún no ha cumplido años este año
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            
+            if (age >= 0) {
+                ageInput.value = age + (age === 1 ? ' año' : ' años');
+            } else {
+                ageInput.value = '';
+            }
+        } else {
+            ageInput.value = '';
+        }
+    };
+
+    // Calcular edad al cargar la página si hay valor previo
+    if (document.getElementById('birth_date').value) {
+        calculateAge();
+    }
+
+    // Prevent double submit
+    form.addEventListener('submit', function (e) {
+        if (!form.checkValidity()) {
+            return;
+        }
+        saveBtn.disabled = true;
+        saveSpinner.classList.remove('hidden');
+    });
+
+    @if ($errors->any())
+        (function () {
+            const firstErrorEl = document.querySelector('.ring-2.ring-red-400, [aria-invalid="true"]');
+            if (firstErrorEl) {
+                firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstErrorEl.focus();
+            }
+        })();
+    @endif
+})();
+        </script>
     @endpush
 </x-layouts.app>
