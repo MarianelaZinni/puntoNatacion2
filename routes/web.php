@@ -43,6 +43,9 @@ Route::get('/teachers/{teacher}', [TeacherController::class, 'show'])->name('tea
 Route::get('/teachers/{teacher}/edit', [TeacherController::class, 'edit'])->name('teachers.edit');
 Route::put('/teachers/{teacher}', [TeacherController::class, 'update'])->name('teachers.update');
 Route::delete('/teachers/{teacher}', [TeacherController::class, 'destroy'])->name('teachers.destroy');
+// Asignación de profesores a clases
+Route::post('/teachers/{teacher}/assign-subject', [TeacherController::class, 'assignToSubject'])->name('teachers.assignToSubject');
+Route::post('/teachers/{teacher}/remove-subject', [TeacherController::class, 'removeFromSubject'])->name('teachers.removeFromSubject');
 
 
 // Extra: Anotar a clase y registrar pago

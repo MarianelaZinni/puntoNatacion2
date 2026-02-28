@@ -82,10 +82,10 @@
             </dl>
         </div>
 
-        {{-- Clases que dicta --}}
-        <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
+        {{-- Clases que dicta como Titular --}}
+        <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm mb-6">
             <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Clases que Dicta
+                Clases como Titular
                 <span class="text-sm font-normal text-gray-600 dark:text-gray-400">({{ $teacher->subjects->count() }})</span>
             </h2>
 
@@ -108,6 +108,9 @@
                                 </th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                     Alumnos
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Acciones
                                 </th>
                             </tr>
                         </thead>
@@ -132,6 +135,13 @@
                                             {{ $subject->students->count() }} / {{ $subject->capacity }}
                                         </span>
                                     </td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <button type="button"
+                                                onclick="confirmRemove({{ $subject->id }}, 'titular')"
+                                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                                            <flux:icon name="x-mark" class="h-4 w-4" />
+                                        </button>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -139,7 +149,163 @@
                 </div>
             @else
                 <p class="text-gray-500 dark:text-gray-400 text-center py-8">
-                    Este profesor aún no tiene clases asignadas.
+                    Este profesor aún no tiene clases asignadas como titular.
+                </p>
+            @endif
+        </div>
+
+        {{-- Clases que dicta como Suplente --}}
+        <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Clases como Suplente
+                <span class="text-sm font-normal text-gray-600 dark:text-gray-400">({{ $teacher->subjectsAsSubstitute->count() }})</span>
+            </h2>
+
+            @if($teacher->subjectsAsSubstitute->count() > 0)
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Tipo
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Día
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Horario
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Capacidad
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Alumnos
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                            @foreach($teacher->subjectsAsSubstitute as $subject)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                        {{ $subject->subjectType->name ?? '-' }}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                        {{ ucfirst($subject->day) }}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                        {{ \Carbon\Carbon::parse($subject->start_time)->format('H:i') }} - 
+                                        {{ \Carbon\Carbon::parse($subject->end_time)->format('H:i') }}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                        {{ $subject->capacity }}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                                            {{ $subject->students->count() }} / {{ $subject->capacity }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <button type="button"
+                                                onclick="confirmRemove({{ $subject->id }}, 'substitute')"
+                                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                                            <flux:icon name="x-mark" class="h-4 w-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <p class="text-gray-500 dark:text-gray-400 text-center py-8">
+                    Este profesor aún no tiene clases asignadas como suplente.
+                </p>
+            @endif
+        </div>
+
+        {{-- Asignar a nuevas clases --}}
+        <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Asignar a Clases
+            </h2>
+
+            @if($availableSubjects->count() > 0)
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Tipo
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Día
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Horario
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Profesor Actual
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Suplente Actual
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                            @foreach($availableSubjects as $subject)
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                        {{ $subject->subjectType->name ?? '-' }}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                        {{ ucfirst($subject->day) }}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                        {{ \Carbon\Carbon::parse($subject->start_time)->format('H:i') }} - 
+                                        {{ \Carbon\Carbon::parse($subject->end_time)->format('H:i') }}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                        {{ $subject->teacher ? $subject->teacher->full_name : '-' }}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                        {{ $subject->substituteTeacher ? $subject->substituteTeacher->full_name : '-' }}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <div class="flex gap-2">
+                                            @if(!$subject->teacher_id)
+                                                <button type="button"
+                                                        onclick="assignTeacher({{ $subject->id }}, 'titular')"
+                                                        class="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition"
+                                                        title="Asignar como titular">
+                                                    <flux:icon name="user" class="h-3 w-3" />
+                                                    Titular
+                                                </button>
+                                            @endif
+                                            @if(!$subject->substitute_teacher_id)
+                                                <button type="button"
+                                                        onclick="assignTeacher({{ $subject->id }}, 'substitute')"
+                                                        class="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded transition"
+                                                        title="Asignar como suplente">
+                                                    <flux:icon name="user-plus" class="h-3 w-3" />
+                                                    Suplente
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <p class="text-gray-500 dark:text-gray-400 text-center py-8">
+                    No hay clases disponibles para asignar a este profesor.
                 </p>
             @endif
         </div>
@@ -166,13 +332,99 @@
             document.getElementById('flash-success').style.display = 'none';
         });
 
+        // Asignar profesor a clase
+        function assignTeacher(subjectId, role) {
+            const roleText = role === 'titular' ? 'titular' : 'suplente';
+            Swal.fire({
+                title: '¿Asignar como ' + roleText + '?',
+                text: 'Se asignará a {{ $teacher->full_name }} como ' + roleText + ' de esta clase.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, asignar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '{{ route('teachers.assignToSubject', $teacher) }}';
+                    
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = '_token';
+                    csrfInput.value = csrfToken;
+                    
+                    const subjectInput = document.createElement('input');
+                    subjectInput.type = 'hidden';
+                    subjectInput.name = 'subject_id';
+                    subjectInput.value = subjectId;
+                    
+                    const roleInput = document.createElement('input');
+                    roleInput.type = 'hidden';
+                    roleInput.name = 'role';
+                    roleInput.value = role;
+                    
+                    form.appendChild(csrfInput);
+                    form.appendChild(subjectInput);
+                    form.appendChild(roleInput);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
+
+        // Remover profesor de clase
+        function confirmRemove(subjectId, role) {
+            const roleText = role === 'titular' ? 'titular' : 'suplente';
+            Swal.fire({
+                title: '¿Remover como ' + roleText + '?',
+                text: 'Se removerá a {{ $teacher->full_name }} como ' + roleText + ' de esta clase.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, remover',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '{{ route('teachers.removeFromSubject', $teacher) }}';
+                    
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = '_token';
+                    csrfInput.value = csrfToken;
+                    
+                    const subjectInput = document.createElement('input');
+                    subjectInput.type = 'hidden';
+                    subjectInput.name = 'subject_id';
+                    subjectInput.value = subjectId;
+                    
+                    const roleInput = document.createElement('input');
+                    roleInput.type = 'hidden';
+                    roleInput.name = 'role';
+                    roleInput.value = role;
+                    
+                    form.appendChild(csrfInput);
+                    form.appendChild(subjectInput);
+                    form.appendChild(roleInput);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
+
         // Delete confirmation
         function confirmDelete() {
             Swal.fire({
                 title: '¿Estás seguro?',
                 html: `Vas a eliminar al profesor <strong>{{ $teacher->full_name }}</strong>.<br><br>
-                       @if($teacher->subjects->count() > 0)
-                       Las {{ $teacher->subjects->count() }} {{ $teacher->subjects->count() == 1 ? 'clase' : 'clases' }} que dicta quedarán sin profesor asignado.
+                       @if($teacher->subjects->count() > 0 || $teacher->subjectsAsSubstitute->count() > 0)
+                       Las clases asignadas quedarán sin este profesor.
                        @endif`,
                 icon: 'warning',
                 showCancelButton: true,

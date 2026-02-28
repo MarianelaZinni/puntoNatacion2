@@ -12,6 +12,7 @@ class Subject extends Model
     protected $fillable = [
         'subject_type_id',
         'teacher_id',
+        'substitute_teacher_id',
         'day',
         'start_time',
         'end_time',
@@ -33,6 +34,14 @@ class Subject extends Model
     public function teacher()
     {
         return $this->belongsTo(\App\Models\Teacher::class, 'teacher_id');
+    }
+
+    /**
+     * Relación con el profesor suplente de la clase
+     */
+    public function substituteTeacher()
+    {
+        return $this->belongsTo(\App\Models\Teacher::class, 'substitute_teacher_id');
     }
 
     /**

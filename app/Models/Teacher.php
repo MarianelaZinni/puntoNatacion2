@@ -22,11 +22,19 @@ class Teacher extends Model
     ];
 
     /**
-     * Relación: Un profesor puede dictar varias clases
+     * Relación: Un profesor puede dictar varias clases como titular
      */
     public function subjects(): HasMany
     {
-        return $this->hasMany(Subject::class);
+        return $this->hasMany(Subject::class, 'teacher_id');
+    }
+
+    /**
+     * Relación: Un profesor puede ser suplente en varias clases
+     */
+    public function subjectsAsSubstitute(): HasMany
+    {
+        return $this->hasMany(Subject::class, 'substitute_teacher_id');
     }
 
     /**

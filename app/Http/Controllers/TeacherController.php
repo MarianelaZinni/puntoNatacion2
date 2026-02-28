@@ -85,10 +85,24 @@ class TeacherController extends Controller
      */
     public function show(Teacher $teacher)
     {
-        // Eager load subjects with subjectType
-        $teacher->load(['subjects.subjectType', 'subjects.students']);
+        // Eager load subjects with subjectType (titular y suplente)
+        $teacher->load(['subjects.subjectType', 'subjects.students', 'subjectsAsSubstitute.subjectType', 'subjectsAsSubstitute.students']);
+        
+        // Obtener todas las clases disponibles (que no tengan a este profesor como titular ni suplente)
+        $availableSubjects = Subject::with(['subjectType', 'teacher', 'substituteTeacher'])
+            ->where(function($query) use ($teacher) {
+                $query->where('teacher_id', '!=', $teacher->id)
+                      ->orWhereNull('teacher_id');
+            })
+            ->where(function($query) use ($teacher) {
+                $query->where('substitute_teacher_id', '!=', $teacher->id)
+                      ->orWhereNull('substitute_teacher_id');
+            })
+            ->orderBy('day')
+            ->orderBy('start_time')
+            ->get();
 
-        return view('teachers.show', compact('teacher'));
+        return view('teachers.show', compact('teacher', 'availableSubjects'));
     }
 
     /**
@@ -140,5 +154,71 @@ class TeacherController extends Controller
 
         return redirect()->route('teachers.index')
             ->with('success', 'Profesor eliminado exitosamente.');
+    }
+
+    /**
+     * Asignar profesor a una clase (como titular o suplente)
+     */
+    public function assignToSubject(Request $request, Teacher $teacher)
+    {
+        $validator = Validator::make($request->all(), [
+            'subject_id' => 'required|exists:subjects,id',
+            'role' => 'required|in:titular,substitute',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->route('teachers.show', $teacher)
+                ->withErrors($validator);
+        }
+
+        $subject = Subject::findOrFail($request->subject_id);
+        
+        if ($request->role === 'titular') {
+            $subject->teacher_id = $teacher->id;
+            $message = 'Profesor asignado como titular exitosamente.';
+        } else {
+            $subject->substitute_teacher_id = $teacher->id;
+            $message = 'Profesor asignado como suplente exitosamente.';
+        }
+        
+        $subject->save();
+
+        return redirect()->route('teachers.show', $teacher)
+            ->with('success', $message);
+    }
+
+    /**
+     * Remover profesor de una clase
+     */
+    public function removeFromSubject(Request $request, Teacher $teacher)
+    {
+        $validator = Validator::make($request->all(), [
+            'subject_id' => 'required|exists:subjects,id',
+            'role' => 'required|in:titular,substitute',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->route('teachers.show', $teacher)
+                ->withErrors($validator);
+        }
+
+        $subject = Subject::findOrFail($request->subject_id);
+        
+        // Verificar que el profesor esté asignado en el rol especificado
+        if ($request->role === 'titular' && $subject->teacher_id === $teacher->id) {
+            $subject->teacher_id = null;
+            $message = 'Profesor removido como titular exitosamente.';
+        } elseif ($request->role === 'substitute' && $subject->substitute_teacher_id === $teacher->id) {
+            $subject->substitute_teacher_id = null;
+            $message = 'Profesor removido como suplente exitosamente.';
+        } else {
+            return redirect()->route('teachers.show', $teacher)
+                ->withErrors(['error' => 'El profesor no está asignado en ese rol para esta clase.']);
+        }
+        
+        $subject->save();
+
+        return redirect()->route('teachers.show', $teacher)
+            ->with('success', $message);
     }
 }
