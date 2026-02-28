@@ -11,11 +11,11 @@ class Subject extends Model
 
     protected $fillable = [
         'subject_type_id',
+        'teacher_id',
         'day',
         'start_time',
         'end_time',
         'capacity',
-        // ...
     ];
 
     /**
@@ -25,6 +25,14 @@ class Subject extends Model
     public function subjectType()
     {
         return $this->belongsTo(\App\Models\SubjectType::class, 'subject_type_id');
+    }
+
+    /**
+     * Relación con el profesor titular de la clase
+     */
+    public function teacher()
+    {
+        return $this->belongsTo(\App\Models\Teacher::class, 'teacher_id');
     }
 
     /**
