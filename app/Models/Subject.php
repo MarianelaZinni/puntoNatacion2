@@ -53,4 +53,12 @@ class Subject extends Model
         return $this->belongsToMany(\App\Models\Student::class, 'student_subject', 'subject_id', 'student_id')
                     ->withTimestamps();
     }
+
+    /**
+     * Relación con los comentarios de la clase
+     */
+    public function comments()
+    {
+        return $this->hasMany(\App\Models\SubjectComment::class)->orderBy('created_at', 'desc');
+    }
 }

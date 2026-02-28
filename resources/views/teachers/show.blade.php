@@ -143,6 +143,75 @@
                                         </button>
                                     </td>
                                 </tr>
+                                {{-- Comentarios para esta clase --}}
+                                <tr class="bg-gray-50 dark:bg-gray-800">
+                                    <td colspan="6" class="px-4 py-3">
+                                        <div class="space-y-3">
+                                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Comentarios</h4>
+                                            
+                                            {{-- Add comment form --}}
+                                            <form onsubmit="event.preventDefault(); addComment({{ $subject->id }}, event.target.querySelector('textarea').value, event.target);" class="space-y-2">
+                                                <textarea 
+                                                    name="comment" 
+                                                    rows="2" 
+                                                    maxlength="1000"
+                                                    placeholder="Agregar un comentario..."
+                                                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                                                ></textarea>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-xs text-gray-500">Máx. 1000 caracteres</span>
+                                                    <button type="submit" class="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">
+                                                        Agregar
+                                                    </button>
+                                                </div>
+                                            </form>
+                                            
+                                            {{-- Comments list --}}
+                                            <div class="space-y-2" id="comments-{{ $subject->id }}">
+                                                @forelse($subject->comments as $comment)
+                                                    <div class="p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded" id="comment-{{ $comment->id }}">
+                                                        <div class="flex items-start justify-between">
+                                                            <div class="flex-1">
+                                                                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                                                    <span class="font-semibold">{{ $comment->teacher->full_name }}</span>
+                                                                    <span>•</span>
+                                                                    <span>{{ $comment->created_at->diffForHumans() }}</span>
+                                                                </div>
+                                                                <p class="text-sm text-gray-700 dark:text-gray-300" id="comment-text-{{ $comment->id }}">
+                                                                    {{ $comment->comment }}
+                                                                </p>
+                                                                <form id="edit-form-{{ $comment->id }}" style="display:none;" onsubmit="event.preventDefault(); updateComment({{ $comment->id }}, event.target.querySelector('textarea').value);" class="mt-2 space-y-2">
+                                                                    <textarea 
+                                                                        name="comment" 
+                                                                        rows="2" 
+                                                                        maxlength="1000"
+                                                                        class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
+                                                                    >{{ $comment->comment }}</textarea>
+                                                                    <div class="flex gap-2">
+                                                                        <button type="submit" class="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">Guardar</button>
+                                                                        <button type="button" onclick="cancelEdit({{ $comment->id }})" class="px-3 py-1 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded">Cancelar</button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+                                                            @if($comment->canBeEditedBy($teacher))
+                                                                <div class="flex gap-2 ml-3">
+                                                                    <button onclick="showEditForm({{ $comment->id }})" class="text-orange-600 hover:text-orange-900 dark:text-orange-400">
+                                                                        <flux:icon name="pencil" class="h-4 w-4" />
+                                                                    </button>
+                                                                    <button onclick="deleteComment({{ $comment->id }})" class="text-red-600 hover:text-red-900 dark:text-red-400">
+                                                                        <flux:icon name="trash" class="h-4 w-4" />
+                                                                    </button>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <p class="text-sm text-gray-500 dark:text-gray-400 italic">No hay comentarios aún.</p>
+                                                @endforelse
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -213,6 +282,144 @@
                                                 class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
                                             <flux:icon name="x-mark" class="h-4 w-4" />
                                         </button>
+                                    </td>
+                                </tr>
+                                {{-- Comentarios para esta clase --}}
+                                <tr class="bg-gray-50 dark:bg-gray-800">
+                                    <td colspan="6" class="px-4 py-3">
+                                        <div class="space-y-3">
+                                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Comentarios</h4>
+                                            
+                                            {{-- Add comment form --}}
+                                            <form onsubmit="event.preventDefault(); addComment({{ $subject->id }}, event.target.querySelector('textarea').value, event.target);" class="space-y-2">
+                                                <textarea 
+                                                    name="comment" 
+                                                    rows="2" 
+                                                    maxlength="1000"
+                                                    placeholder="Agregar un comentario..."
+                                                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                                                ></textarea>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-xs text-gray-500">Máx. 1000 caracteres</span>
+                                                    <button type="submit" class="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">
+                                                        Agregar
+                                                    </button>
+                                                </div>
+                                            </form>
+                                            
+                                            {{-- Comments list --}}
+                                            <div class="space-y-2" id="comments-{{ $subject->id }}">
+                                                @forelse($subject->comments as $comment)
+                                                    <div class="p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded" id="comment-{{ $comment->id }}">
+                                                        <div class="flex items-start justify-between">
+                                                            <div class="flex-1">
+                                                                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                                                    <span class="font-semibold">{{ $comment->teacher->full_name }}</span>
+                                                                    <span>•</span>
+                                                                    <span>{{ $comment->created_at->diffForHumans() }}</span>
+                                                                </div>
+                                                                <p class="text-sm text-gray-700 dark:text-gray-300" id="comment-text-{{ $comment->id }}">
+                                                                    {{ $comment->comment }}
+                                                                </p>
+                                                                <form id="edit-form-{{ $comment->id }}" style="display:none;" onsubmit="event.preventDefault(); updateComment({{ $comment->id }}, event.target.querySelector('textarea').value);" class="mt-2 space-y-2">
+                                                                    <textarea 
+                                                                        name="comment" 
+                                                                        rows="2" 
+                                                                        maxlength="1000"
+                                                                        class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
+                                                                    >{{ $comment->comment }}</textarea>
+                                                                    <div class="flex gap-2">
+                                                                        <button type="submit" class="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">Guardar</button>
+                                                                        <button type="button" onclick="cancelEdit({{ $comment->id }})" class="px-3 py-1 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded">Cancelar</button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+                                                            @if($comment->canBeEditedBy($teacher))
+                                                                <div class="flex gap-2 ml-3">
+                                                                    <button onclick="showEditForm({{ $comment->id }})" class="text-orange-600 hover:text-orange-900 dark:text-orange-400">
+                                                                        <flux:icon name="pencil" class="h-4 w-4" />
+                                                                    </button>
+                                                                    <button onclick="deleteComment({{ $comment->id }})" class="text-red-600 hover:text-red-900 dark:text-red-400">
+                                                                        <flux:icon name="trash" class="h-4 w-4" />
+                                                                    </button>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <p class="text-sm text-gray-500 dark:text-gray-400 italic">No hay comentarios aún.</p>
+                                                @endforelse
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {{-- Comentarios para esta clase (suplente) --}}
+                                <tr class="bg-gray-50 dark:bg-gray-800">
+                                    <td colspan="6" class="px-4 py-3">
+                                        <div class="space-y-3">
+                                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Comentarios</h4>
+                                            
+                                            {{-- Add comment form --}}
+                                            <form onsubmit="event.preventDefault(); addComment({{ $subject->id }}, event.target.querySelector('textarea').value, event.target);" class="space-y-2">
+                                                <textarea 
+                                                    name="comment" 
+                                                    rows="2" 
+                                                    maxlength="1000"
+                                                    placeholder="Agregar un comentario..."
+                                                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                                                ></textarea>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-xs text-gray-500">Máx. 1000 caracteres</span>
+                                                    <button type="submit" class="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">
+                                                        Agregar
+                                                    </button>
+                                                </div>
+                                            </form>
+                                            
+                                            {{-- Comments list --}}
+                                            <div class="space-y-2" id="comments-{{ $subject->id }}">
+                                                @forelse($subject->comments as $comment)
+                                                    <div class="p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded" id="comment-{{ $comment->id }}">
+                                                        <div class="flex items-start justify-between">
+                                                            <div class="flex-1">
+                                                                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                                                    <span class="font-semibold">{{ $comment->teacher->full_name }}</span>
+                                                                    <span>•</span>
+                                                                    <span>{{ $comment->created_at->diffForHumans() }}</span>
+                                                                </div>
+                                                                <p class="text-sm text-gray-700 dark:text-gray-300" id="comment-text-{{ $comment->id }}">
+                                                                    {{ $comment->comment }}
+                                                                </p>
+                                                                <form id="edit-form-{{ $comment->id }}" style="display:none;" onsubmit="event.preventDefault(); updateComment({{ $comment->id }}, event.target.querySelector('textarea').value);" class="mt-2 space-y-2">
+                                                                    <textarea 
+                                                                        name="comment" 
+                                                                        rows="2" 
+                                                                        maxlength="1000"
+                                                                        class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
+                                                                    >{{ $comment->comment }}</textarea>
+                                                                    <div class="flex gap-2">
+                                                                        <button type="submit" class="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">Guardar</button>
+                                                                        <button type="button" onclick="cancelEdit({{ $comment->id }})" class="px-3 py-1 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded">Cancelar</button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+                                                            @if($comment->canBeEditedBy($teacher))
+                                                                <div class="flex gap-2 ml-3">
+                                                                    <button onclick="showEditForm({{ $comment->id }})" class="text-orange-600 hover:text-orange-900 dark:text-orange-400">
+                                                                        <flux:icon name="pencil" class="h-4 w-4" />
+                                                                    </button>
+                                                                    <button onclick="deleteComment({{ $comment->id }})" class="text-red-600 hover:text-red-900 dark:text-red-400">
+                                                                        <flux:icon name="trash" class="h-4 w-4" />
+                                                                    </button>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <p class="text-sm text-gray-500 dark:text-gray-400 italic">No hay comentarios aún.</p>
+                                                @endforelse
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -296,6 +503,75 @@
                                                     Suplente
                                                 </button>
                                             @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                                {{-- Comentarios para esta clase --}}
+                                <tr class="bg-gray-50 dark:bg-gray-800">
+                                    <td colspan="6" class="px-4 py-3">
+                                        <div class="space-y-3">
+                                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Comentarios</h4>
+                                            
+                                            {{-- Add comment form --}}
+                                            <form onsubmit="event.preventDefault(); addComment({{ $subject->id }}, event.target.querySelector('textarea').value, event.target);" class="space-y-2">
+                                                <textarea 
+                                                    name="comment" 
+                                                    rows="2" 
+                                                    maxlength="1000"
+                                                    placeholder="Agregar un comentario..."
+                                                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                                                ></textarea>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-xs text-gray-500">Máx. 1000 caracteres</span>
+                                                    <button type="submit" class="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">
+                                                        Agregar
+                                                    </button>
+                                                </div>
+                                            </form>
+                                            
+                                            {{-- Comments list --}}
+                                            <div class="space-y-2" id="comments-{{ $subject->id }}">
+                                                @forelse($subject->comments as $comment)
+                                                    <div class="p-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded" id="comment-{{ $comment->id }}">
+                                                        <div class="flex items-start justify-between">
+                                                            <div class="flex-1">
+                                                                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                                                    <span class="font-semibold">{{ $comment->teacher->full_name }}</span>
+                                                                    <span>•</span>
+                                                                    <span>{{ $comment->created_at->diffForHumans() }}</span>
+                                                                </div>
+                                                                <p class="text-sm text-gray-700 dark:text-gray-300" id="comment-text-{{ $comment->id }}">
+                                                                    {{ $comment->comment }}
+                                                                </p>
+                                                                <form id="edit-form-{{ $comment->id }}" style="display:none;" onsubmit="event.preventDefault(); updateComment({{ $comment->id }}, event.target.querySelector('textarea').value);" class="mt-2 space-y-2">
+                                                                    <textarea 
+                                                                        name="comment" 
+                                                                        rows="2" 
+                                                                        maxlength="1000"
+                                                                        class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
+                                                                    >{{ $comment->comment }}</textarea>
+                                                                    <div class="flex gap-2">
+                                                                        <button type="submit" class="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">Guardar</button>
+                                                                        <button type="button" onclick="cancelEdit({{ $comment->id }})" class="px-3 py-1 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded">Cancelar</button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
+                                                            @if($comment->canBeEditedBy($teacher))
+                                                                <div class="flex gap-2 ml-3">
+                                                                    <button onclick="showEditForm({{ $comment->id }})" class="text-orange-600 hover:text-orange-900 dark:text-orange-400">
+                                                                        <flux:icon name="pencil" class="h-4 w-4" />
+                                                                    </button>
+                                                                    <button onclick="deleteComment({{ $comment->id }})" class="text-red-600 hover:text-red-900 dark:text-red-400">
+                                                                        <flux:icon name="trash" class="h-4 w-4" />
+                                                                    </button>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <p class="text-sm text-gray-500 dark:text-gray-400 italic">No hay comentarios aún.</p>
+                                                @endforelse
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -453,6 +729,166 @@
                     form.appendChild(methodInput);
                     document.body.appendChild(form);
                     form.submit();
+                }
+            });
+        }
+
+        // Comments functionality
+        function addComment(subjectId, commentText, form) {
+            if (!commentText.trim()) {
+                return;
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            fetch(`/subjects/${subjectId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    comment: commentText,
+                    teacher_id: {{ $teacher->id }}
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Comentario agregado',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    // Reload page to show new comment
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Ocurrió un error al agregar el comentario.'
+                });
+            });
+        }
+
+        function showEditForm(commentId) {
+            document.getElementById(`comment-text-${commentId}`).style.display = 'none';
+            document.getElementById(`edit-form-${commentId}`).style.display = 'block';
+        }
+
+        function cancelEdit(commentId) {
+            document.getElementById(`comment-text-${commentId}`).style.display = 'block';
+            document.getElementById(`edit-form-${commentId}`).style.display = 'none';
+        }
+
+        function updateComment(commentId, commentText) {
+            if (!commentText.trim()) {
+                return;
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            fetch(`/comments/${commentId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    comment: commentText,
+                    teacher_id: {{ $teacher->id }}
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Comentario actualizado',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    // Reload page to show updated comment
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Ocurrió un error al actualizar el comentario.'
+                });
+            });
+        }
+
+        function deleteComment(commentId) {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Se eliminará este comentario permanentemente.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    
+                    fetch(`/comments/${commentId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            teacher_id: {{ $teacher->id }}
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Comentario eliminado',
+                                text: data.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                            // Reload page to reflect deletion
+                            setTimeout(() => window.location.reload(), 2000);
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: data.message
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Ocurrió un error al eliminar el comentario.'
+                        });
+                    });
                 }
             });
         }

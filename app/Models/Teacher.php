@@ -56,4 +56,21 @@ class Teacher extends Model
 
         return Carbon::parse($this->birth_date)->age;
     }
+
+    /**
+     * Relación: Comentarios creados por este profesor
+     */
+    public function subjectComments(): HasMany
+    {
+        return $this->hasMany(SubjectComment::class);
+    }
+
+    /**
+     * Check if teacher can comment on a subject
+     * (must be titular or substitute teacher)
+     */
+    public function canCommentOnSubject(Subject $subject): bool
+    {
+        return $this->id === $subject->teacher_id || $this->id === $subject->substitute_teacher_id;
+    }
 }

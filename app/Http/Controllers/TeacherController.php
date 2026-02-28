@@ -85,8 +85,15 @@ class TeacherController extends Controller
      */
     public function show(Teacher $teacher)
     {
-        // Eager load subjects with subjectType (titular y suplente)
-        $teacher->load(['subjects.subjectType', 'subjects.students', 'subjectsAsSubstitute.subjectType', 'subjectsAsSubstitute.students']);
+        // Eager load subjects with subjectType, students, and comments (titular y suplente)
+        $teacher->load([
+            'subjects.subjectType',
+            'subjects.students',
+            'subjects.comments.teacher',
+            'subjectsAsSubstitute.subjectType',
+            'subjectsAsSubstitute.students',
+            'subjectsAsSubstitute.comments.teacher'
+        ]);
         
         // Obtener todas las clases disponibles (que no tengan a este profesor como titular ni suplente)
         $availableSubjects = Subject::with(['subjectType', 'teacher', 'substituteTeacher'])

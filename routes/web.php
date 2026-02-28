@@ -47,6 +47,10 @@ Route::delete('/teachers/{teacher}', [TeacherController::class, 'destroy'])->nam
 Route::post('/teachers/{teacher}/assign-subject', [TeacherController::class, 'assignToSubject'])->name('teachers.assignToSubject');
 Route::post('/teachers/{teacher}/remove-subject', [TeacherController::class, 'removeFromSubject'])->name('teachers.removeFromSubject');
 
+// Rutas para comentarios de clases (Subject Comments)
+Route::post('/subjects/{subject}/comments', [\App\Http\Controllers\SubjectCommentController::class, 'store'])->name('subject-comments.store');
+Route::put('/comments/{comment}', [\App\Http\Controllers\SubjectCommentController::class, 'update'])->name('subject-comments.update');
+Route::delete('/comments/{comment}', [\App\Http\Controllers\SubjectCommentController::class, 'destroy'])->name('subject-comments.destroy');
 
 // Extra: Anotar a clase y registrar pago
 Route::get('students/{student}/enroll', [StudentController::class, 'enrollClassForm'])
