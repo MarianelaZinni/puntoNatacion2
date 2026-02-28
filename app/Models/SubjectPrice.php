@@ -21,9 +21,43 @@ class SubjectPrice extends Model
         'price' => 'decimal:2',
     ];
 
+    /**
+     * Boot method to register model events for price history tracking
+     */
+    protected static function booted(): void
+    {
+        // Track when a new price is created
+        static::created(function (SubjectPrice $subjectPrice) {
+            SubjectPriceHistory::logPriceChange(
+                $subjectPrice,
+                null, // No previous price for new records
+                (float) $subjectPrice->price
+            );
+        });
+
+        // Track when a price is updated
+        static::updated(function (SubjectPrice $subjectPrice) {
+            // Check if the price actually changed
+            if ($subjectPrice->wasChanged('price')) {
+                $oldPrice = (float) $subjectPrice->getOriginal('price');
+                $newPrice = (float) $subjectPrice->price;
+                
+                SubjectPriceHistory::logPriceChange($subjectPrice, $oldPrice, $newPrice);
+            }
+        });
+    }
+
     public function subjectType()
     {
         return $this->belongsTo(SubjectType::class);
+    }
+
+    /**
+     * Relación con el historial de precios
+     */
+    public function priceHistory()
+    {
+        return $this->hasMany(SubjectPriceHistory::class);
     }
 
     /**
