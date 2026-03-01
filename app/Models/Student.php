@@ -123,8 +123,10 @@ class Student extends Authenticatable
     }
 
     /**
-     * Calcula la deuda acumulada desde la creación hasta el mes actual,
-     * usando el valor actual de cuota como referencia para todos los meses.
+     * Calcula la deuda acumulada desde la creación hasta el mes actual.
+     * 
+     * MEJORA: Ahora usa expected_amount de los pagos cuando está disponible
+     * para mantener precios históricos correctos.
      *
      * Cambios:
      * - El período actual (mes en curso) sólo se considera "adeudado" si hoy es día > 10
@@ -136,9 +138,9 @@ class Student extends Authenticatable
      * Retorna:
      * [
      *   'debt' => float,
-     *   'monthly_amount' => float,
-     *   'unpaid_periods' => [ {period, paid, deficit}, ... ], // sólo los adeudados según la regla del día 10
-     *   'selectable_periods' => [ {period, paid, deficit}, ... ], // para el select (unpaid + current)
+     *   'monthly_amount' => float,  // precio actual (para referencia)
+     *   'unpaid_periods' => [ {period, paid, deficit, expected}, ... ],
+     *   'selectable_periods' => [ {period, paid, deficit, expected}, ... ],
      *   'next_unpaid_period' => 'YYYY-MM' | null
      * ]
      */
@@ -153,9 +155,10 @@ class Student extends Authenticatable
             }]);
         }
 
-        $monthlyAmount = $this->currentMonthlyAmount();
+        // Precio mensual ACTUAL (para nuevos períodos y referencia)
+        $currentMonthlyAmount = $this->currentMonthlyAmount();
 
-        if ($monthlyAmount <= 0) {
+        if ($currentMonthlyAmount <= 0) {
             return [
                 'debt' => 0.0,
                 'monthly_amount' => 0.0,
@@ -181,8 +184,8 @@ class Student extends Authenticatable
         while ($cursor->lte($end)) {
             $periodKey = $cursor->format('Y-m');
 
-            // Sumar pagos cuyo payment_period coincide con este mes
-            $paid = $payments->reduce(function ($carry, $p) use ($cursor) {
+            // Obtener pagos para este período y sumar montos
+            $paymentsForPeriod = $payments->filter(function ($p) use ($cursor) {
                 $pPeriod = null;
                 if (!empty($p->payment_period)) {
                     try {
@@ -197,14 +200,26 @@ class Student extends Authenticatable
                         $pPeriod = null;
                     }
                 }
+                return $pPeriod && $pPeriod->format('Y-m') === $cursor->format('Y-m');
+            });
 
-                if ($pPeriod && $pPeriod->format('Y-m') === $cursor->format('Y-m')) {
-                    return $carry + (float) $p->amount;
-                }
-                return $carry;
-            }, 0.0);
+            $paid = $paymentsForPeriod->sum('amount');
 
-            $deficit = max(0.0, $monthlyAmount - $paid);
+            // MEJORA: Determinar el monto esperado para este período
+            // 1. Si hay pagos con expected_amount, usar el promedio/máximo de esos
+            // 2. Si no, usar el currentMonthlyAmount como fallback
+            $expectedAmountForPeriod = $currentMonthlyAmount;
+            
+            $paymentsWithExpected = $paymentsForPeriod->filter(function($p) {
+                return !is_null($p->expected_amount) && $p->expected_amount > 0;
+            });
+            
+            if ($paymentsWithExpected->count() > 0) {
+                // Usar el expected_amount más común o el máximo de los pagos de este período
+                $expectedAmountForPeriod = $paymentsWithExpected->max('expected_amount');
+            }
+
+            $deficit = max(0.0, $expectedAmountForPeriod - $paid);
 
             // Si es el mes actual, solo lo marcamos adeudado (en unpaidPeriods) si includeCurrentAsDue === true
             if ($cursor->format('Y-m') === $end->format('Y-m')) {
@@ -213,6 +228,7 @@ class Student extends Authenticatable
                         'period' => $periodKey,
                         'paid' => round($paid, 2),
                         'deficit' => round($deficit, 2),
+                        'expected' => round($expectedAmountForPeriod, 2),
                     ];
                     $totalDebt += $deficit;
                 }
@@ -221,6 +237,7 @@ class Student extends Authenticatable
                     'period' => $periodKey,
                     'paid' => round($paid, 2),
                     'deficit' => round($deficit, 2),
+                    'expected' => round($expectedAmountForPeriod, 2),
                 ];
             } else {
                 // meses anteriores: se consideran adeudados si deficit > 0
@@ -229,6 +246,7 @@ class Student extends Authenticatable
                         'period' => $periodKey,
                         'paid' => round($paid, 2),
                         'deficit' => round($deficit, 2),
+                        'expected' => round($expectedAmountForPeriod, 2),
                     ];
                     $totalDebt += $deficit;
                 }
@@ -238,6 +256,7 @@ class Student extends Authenticatable
                         'period' => $periodKey,
                         'paid' => round($paid, 2),
                         'deficit' => round($deficit, 2),
+                        'expected' => round($expectedAmountForPeriod, 2),
                     ];
                 }
             }
@@ -255,7 +274,7 @@ class Student extends Authenticatable
 
         return [
             'debt' => round((float)$totalDebt, 2),
-            'monthly_amount' => round((float)$monthlyAmount, 2),
+            'monthly_amount' => round((float)$currentMonthlyAmount, 2),
             'unpaid_periods' => $unpaidPeriods,
             'selectable_periods' => $selectablePeriods,
             'next_unpaid_period' => count($unpaidPeriods) ? $unpaidPeriods[0]['period'] : null,

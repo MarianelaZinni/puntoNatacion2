@@ -66,6 +66,9 @@ Route::middleware(['web'])->group(function () {
 Route::middleware(['web'])->group(function () {
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
+    Route::get('/payments/{payment}/edit', [PaymentController::class, 'edit'])->name('payments.edit');  // ← NUEVO
+    Route::put('/payments/{payment}', [PaymentController::class, 'update'])->name('payments.update');  // ← NUEVO
+    Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');  // ← NUEVO
 });
 Route::get('/payments/history', [PaymentController::class, 'history'])->name('payments.history');
 

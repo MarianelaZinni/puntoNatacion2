@@ -86,13 +86,36 @@
          * Finds the closest form and submits it after confirmation.
          */
         window.confirmDelete = function (btn) {
+            const methodName = btn.getAttribute('data-method-name') || 'este método de pago';
             // Safety: ensure Swal is available
             if (typeof Swal === 'undefined') {
                 // fallback browser confirm
                 const form = btn.closest('form');
-                if (confirm('¿Estás seguro? Esta acción no se puede deshacer.')) {
-                    if (form) form.submit();
-                }
+                if (typeof Swal !== 'undefined') {
+    Swal.fire({
+        title: '¿Eliminar este método de pago?',
+        html: `<div class="text-left">
+            <p class="mb-2">Método: <strong>${methodName}</strong></p>
+            <p class="mt-3 text-sm text-gray-600">Esta acción no se puede deshacer.</p>
+        </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e53e3e',
+        cancelButtonColor: '#6B7280',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        focusCancel: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            form.submit();
+        }
+    });
+} else {
+    // Fallback to native confirm
+    if (confirm('¿Estás seguro? Esta acción no se puede deshacer.')) {
+        form.submit();
+    }
+}
                 return;
             }
 

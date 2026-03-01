@@ -65,6 +65,39 @@
             </div>
         @endif
 
+        {{-- Mensajes flash --}}
+        @if(session('success'))
+            <div id="flash-success" class="mb-4 p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/30 dark:border-green-800 text-green-800 dark:text-green-200 flex items-start gap-3 shadow-sm"
+                 role="status" aria-live="polite" data-timeout="5000">
+                <div class="flex-1 text-base leading-relaxed">
+                    {{ session('success') }}
+                </div>
+                <button type="button"
+                        class="ml-2 -mr-1 p-1 rounded hover:bg-green-100 dark:hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] text-green-800 dark:text-green-200"
+                        aria-label="Cerrar mensaje" id="flash-success-close">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div id="flash-error" class="mb-4 p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/30 dark:border-red-800 text-red-800 dark:text-red-200 flex items-start gap-3 shadow-sm"
+                 role="alert" aria-live="assertive" data-timeout="8000">
+                <div class="flex-1 text-base leading-relaxed">
+                    {{ session('error') }}
+                </div>
+                <button type="button"
+                        class="ml-2 -mr-1 p-1 rounded hover:bg-red-100 dark:hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] text-red-800 dark:text-red-200"
+                        aria-label="Cerrar mensaje" id="flash-error-close">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        @endif
+
         <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
             @if($payments->isEmpty())
                 <div class="p-4 bg-gray-50 dark:bg-zinc-900/40 rounded border border-gray-100 dark:border-zinc-700 text-gray-700 dark:text-gray-200">
@@ -81,6 +114,7 @@
                             <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Método</th>
                             <th class="text-right text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Monto (AR$)</th>
                             <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Notas</th>
+                            <th class="text-center text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Acciones</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -116,6 +150,37 @@
                                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
                                     {{ $payment->notes ?? '-' }}
                                 </td>
+                                
+                                {{-- Columna: Acciones --}}
+                                <td class="px-4 py-3 text-center">
+                                    <div class="flex items-center justify-center gap-2">
+                                        {{-- Botón Editar --}}
+                                        <a href="{{ route('payments.edit', $payment) }}"
+                                                       class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-yellow-100 dark:hover:bg-yellow-900 text-yellow-600 dark:text-yellow-300">
+                <span class="sr-only">Editar</span>
+                <flux:icon name="pencil-square" class="h-5 w-5" />
+                                                    </a>
+                                        
+                                        {{-- Formulario Eliminar --}}
+                                        <form action="{{ route('payments.destroy', $payment) }}" 
+                                              method="POST" 
+                                              class="inline payment-delete-form"
+                                              data-payment-id="{{ $payment->id }}"
+                                              data-payment-amount="{{ number_format($payment->amount, 2, ',', '.') }}"
+                                              data-payment-period="{{ $periodLabel }}"
+                                              data-student-name="{{ $payment->student->name ?? '' }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button"
+                                                                onclick="confirmDeletePayment(this)"
+                                                                 class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-400 border-0"
+                                                                title="Eliminar pago">
+                                                            <span class="sr-only">Eliminar</span>
+                                                        <flux:icon name="x-circle" class="h-5 w-5" />
+                                                        </button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         @endforeach
                         </tbody>
@@ -131,4 +196,82 @@
             @endif
         </div>
     </div>
+    
+    @push('scripts')
+    <!-- SweetAlert2 (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Confirm delete payment with SweetAlert2
+        window.confirmDeletePayment = function (btn) {
+            const form = btn.closest('form');
+            if (!form) return;
+
+            const paymentAmount = form.dataset.paymentAmount || '';
+            const paymentPeriod = form.dataset.paymentPeriod || '';
+            const studentName = form.dataset.studentName || '';
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: '¿Eliminar este pago?',
+                    html: `<div class="text-left">
+                        ${studentName ? `<p class="mb-2">Alumno: <strong>${studentName}</strong></p>` : ''}
+                        <p class="mb-2">Periodo: <strong>${paymentPeriod}</strong></p>
+                        <p>Monto: <strong>$${paymentAmount}</strong></p>
+                        <p class="mt-3 text-sm text-gray-600">Esta acción no se puede deshacer.</p>
+                    </div>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e53e3e',
+                    cancelButtonColor: '#6B7280',
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar',
+                    focusCancel: true,
+                    customClass: {
+                        popup: 'text-left'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            } else {
+                // Fallback to native confirm
+                if (confirm('¿Estás seguro de que querés eliminar este pago? Esta acción no se puede deshacer.')) {
+                    form.submit();
+                }
+            }
+        };
+        
+        // Flash message auto-dismiss
+        function initFlash(id, closeId) {
+            const el = document.getElementById(id);
+            if (!el) return;
+
+            const timeout = parseInt(el.dataset.timeout || 5000, 10);
+
+            const dismiss = () => {
+                el.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                setTimeout(() => {
+                    if (el && el.parentNode) el.parentNode.removeChild(el);
+                }, 500);
+            };
+
+            const timer = setTimeout(dismiss, timeout);
+
+            const closeBtn = document.getElementById(closeId);
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function () {
+                    clearTimeout(timer);
+                    dismiss();
+                });
+            }
+        }
+
+        initFlash('flash-success', 'flash-success-close');
+        initFlash('flash-error', 'flash-error-close');
+    });
+    </script>
+    @endpush
 </x-layouts.app>

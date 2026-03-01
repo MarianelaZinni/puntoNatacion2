@@ -75,6 +75,7 @@
                         {{ $student->birth_date ? $student->birth_date->format('d/m/Y') : '-' }}
                     </dd>
                 </div>
+
                 <div>
                     <dt class="text-base font-medium text-gray-700 dark:text-gray-300">Edad</dt>
                     <dd class="mt-3 text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
@@ -91,12 +92,6 @@
                     <dd class="mt-3 text-gray-900 dark:text-gray-100 font-medium leading-relaxed">{{ $student->address ?? '-' }}</dd>
                 </div>
 
-             
-                <div class="sm:col-span-2">
-                    <dt class="text-base font-medium text-gray-700 dark:text-gray-300">Observaciones</dt>
-                    <dd class="mt-3 text-gray-900 dark:text-gray-100 font-medium leading-relaxed whitespace-pre-line">{{ $student->observations ?? '-' }}</dd>
-                </div>
-              
                 <div>
                     <dt class="text-base font-medium text-gray-700 dark:text-gray-300">Creado</dt>
                     <dd class="mt-3 text-gray-500 dark:text-gray-400 text-sm leading-relaxed">{{ $student->created_at ? $student->created_at->diffForHumans() . ' — ' . $student->created_at->format('d/m/Y H:i') : '-' }}</dd>
@@ -286,6 +281,7 @@
                                         <th class="px-3 py-2 text-left">Método</th>
                                         <th class="px-3 py-2 text-right">Monto (AR$)</th>
                                         <th class="px-3 py-2 text-left">Notas</th>
+                                        <th class="px-3 py-2 text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -318,6 +314,36 @@
                                             <td class="px-3 py-3 text-sm text-gray-700 dark:text-gray-200">
                                                 {{ $payment->notes ?? '-' }}
                                             </td>
+                                            
+                                            {{-- Columna: Acciones (NUEVA) --}}
+                                            <td class="px-3 py-3 text-center">
+                                                <div class="flex items-center justify-center gap-1.5">
+                                                    {{-- Botón Editar --}}
+                                                    <a href="{{ route('payments.edit', $payment) }}"
+                                                       class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-yellow-100 dark:hover:bg-yellow-900 text-yellow-600 dark:text-yellow-300">
+                <span class="sr-only">Editar</span>
+                <flux:icon name="pencil-square" class="h-5 w-5" />
+                                                    </a>
+                                                    
+                                                    {{-- Formulario Eliminar --}}
+                                                    <form action="{{ route('payments.destroy', $payment) }}" 
+                                                          method="POST" 
+                                                          class="inline payment-delete-form"
+                                                          data-payment-id="{{ $payment->id }}"
+                                                          data-payment-amount="{{ number_format($payment->amount, 2, ',', '.') }}"
+                                                          data-payment-period="{{ $periodLabel }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="button"
+                                                                onclick="confirmDeletePayment(this)"
+                                                                 class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-400 border-0"
+                                                                title="Eliminar pago">
+                                                            <span class="sr-only">Eliminar</span>
+                                                        <flux:icon name="x-circle" class="h-5 w-5" />
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -341,7 +367,7 @@
                     @csrf
                     @method('DELETE')
                     <button type="button"
-                            onclick="confirmDelete(this)"
+                            onclick="confirmDeleteStudent(this)"
                             title="Eliminar {{ $student->name }}"
                             aria-label="Eliminar {{ $student->name }}"
                             class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition text-base">
@@ -358,20 +384,18 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Confirm delete helper: asks confirm via SweetAlert2, then submits the closest form
-        window.confirmDelete = function (btn) {
-            // find closest form
+        // Confirm delete student with SweetAlert2
+        window.confirmDeleteStudent = function (btn) {
             const form = btn.closest('form');
             if (!form) return;
 
-            // Use SweetAlert2 if available
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     title: '¿Estás seguro?',
-                    text: 'Esta acción no se puede deshacer.',
+                    text: 'Se eliminará el alumno y todos sus datos asociados. Esta acción no se puede deshacer.',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#e53e3e', // rojo para eliminar
+                    confirmButtonColor: '#e53e3e',
                     cancelButtonColor: '#6B7280',
                     confirmButtonText: 'Sí, eliminar',
                     cancelButtonText: 'Cancelar',
@@ -381,12 +405,47 @@
                         form.submit();
                     }
                 });
-                return;
+            } else {
+                // Fallback to native confirm
+                if (confirm('¿Seguro que querés eliminar este alumno? Esta acción no se puede deshacer.')) {
+                    form.submit();
+                }
             }
+        };
 
-            // Fallback to native confirm
-            if (confirm('¿Seguro que querés eliminar este alumno? Esta acción no se puede deshacer.')) {
-                form.submit();
+        // Confirm delete payment with SweetAlert2
+        window.confirmDeletePayment = function (btn) {
+            const form = btn.closest('form');
+            if (!form) return;
+
+            const paymentAmount = form.dataset.paymentAmount || '';
+            const paymentPeriod = form.dataset.paymentPeriod || '';
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: '¿Eliminar este pago?',
+                    html: `<div class="text-left">
+                        <p class="mb-2">Periodo: <strong>${paymentPeriod}</strong></p>
+                        <p>Monto: <strong>$${paymentAmount}</strong></p>
+                        <p class="mt-3 text-sm text-gray-600">Esta acción no se puede deshacer.</p>
+                    </div>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e53e3e',
+                    cancelButtonColor: '#6B7280',
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar',
+                    focusCancel: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            } else {
+                // Fallback to native confirm
+                if (confirm('¿Estás seguro de que querés eliminar este pago? Esta acción no se puede deshacer.')) {
+                    form.submit();
+                }
             }
         };
 

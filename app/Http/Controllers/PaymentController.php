@@ -83,7 +83,7 @@ class PaymentController extends Controller
     $selectedStudentId = $request->query('student_id');
 
     return view('payments.index', compact('students', 'paymentMethods', 'selectedStudentId'));
-}
+    }
 
     /**
      * Guarda un nuevo pago.
@@ -106,11 +106,17 @@ class PaymentController extends Controller
         } catch (\Throwable $e) {
             return redirect()->back()->withInput()->with('error', 'Período inválido.');
         }
+$student = Student::with(['subjects.subjectType'])->find($data['student_id']);
+        $expectedAmount = 0;
+         if ($student) {
+            $expectedAmount = $student->currentMonthlyAmount();
+        }
 
         // Guardar el pago (permitimos pagos parciales por periodo)
         Payment::create([
             'student_id' => $data['student_id'],
             'amount' => $data['amount'],
+             'expected_amount' => $expectedAmount, 
             'payment_date' => $data['payment_date'],
             'payment_period' => $periodCarbon->toDateString(),
             'payment_method_id' => $data['payment_method_id'] ?? null,
@@ -214,5 +220,89 @@ class PaymentController extends Controller
         }
 
         return view('payments.history', compact('payments', 'students', 'studentId', 'searchName', 'selectedStudent', 'debtSummary'));
+    }
+
+    /**
+     * Muestra el formulario de edición de un pago.
+     */
+    public function edit(Payment $payment)
+    {
+        // Cargar relaciones necesarias
+        $payment->load(['student', 'paymentMethod']);
+        
+        // Cargar todos los estudiantes y métodos de pago para los selects
+        $students = Student::orderBy('name')->get();
+        $paymentMethods = PaymentMethod::orderBy('name')->get();
+        
+        // Convertir payment_period a formato Y-m para el input type="month"
+        $paymentPeriodFormatted = null;
+        if ($payment->payment_period) {
+            try {
+                $paymentPeriodFormatted = Carbon::parse($payment->payment_period)->format('Y-m');
+            } catch (\Throwable $e) {
+                $paymentPeriodFormatted = Carbon::now()->format('Y-m');
+            }
+        } else {
+            $paymentPeriodFormatted = Carbon::now()->format('Y-m');
+        }
+        
+        return view('payments.edit', compact('payment', 'students', 'paymentMethods', 'paymentPeriodFormatted'));
+    }
+    
+    /**
+     * Actualiza un pago existente.
+     */
+    public function update(Request $request, Payment $payment)
+    {
+        $data = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'amount' => 'required|numeric|min:0.01',
+            'payment_date' => 'required|date',
+            'payment_method_id' => 'nullable|exists:payment_methods,id',
+            'payment_period' => ['required','regex:/^\d{4}-\d{2}$/'],
+            'notes' => 'nullable|string|max:1000',
+        ]);
+        
+        // Normalizar payment_period
+        try {
+            $periodCarbon = Carbon::createFromFormat('Y-m', $data['payment_period'])->startOfMonth();
+        } catch (\Throwable $e) {
+            return redirect()->back()->withInput()->with('error', 'Período inválido.');
+        }
+        
+        // Recalcular expected_amount si cambió el estudiante o el período
+        $student = Student::with(['subjects.subjectType'])->find($data['student_id']);
+        $expectedAmount = $payment->expected_amount; // mantener el original por defecto
+        
+        // Si cambió el estudiante, recalcular expected_amount
+        if ($student && $data['student_id'] != $payment->student_id) {
+            $expectedAmount = $student->currentMonthlyAmount();
+        }
+        
+        // Actualizar el pago
+        $payment->update([
+            'student_id' => $data['student_id'],
+            'amount' => $data['amount'],
+            'expected_amount' => $expectedAmount,
+            'payment_date' => $data['payment_date'],
+            'payment_period' => $periodCarbon->toDateString(),
+            'payment_method_id' => $data['payment_method_id'] ?? null,
+            'notes' => $data['notes'] ?? null,
+        ]);
+        
+        return redirect()->route('payments.history', ['student_id' => $payment->student_id])
+            ->with('success', 'Pago actualizado correctamente.');
+    }
+    
+    /**
+     * Elimina un pago.
+     */
+    public function destroy(Payment $payment)
+    {
+        $studentId = $payment->student_id;
+        $payment->delete();
+        
+        return redirect()->route('payments.history', ['student_id' => $studentId])
+            ->with('success', 'Pago eliminado correctamente.');
     }
 }

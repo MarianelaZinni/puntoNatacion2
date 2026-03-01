@@ -13,6 +13,7 @@ class Payment extends Model
         'student_id',
         'payment_method_id',
         'amount',
+        'expected_amount', 
         'payment_date',
         'payment_period',
         'notes',
@@ -22,6 +23,7 @@ class Payment extends Model
         'payment_date' => 'date',
         'payment_period' => 'date',
         'amount' => 'decimal:2',
+        'expected_amount' => 'decimal:2',
     ];
 
     public function student()
