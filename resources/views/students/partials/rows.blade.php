@@ -108,6 +108,12 @@
                 <flux:icon name="clock" class="h-5 w-5" />
             </a>
 
+            {{-- Botón Revisión Médica (NUEVO) --}}
+                        <a href="{{ route('medical_checkups.index', ['student_id' => $student->id]) }}"
+                            class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-lime-100 dark:hover:bg-lime-900 text-lime-600 dark:text-lime-300">
+                <span class="sr-only">Revisión médica</span>
+                <flux:icon name="heart" class="h-5 w-5" />
+                        </a>
         </div>
     </td>
 </tr>

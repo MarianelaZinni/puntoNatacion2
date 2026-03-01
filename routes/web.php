@@ -11,6 +11,7 @@ use App\Http\Controllers\SubjectPriceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\MedicalCheckupController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -71,6 +72,16 @@ Route::middleware(['web'])->group(function () {
     Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');  // ← NUEVO
 });
 Route::get('/payments/history', [PaymentController::class, 'history'])->name('payments.history');
+
+// Medical Checkups (Revisiones médicas)
+Route::middleware(['web'])->group(function () {
+    Route::get('/medical-checkups', [MedicalCheckupController::class, 'index'])->name('medical_checkups.index');
+    Route::get('/medical-checkups/create', [MedicalCheckupController::class, 'create'])->name('medical_checkups.create');
+    Route::post('/medical-checkups', [MedicalCheckupController::class, 'store'])->name('medical_checkups.store');
+    Route::get('/medical-checkups/{medicalCheckup}/edit', [MedicalCheckupController::class, 'edit'])->name('medical_checkups.edit');
+    Route::put('/medical-checkups/{medicalCheckup}', [MedicalCheckupController::class, 'update'])->name('medical_checkups.update');
+    Route::delete('/medical-checkups/{medicalCheckup}', [MedicalCheckupController::class, 'destroy'])->name('medical_checkups.destroy');
+});
 
 // Ruta para backup de base de datos  
 Route::middleware(['auth'])->group(function () {

@@ -317,4 +317,12 @@ class Student extends Authenticatable
         }
         return Carbon::parse($this->birth_date)->age;
     }
+
+    /**
+     * Revisiones médicas del alumno.
+     */
+    public function medicalCheckups()
+    {
+        return $this->hasMany(MedicalCheckup::class);
+    }
 }
