@@ -66,6 +66,14 @@ class Teacher extends Model
     }
 
     /**
+     * Relación: Notas sobre alumnos escritas por este profesor
+     */
+    public function studentNotes(): HasMany
+    {
+        return $this->hasMany(StudentNote::class);
+    }
+
+    /**
      * Check if teacher can comment on a subject
      * (must be titular or substitute teacher)
      */

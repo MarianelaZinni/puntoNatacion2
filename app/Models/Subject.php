@@ -61,4 +61,12 @@ class Subject extends Model
     {
         return $this->hasMany(\App\Models\SubjectComment::class)->orderBy('created_at', 'desc');
     }
+
+    /**
+     * Relación con las notas de alumnos de esta clase
+     */
+    public function studentNotes()
+    {
+        return $this->hasMany(\App\Models\StudentNote::class)->orderBy('created_at', 'desc');
+    }
 }

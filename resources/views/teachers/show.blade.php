@@ -210,6 +210,92 @@
                                                 @endforelse
                                             </div>
                                         </div>
+                                        
+                                        {{-- SECCIÓN DE NOTAS DE ALUMNOS --}}
+                                        <div class="mt-4 border-t border-gray-300 dark:border-gray-600 pt-4">
+                                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Notas de Alumnos</h4>
+                                            
+                                            @if($subject->students->count() > 0)
+                                                <div class="space-y-3">
+                                                    @foreach($subject->students as $student)
+                                                        <div class="border border-gray-300 dark:border-gray-600 rounded p-3 bg-gray-50 dark:bg-gray-800">
+                                                            <div class="flex items-center justify-between mb-2">
+                                                                <h5 class="font-medium text-gray-900 dark:text-gray-100">
+                                                                    {{ $student->name }}
+                                                                </h5>
+                                                                <span class="text-xs text-gray-500">DNI: {{ $student->dni }}</span>
+                                                            </div>
+                                                            
+                                                            {{-- Formulario para agregar nota --}}
+                                                            <form onsubmit="event.preventDefault(); addStudentNote({{ $student->id }}, {{ $subject->id }}, event.target.querySelector('textarea').value, event.target);" class="space-y-2 mb-3">
+                                                                <textarea 
+                                                                    name="note" 
+                                                                    rows="2" 
+                                                                    maxlength="2000"
+                                                                    placeholder="Agregar una nota sobre este alumno..."
+                                                                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                                                                ></textarea>
+                                                                <div class="flex items-center justify-between">
+                                                                    <span class="text-xs text-gray-500">Máx. 2000 caracteres</span>
+                                                                    <button type="submit" class="px-3 py-1 text-sm bg-green-500 hover:bg-green-600 text-white rounded">
+                                                                        Agregar Nota
+                                                                    </button>
+                                                                </div>
+                                                            </form>
+                                                            
+                                                            {{-- Listado de notas --}}
+                                                            <div class="space-y-2" id="student-notes-{{ $student->id }}-{{ $subject->id }}">
+                                                                @php
+                                                                    $studentNotes = $subject->studentNotes->where('student_id', $student->id);
+                                                                @endphp
+                                                                @forelse($studentNotes as $note)
+                                                                    <div class="p-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-xs" id="student-note-{{ $note->id }}">
+                                                                        <div class="flex items-start justify-between">
+                                                                            <div class="flex-1">
+                                                                                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                                                                    <span class="font-semibold">{{ $note->teacher->full_name }}</span>
+                                                                                    <span>•</span>
+                                                                                    <span>{{ $note->created_at->diffForHumans() }}</span>
+                                                                                </div>
+                                                                                <p class="text-sm text-gray-700 dark:text-gray-300" id="student-note-text-{{ $note->id }}">
+                                                                                    {{ $note->note }}
+                                                                                </p>
+                                                                                <form id="student-note-edit-form-{{ $note->id }}" style="display:none;" onsubmit="event.preventDefault(); updateStudentNote({{ $note->id }}, event.target.querySelector('textarea').value);" class="mt-2 space-y-2">
+                                                                                    <textarea 
+                                                                                        name="note" 
+                                                                                        rows="2" 
+                                                                                        maxlength="2000"
+                                                                                        class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
+                                                                                    >{{ $note->note }}</textarea>
+                                                                                    <div class="flex gap-2">
+                                                                                        <button type="submit" class="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">Guardar</button>
+                                                                                        <button type="button" onclick="cancelStudentNoteEdit({{ $note->id }})" class="px-3 py-1 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded">Cancelar</button>
+                                                                                    </div>
+                                                                                </form>
+                                                                            </div>
+                                                                            @if($note->canBeEditedBy($teacher))
+                                                                                <div class="flex gap-2 ml-3">
+                                                                                    <button onclick="showStudentNoteEditForm({{ $note->id }})" class="text-orange-600 hover:text-orange-900 dark:text-orange-400">
+                                                                                        <flux:icon name="pencil" class="h-3 w-3" />
+                                                                                    </button>
+                                                                                    <button onclick="deleteStudentNote({{ $note->id }})" class="text-red-600 hover:text-red-900 dark:text-red-400">
+                                                                                        <flux:icon name="trash" class="h-3 w-3" />
+                                                                                    </button>
+                                                                                </div>
+                                                                            @endif
+                                                                        </div>
+                                                                    </div>
+                                                                @empty
+                                                                    <p class="text-xs text-gray-500 dark:text-gray-400 italic">No hay notas para este alumno.</p>
+                                                                @endforelse
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <p class="text-sm text-gray-500 dark:text-gray-400 italic">No hay alumnos inscritos en esta clase.</p>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -419,6 +505,92 @@
                                                     <p class="text-sm text-gray-500 dark:text-gray-400 italic">No hay comentarios aún.</p>
                                                 @endforelse
                                             </div>
+                                        </div>
+                                        
+                                        {{-- SECCIÓN DE NOTAS DE ALUMNOS (SUPLENTE) --}}
+                                        <div class="mt-4 border-t border-gray-300 dark:border-gray-600 pt-4">
+                                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Notas de Alumnos</h4>
+                                            
+                                            @if($subject->students->count() > 0)
+                                                <div class="space-y-3">
+                                                    @foreach($subject->students as $student)
+                                                        <div class="border border-gray-300 dark:border-gray-600 rounded p-3 bg-gray-50 dark:bg-gray-800">
+                                                            <div class="flex items-center justify-between mb-2">
+                                                                <h5 class="font-medium text-gray-900 dark:text-gray-100">
+                                                                    {{ $student->name }}
+                                                                </h5>
+                                                                <span class="text-xs text-gray-500">DNI: {{ $student->dni }}</span>
+                                                            </div>
+                                                            
+                                                            {{-- Formulario para agregar nota --}}
+                                                            <form onsubmit="event.preventDefault(); addStudentNote({{ $student->id }}, {{ $subject->id }}, event.target.querySelector('textarea').value, event.target);" class="space-y-2 mb-3">
+                                                                <textarea 
+                                                                    name="note" 
+                                                                    rows="2" 
+                                                                    maxlength="2000"
+                                                                    placeholder="Agregar una nota sobre este alumno..."
+                                                                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                                                                ></textarea>
+                                                                <div class="flex items-center justify-between">
+                                                                    <span class="text-xs text-gray-500">Máx. 2000 caracteres</span>
+                                                                    <button type="submit" class="px-3 py-1 text-sm bg-green-500 hover:bg-green-600 text-white rounded">
+                                                                        Agregar Nota
+                                                                    </button>
+                                                                </div>
+                                                            </form>
+                                                            
+                                                            {{-- Listado de notas --}}
+                                                            <div class="space-y-2" id="student-notes-{{ $student->id }}-{{ $subject->id }}">
+                                                                @php
+                                                                    $studentNotes = $subject->studentNotes->where('student_id', $student->id);
+                                                                @endphp
+                                                                @forelse($studentNotes as $note)
+                                                                    <div class="p-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-xs" id="student-note-{{ $note->id }}">
+                                                                        <div class="flex items-start justify-between">
+                                                                            <div class="flex-1">
+                                                                                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                                                                    <span class="font-semibold">{{ $note->teacher->full_name }}</span>
+                                                                                    <span>•</span>
+                                                                                    <span>{{ $note->created_at->diffForHumans() }}</span>
+                                                                                </div>
+                                                                                <p class="text-sm text-gray-700 dark:text-gray-300" id="student-note-text-{{ $note->id }}">
+                                                                                    {{ $note->note }}
+                                                                                </p>
+                                                                                <form id="student-note-edit-form-{{ $note->id }}" style="display:none;" onsubmit="event.preventDefault(); updateStudentNote({{ $note->id }}, event.target.querySelector('textarea').value);" class="mt-2 space-y-2">
+                                                                                    <textarea 
+                                                                                        name="note" 
+                                                                                        rows="2" 
+                                                                                        maxlength="2000"
+                                                                                        class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-900"
+                                                                                    >{{ $note->note }}</textarea>
+                                                                                    <div class="flex gap-2">
+                                                                                        <button type="submit" class="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded">Guardar</button>
+                                                                                        <button type="button" onclick="cancelStudentNoteEdit({{ $note->id }})" class="px-3 py-1 text-sm bg-gray-500 hover:bg-gray-600 text-white rounded">Cancelar</button>
+                                                                                    </div>
+                                                                                </form>
+                                                                            </div>
+                                                                            @if($note->canBeEditedBy($teacher))
+                                                                                <div class="flex gap-2 ml-3">
+                                                                                    <button onclick="showStudentNoteEditForm({{ $note->id }})" class="text-orange-600 hover:text-orange-900 dark:text-orange-400">
+                                                                                        <flux:icon name="pencil" class="h-3 w-3" />
+                                                                                    </button>
+                                                                                    <button onclick="deleteStudentNote({{ $note->id }})" class="text-red-600 hover:text-red-900 dark:text-red-400">
+                                                                                        <flux:icon name="trash" class="h-3 w-3" />
+                                                                                    </button>
+                                                                                </div>
+                                                                            @endif
+                                                                        </div>
+                                                                    </div>
+                                                                @empty
+                                                                    <p class="text-xs text-gray-500 dark:text-gray-400 italic">No hay notas para este alumno.</p>
+                                                                @endforelse
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <p class="text-sm text-gray-500 dark:text-gray-400 italic">No hay alumnos inscritos en esta clase.</p>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -887,6 +1059,181 @@
                             icon: 'error',
                             title: 'Error',
                             text: 'Ocurrió un error al eliminar el comentario.'
+                        });
+                    });
+                }
+            });
+        }
+
+        // ========================================
+        // FUNCIONES PARA NOTAS DE ALUMNOS
+        // ========================================
+        
+        function addStudentNote(studentId, subjectId, noteText, form) {
+            if (!noteText || noteText.trim() === '') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Atención',
+                    text: 'Debes escribir una nota.'
+                });
+                return;
+            }
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            fetch(`/students/${studentId}/notes`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    teacher_id: {{ $teacher->id }},
+                    subject_id: subjectId,
+                    note: noteText
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Nota agregada',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    // Clear form and reload page
+                    form.reset();
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message || 'No se pudo agregar la nota.'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Ocurrió un error al agregar la nota.'
+                });
+            });
+        }
+
+        function showStudentNoteEditForm(noteId) {
+            document.getElementById(`student-note-text-${noteId}`).style.display = 'none';
+            document.getElementById(`student-note-edit-form-${noteId}`).style.display = 'block';
+        }
+
+        function cancelStudentNoteEdit(noteId) {
+            document.getElementById(`student-note-text-${noteId}`).style.display = 'block';
+            document.getElementById(`student-note-edit-form-${noteId}`).style.display = 'none';
+        }
+
+        function updateStudentNote(noteId, noteText) {
+            if (!noteText || noteText.trim() === '') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Atención',
+                    text: 'La nota no puede estar vacía.'
+                });
+                return;
+            }
+            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            fetch(`/notes/${noteId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    note_text: noteText,
+                    teacher_id: {{ $teacher->id }}
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Nota actualizada',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    // Reload page to show updated note
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Ocurrió un error al actualizar la nota.'
+                });
+            });
+        }
+
+        function deleteStudentNote(noteId) {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Se eliminará esta nota permanentemente.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    
+                    fetch(`/notes/${noteId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            teacher_id: {{ $teacher->id }}
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Nota eliminada',
+                                text: data.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                            // Reload page to reflect deletion
+                            setTimeout(() => window.location.reload(), 2000);
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: data.message
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Ocurrió un error al eliminar la nota.'
                         });
                     });
                 }

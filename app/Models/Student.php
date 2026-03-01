@@ -44,6 +44,14 @@ class Student extends Authenticatable
                     ->withTimestamps();
     }
 
+    /**
+     * Relación: Notas que los profesores han escrito sobre este alumno
+     */
+    public function notes()
+    {
+        return $this->hasMany(\App\Models\StudentNote::class)->orderBy('created_at', 'desc');
+    }
+
     /****************************
      * Cálculo de cuota / deuda
      ****************************/

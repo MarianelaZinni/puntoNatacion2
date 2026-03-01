@@ -85,13 +85,17 @@ class TeacherController extends Controller
      */
     public function show(Teacher $teacher)
     {
-        // Eager load subjects with subjectType, students, and comments (titular y suplente)
+        // Eager load subjects with subjectType, students, student notes, and comments (titular y suplente)
         $teacher->load([
             'subjects.subjectType',
             'subjects.students',
+            'subjects.studentNotes.teacher',
+            'subjects.studentNotes.student',
             'subjects.comments.teacher',
             'subjectsAsSubstitute.subjectType',
             'subjectsAsSubstitute.students',
+            'subjectsAsSubstitute.studentNotes.teacher',
+            'subjectsAsSubstitute.studentNotes.student',
             'subjectsAsSubstitute.comments.teacher'
         ]);
         

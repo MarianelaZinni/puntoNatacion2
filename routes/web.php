@@ -52,6 +52,11 @@ Route::post('/subjects/{subject}/comments', [\App\Http\Controllers\SubjectCommen
 Route::put('/comments/{comment}', [\App\Http\Controllers\SubjectCommentController::class, 'update'])->name('subject-comments.update');
 Route::delete('/comments/{comment}', [\App\Http\Controllers\SubjectCommentController::class, 'destroy'])->name('subject-comments.destroy');
 
+// Rutas para notas de alumnos (Student Notes)
+Route::post('/students/{student}/notes', [\App\Http\Controllers\StudentNoteController::class, 'store'])->name('student-notes.store');
+Route::put('/notes/{note}', [\App\Http\Controllers\StudentNoteController::class, 'update'])->name('student-notes.update');
+Route::delete('/notes/{note}', [\App\Http\Controllers\StudentNoteController::class, 'destroy'])->name('student-notes.destroy');
+
 // Extra: Anotar a clase y registrar pago
 Route::get('students/{student}/enroll', [StudentController::class, 'enrollClassForm'])
     ->name('students.enrollClassForm');
