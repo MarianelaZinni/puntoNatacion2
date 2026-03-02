@@ -57,6 +57,26 @@
                 </div>
 
                 <div>
+                    <label for="teacher_id" class="block font-medium mb-1">Profesor Titular</label>
+                    <select name="teacher_id" id="teacher_id" class="w-full rounded border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100">
+                        <option value="">Sin profesor titular</option>
+                        @foreach($teachers as $teacher)
+                            <option value="{{ $teacher->id }}">{{ $teacher->surname }}, {{ $teacher->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label for="substitute_teacher_id" class="block font-medium mb-1">Profesor Suplente</label>
+                    <select name="substitute_teacher_id" id="substitute_teacher_id" class="w-full rounded border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100">
+                        <option value="">Sin profesor suplente</option>
+                        @foreach($teachers as $teacher)
+                            <option value="{{ $teacher->id }}">{{ $teacher->surname }}, {{ $teacher->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
                     <label class="block font-medium mb-1">Inscriptos</label>
                     <div id="modal-students" class="max-h-40 overflow-auto text-sm text-gray-700 dark:text-gray-200"></div>
                 </div>
@@ -166,6 +186,7 @@
                             const color = subjectColors[subj.subject_type_id] || '#29b1dc';
                             const enrolled = subj.students ? subj.students.length : 0;
                             const title = subj.subject_type ? (subj.subject_type.description || subj.subject_type.value || 'Materia') : 'Materia';
+                            const teacherName = subj.teacher ? escapeHtml(subj.teacher.full_name) : '';
                             cellInner += `
                                 <button
                                     type="button"
@@ -179,6 +200,7 @@
                                     </div>
                                     <div class="text-xs text-gray-500 dark:text-gray-300 mt-1">${escapeHtml(subj.start_time)} — ${escapeHtml(subj.end_time)}</div>
                                     <div class="text-xs text-gray-600 dark:text-gray-300 mt-1">${enrolled}/${subj.capacity || '—'}</div>
+                                    ${teacherName ? `<div class="text-xs text-blue-600 dark:text-blue-400 mt-1">👤 ${teacherName}</div>` : ''}
                                 </button>
                             `;
                         }
@@ -219,6 +241,8 @@
             document.getElementById('day').value = subj.day || '';
             document.getElementById('start_time').value = subj.start_time || '';
             document.getElementById('end_time').value = subj.end_time || '';
+            document.getElementById('teacher_id').value = subj.teacher_id || '';
+            document.getElementById('substitute_teacher_id').value = subj.substitute_teacher_id || '';
 
             const enrolledCount = subj.students ? subj.students.length : 0;
             if (enrolledCount > 0) {
@@ -287,6 +311,8 @@
             const day = document.getElementById('day').value;
             const start_time = document.getElementById('start_time').value;
             const end_time = document.getElementById('end_time').value;
+            const teacher_id = document.getElementById('teacher_id').value || null;
+            const substitute_teacher_id = document.getElementById('substitute_teacher_id').value || null;
 
             if (!start_time || !end_time || start_time >= end_time) {
                 Swal.fire({ icon: 'warning', title: 'Horas inválidas', text: 'La hora de inicio debe ser menor que la hora de fin.'});
@@ -312,7 +338,7 @@
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({ subject_type_id, capacity, day, start_time, end_time })
+                body: JSON.stringify({ subject_type_id, capacity, day, start_time, end_time, teacher_id, substitute_teacher_id })
             })
             .then(r => {
                 if (!r.ok) return r.text().then(t => { throw new Error(t || 'Network response not ok'); });

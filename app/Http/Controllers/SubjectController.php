@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Subject;
 use App\Models\SubjectType;
+use App\Models\Teacher;
 use Illuminate\Http\Request;
 
 class SubjectController extends Controller
@@ -14,6 +15,7 @@ class SubjectController extends Controller
     public function index()
     {
         $subjectTypes = SubjectType::all();
+        $teachers = Teacher::orderBy('surname')->orderBy('name')->get();
 
         // Colores fijos por materia (id => color)
         $subjectColors = [
@@ -28,7 +30,7 @@ class SubjectController extends Controller
         ];
 
         // Cargamos las clases y preparamos un array serializable para inyectar en JS
-        $subjects = Subject::with(['subjectType', 'students'])->get();
+        $subjects = Subject::with(['subjectType', 'students', 'teacher', 'substituteTeacher'])->get();
 
         $subjectsForJs = $subjects->map(function ($s) {
             return [
@@ -38,6 +40,16 @@ class SubjectController extends Controller
                 'day' => $s->day,
                 'start_time' => substr($s->start_time, 0, 5),
                 'end_time' => substr($s->end_time, 0, 5),
+                'teacher_id' => $s->teacher_id,
+                'substitute_teacher_id' => $s->substitute_teacher_id,
+                'teacher' => $s->teacher ? [
+                    'id' => $s->teacher->id,
+                    'full_name' => $s->teacher->full_name ?? ($s->teacher->name . ' ' . $s->teacher->surname),
+                ] : null,
+                'substitute_teacher' => $s->substituteTeacher ? [
+                    'id' => $s->substituteTeacher->id,
+                    'full_name' => $s->substituteTeacher->full_name ?? ($s->substituteTeacher->name . ' ' . $s->substituteTeacher->surname),
+                ] : null,
                 'subject_type' => $s->subjectType ? [
                     'id' => $s->subjectType->id,
                     'value' => $s->subjectType->value ?? null,
@@ -62,7 +74,7 @@ class SubjectController extends Controller
             ];
         })->values()->toArray();
 
-        return view('subjects.index', compact('subjectTypes', 'subjectColors', 'subjectsForJs', 'subjectTypesForJs'));
+        return view('subjects.index', compact('subjectTypes', 'subjectColors', 'subjectsForJs', 'subjectTypesForJs', 'teachers'));
     }
 
     /**
@@ -136,11 +148,13 @@ class SubjectController extends Controller
             'day' => 'required|string',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
+            'teacher_id' => 'nullable|exists:teachers,id',
+            'substitute_teacher_id' => 'nullable|exists:teachers,id',
         ]);
 
         $subject = Subject::create($data);
 
-        return response()->json(['success' => true, 'subject' => $subject]);
+        return response()->json(['success' => true, 'subject' => $subject->load(['teacher', 'substituteTeacher', 'subjectType'])]);
     }
 
     /**
@@ -154,6 +168,8 @@ class SubjectController extends Controller
             'day' => 'required|string',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
+            'teacher_id' => 'nullable|exists:teachers,id',
+            'substitute_teacher_id' => 'nullable|exists:teachers,id',
         ]);
 
         // Verificar que el nuevo cupo no sea menor que la cantidad de alumnos ya inscriptos
@@ -172,7 +188,7 @@ class SubjectController extends Controller
 
         $subject->update($data);
 
-        return response()->json(['success' => true, 'subject' => $subject]);
+        return response()->json(['success' => true, 'subject' => $subject->load(['teacher', 'substituteTeacher', 'subjectType'])]);
     }
 
     /**
