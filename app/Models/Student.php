@@ -135,6 +135,8 @@ class Student extends Authenticatable
      * - Devuelve también 'selectable_periods' que son los periodos que pueden aparecer
      *   en el select del formulario: incluye los periodos adeudados y además siempre
      *   el periodo actual (para permitir pagar el mes actual aunque no esté vencido).
+     * - Respeta el mes de inicio configurado (DEBT_START_MONTH): no genera deuda antes
+     *   de ese mes en cada año académico.
      *
      * Retorna:
      * [
@@ -168,7 +170,17 @@ class Student extends Authenticatable
             ];
         }
 
-        $start = $this->created_at ? Carbon::parse($this->created_at)->startOfMonth() : Carbon::now()->startOfMonth();
+        // Fecha de creación del alumno
+        $creationDate = $this->created_at ? Carbon::parse($this->created_at)->startOfMonth() : Carbon::now()->startOfMonth();
+        
+        // Mes de inicio configurado para el cálculo de deuda (por defecto: marzo = 3)
+        $debtStartMonth = config('business.debt_start_month', 3);
+        
+        // Calcular el mes de inicio efectivo de la deuda
+        // Si el alumno se creó antes del mes de inicio del año académico, usar ese mes de inicio
+        // Si se creó después, usar la fecha de creación
+        $start = $this->calculateEffectiveDebtStartDate($creationDate, $debtStartMonth);
+        
         $end = Carbon::now()->startOfMonth();
 
         $payments = $this->payments ?? collect();
@@ -177,7 +189,9 @@ class Student extends Authenticatable
         $selectablePeriods = [];
         $totalDebt = 0.0;
 
-        $includeCurrentAsDue = Carbon::now()->day > 10; // regla: mes adeudado si hoy > 10
+        // Día de vencimiento configurado (por defecto: 10)
+        $debtDueDay = config('business.debt_due_day', 10);
+        $includeCurrentAsDue = Carbon::now()->day > $debtDueDay; // regla: mes adeudado si hoy > día configurado
 
         $cursor = $start->copy();
 
@@ -288,5 +302,45 @@ class Student extends Authenticatable
         }
 
         return Carbon::parse($period)->startOfMonth();
+    }
+
+    /**
+     * Calcula la fecha efectiva desde la cual se debe empezar a contar la deuda,
+     * teniendo en cuenta el mes de inicio del año académico configurado.
+     *
+     * Lógica:
+     * - Si el alumno se creó antes del mes de inicio del año académico actual,
+     *   la deuda comienza en ese mes de inicio del mismo año.
+     * - Si el alumno se creó después del mes de inicio, la deuda comienza
+     *   desde el mes de creación.
+     * - Si el alumno se creó en un año anterior, la deuda comienza en el
+     *   mes de inicio del año en que se creó (o posterior si aplica).
+     *
+     * Ejemplo con debtStartMonth = 3 (Marzo):
+     * - Alumno creado en Enero 2024 → deuda desde Marzo 2024
+     * - Alumno creado en Abril 2024 → deuda desde Abril 2024
+     * - Alumno creado en Diciembre 2023 → deuda desde Marzo 2024
+     *
+     * @param Carbon $creationDate Fecha de creación del alumno
+     * @param int $debtStartMonth Mes de inicio del año académico (1-12)
+     * @return Carbon Fecha efectiva de inicio de deuda
+     */
+    protected function calculateEffectiveDebtStartDate(Carbon $creationDate, int $debtStartMonth): Carbon
+    {
+        $now = Carbon::now();
+        $creationYear = $creationDate->year;
+        $creationMonth = $creationDate->month;
+        
+        // Fecha del mes de inicio en el año de creación
+        $academicStartInCreationYear = Carbon::create($creationYear, $debtStartMonth, 1)->startOfMonth();
+        
+        // Si el alumno se creó antes del mes de inicio del año académico
+        if ($creationDate->lt($academicStartInCreationYear)) {
+            // La deuda comienza en el mes de inicio del año académico del año de creación
+            return $academicStartInCreationYear;
+        }
+        
+        // Si el alumno se creó después o en el mes de inicio, la deuda comienza desde la creación
+        return $creationDate->copy();
     }
 }
