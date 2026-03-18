@@ -6,6 +6,7 @@ use App\Models\MedicalCheckup;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MedicalCheckupController extends Controller
 {
@@ -142,6 +143,26 @@ class MedicalCheckupController extends Controller
      */
     public function report(Request $request)
     {
+        $data = $this->fetchReportData($request);
+        return view('medical_checkups.report', $data);
+    }
+
+    /**
+     * Genera y descarga el PDF del reporte de revisiones médicas.
+     */
+    public function reportPdf(Request $request)
+    {
+        $data = $this->fetchReportData($request);
+        $html = view('medical_checkups.report_pdf', $data)->render();
+        $pdf = Pdf::loadHTML($html)->setPaper('a4', 'portrait');
+        return $pdf->download('revisiones_medicas.pdf');
+    }
+
+    /**
+     * Obtiene los datos del reporte de revisiones médicas aplicando los filtros.
+     */
+    private function fetchReportData(Request $request): array
+    {
         $filters = [
             'approved' => $request->query('approved', ''),   // '' = todos, '1' = aprobada, '0' = no aprobada
             'period'   => $request->query('period', ''),     // YYYY-MM
@@ -169,6 +190,11 @@ class MedicalCheckupController extends Controller
             ->orderBy('medical_checkups.checkup_date', 'desc')
             ->get();
 
-        return view('medical_checkups.report', compact('checkups', 'filters'));
+        return [
+            'checkups'     => $checkups,
+            'filters'      => $filters,
+            'company'      => 'Punto Natación',
+            'generated_at' => Carbon::now(),
+        ];
     }
 }

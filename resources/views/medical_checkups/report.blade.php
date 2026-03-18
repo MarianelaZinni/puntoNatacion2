@@ -5,6 +5,17 @@
                 <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Revisiones Médicas</h1>
                 <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Consultá y filtrá las revisiones médicas de todos los alumnos.</p>
             </div>
+            <div>
+                <a id="btn-pdf"
+                   href="{{ route('medical_checkups.report_pdf', request()->only('approved', 'period')) }}"
+                   target="_blank"
+                   class="inline-flex items-center gap-2 px-4 py-2 bg-[#29b1dc] hover:bg-[#24a8cf] text-white rounded shadow transition focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc]">
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0-3-3m3 3 3-3M3 17V7a2 2 0 0 1 2-2h6l2 2h4a2 2 0 0 1 2 2v1" />
+                    </svg>
+                    Exportar PDF
+                </a>
+            </div>
         </div>
 
         {{-- Filtros --}}
@@ -119,4 +130,25 @@
             @endif
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+    (function () {
+        const btnPdf   = document.getElementById('btn-pdf');
+        const selState = document.getElementById('approved');
+        const inpPeriod = document.getElementById('period');
+        const baseUrl  = "{{ route('medical_checkups.report_pdf') }}";
+
+        function updatePdfLink() {
+            const url = new URL(baseUrl, window.location.origin);
+            if (selState && selState.value !== '') url.searchParams.set('approved', selState.value);
+            if (inpPeriod && inpPeriod.value !== '') url.searchParams.set('period', inpPeriod.value);
+            btnPdf.href = url.toString();
+        }
+
+        if (selState)  selState.addEventListener('change', updatePdfLink);
+        if (inpPeriod) inpPeriod.addEventListener('change', updatePdfLink);
+    })();
+    </script>
+    @endpush
 </x-layouts.app>
