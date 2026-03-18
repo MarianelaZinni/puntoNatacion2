@@ -29,7 +29,10 @@
     <div class="text-sm text-gray-600 mt-1">Listado completo de alumnos (imprimible / PDF).</div>
 </a>
 
-           
+            <a href="{{ route('medical_checkups.report') }}" class="p-4 border rounded hover:shadow">
+                <div class="font-semibold">5. Revisiones Médicas</div>
+                <div class="text-sm text-gray-600 mt-1">Filtrá revisiones por estado (aprobada / no aprobada) y período. Exportable a PDF.</div>
+            </a>
         </div>
     </div>
 </x-layouts.app>

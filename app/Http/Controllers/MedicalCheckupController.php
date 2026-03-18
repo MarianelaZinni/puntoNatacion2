@@ -6,6 +6,7 @@ use App\Models\MedicalCheckup;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class MedicalCheckupController extends Controller
 {
@@ -135,5 +136,65 @@ class MedicalCheckupController extends Controller
         
         return redirect()->route('medical_checkups.index', ['student_id' => $studentId])
             ->with('success', 'Revisión médica eliminada correctamente.');
+    }
+
+    /**
+     * Pantalla de búsqueda/filtro global de revisiones médicas.
+     */
+    public function report(Request $request)
+    {
+        $data = $this->fetchReportData($request);
+        return view('medical_checkups.report', $data);
+    }
+
+    /**
+     * Genera y descarga el PDF del reporte de revisiones médicas.
+     */
+    public function reportPdf(Request $request)
+    {
+        $data = $this->fetchReportData($request);
+        $html = view('medical_checkups.report_pdf', $data)->render();
+        $pdf = Pdf::loadHTML($html)->setPaper('a4', 'portrait');
+        return $pdf->download('revisiones_medicas.pdf');
+    }
+
+    /**
+     * Obtiene los datos del reporte de revisiones médicas aplicando los filtros.
+     */
+    private function fetchReportData(Request $request): array
+    {
+        $filters = [
+            'approved' => $request->query('approved', ''),   // '' = todos, '1' = aprobada, '0' = no aprobada
+            'period'   => $request->query('period', ''),     // YYYY-MM
+        ];
+
+        $query = MedicalCheckup::join('students', 'medical_checkups.student_id', '=', 'students.id')
+            ->select('medical_checkups.*', 'students.name as student_name');
+
+        if ($filters['approved'] !== '') {
+            $query->where('approved', (bool) $filters['approved']);
+        }
+
+        if ($filters['period'] !== '') {
+            try {
+                $periodDate = Carbon::createFromFormat('Y-m', $filters['period'])->startOfMonth()->toDateString();
+                $query->where('period', $periodDate);
+            } catch (\Throwable $e) {
+                // período inválido: ignorar filtro
+            }
+        }
+
+        $checkups = $query
+            ->orderBy('medical_checkups.period', 'desc')
+            ->orderBy('students.name', 'asc')
+            ->orderBy('medical_checkups.checkup_date', 'desc')
+            ->get();
+
+        return [
+            'checkups'     => $checkups,
+            'filters'      => $filters,
+            'company'      => 'Punto Natación',
+            'generated_at' => Carbon::now(),
+        ];
     }
 }
