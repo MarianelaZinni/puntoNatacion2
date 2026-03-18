@@ -136,4 +136,39 @@ class MedicalCheckupController extends Controller
         return redirect()->route('medical_checkups.index', ['student_id' => $studentId])
             ->with('success', 'Revisión médica eliminada correctamente.');
     }
+
+    /**
+     * Pantalla de búsqueda/filtro global de revisiones médicas.
+     */
+    public function report(Request $request)
+    {
+        $filters = [
+            'approved' => $request->query('approved', ''),   // '' = todos, '1' = aprobada, '0' = no aprobada
+            'period'   => $request->query('period', ''),     // YYYY-MM
+        ];
+
+        $query = MedicalCheckup::join('students', 'medical_checkups.student_id', '=', 'students.id')
+            ->select('medical_checkups.*', 'students.name as student_name');
+
+        if ($filters['approved'] !== '') {
+            $query->where('approved', (bool) $filters['approved']);
+        }
+
+        if ($filters['period'] !== '') {
+            try {
+                $periodDate = Carbon::createFromFormat('Y-m', $filters['period'])->startOfMonth()->toDateString();
+                $query->where('period', $periodDate);
+            } catch (\Throwable $e) {
+                // período inválido: ignorar filtro
+            }
+        }
+
+        $checkups = $query
+            ->orderBy('medical_checkups.period', 'desc')
+            ->orderBy('students.name', 'asc')
+            ->orderBy('medical_checkups.checkup_date', 'desc')
+            ->get();
+
+        return view('medical_checkups.report', compact('checkups', 'filters'));
+    }
 }
