@@ -46,6 +46,23 @@
 
                 <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
 
+                  {{-- Group: Enfermería --}}
+                <div class="mt-2 mb-3 px-1">
+                    <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Enfermería</div>
+                    <flux:navlist.group>
+                        <flux:navlist.item
+                            icon="heart"
+                            :href="route('medical_checkups.report')"
+                            :current="request()->routeIs('medical_checkups.report')"
+                            wire:navigate
+                        >
+                            {{ __('Revisiones Médicas') }}
+                        </flux:navlist.item>
+                    </flux:navlist.group>
+                </div>
+
+                <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
+
                 {{-- Group: Clases --}}
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Clases</div>

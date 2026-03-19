@@ -78,6 +78,8 @@ Route::middleware(['web'])->group(function () {
     Route::get('/medical-checkups', [MedicalCheckupController::class, 'index'])->name('medical_checkups.index');
     Route::get('/medical-checkups/create', [MedicalCheckupController::class, 'create'])->name('medical_checkups.create');
     Route::post('/medical-checkups', [MedicalCheckupController::class, 'store'])->name('medical_checkups.store');
+    Route::get('/medical-checkups/report', [MedicalCheckupController::class, 'report'])->name('medical_checkups.report');
+    Route::get('/medical-checkups/report/pdf', [MedicalCheckupController::class, 'reportPdf'])->name('medical_checkups.report_pdf');
     Route::get('/medical-checkups/{medicalCheckup}/edit', [MedicalCheckupController::class, 'edit'])->name('medical_checkups.edit');
     Route::put('/medical-checkups/{medicalCheckup}', [MedicalCheckupController::class, 'update'])->name('medical_checkups.update');
     Route::delete('/medical-checkups/{medicalCheckup}', [MedicalCheckupController::class, 'destroy'])->name('medical_checkups.destroy');
