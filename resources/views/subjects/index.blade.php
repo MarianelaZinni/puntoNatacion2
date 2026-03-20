@@ -57,6 +57,26 @@
                 </div>
 
                 <div>
+                    <label for="titular_teacher_id" class="block font-medium mb-1">Profesor Titular</label>
+                    <select name="titular_teacher_id" id="titular_teacher_id" class="w-full rounded border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100">
+                        <option value="">Sin titular</option>
+                        @foreach($teachers as $teacher)
+                            <option value="{{ $teacher->id }}">{{ $teacher->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label for="suplente_teacher_id" class="block font-medium mb-1">Profesor Suplente</label>
+                    <select name="suplente_teacher_id" id="suplente_teacher_id" class="w-full rounded border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100">
+                        <option value="">Sin suplente</option>
+                        @foreach($teachers as $teacher)
+                            <option value="{{ $teacher->id }}">{{ $teacher->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
                     <label class="block font-medium mb-1">Inscriptos</label>
                     <div id="modal-students" class="max-h-40 overflow-auto text-sm text-gray-700 dark:text-gray-200"></div>
                 </div>
@@ -81,6 +101,7 @@
         const subjects = @json($subjectsForJs);
         const subjectTypes = @json($subjectTypesForJs);
         const subjectColors = @json($subjectColors);
+        const teachers = @json($teachersForJs);
 
         const days = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
         const slotMinutes = 50;
@@ -179,6 +200,8 @@
                                     </div>
                                     <div class="text-xs text-gray-500 dark:text-gray-300 mt-1">${escapeHtml(subj.start_time)} — ${escapeHtml(subj.end_time)}</div>
                                     <div class="text-xs text-gray-600 dark:text-gray-300 mt-1">${enrolled}/${subj.capacity || '—'}</div>
+                                    ${subj.titular_teacher_name ? `<div class="text-xs text-blue-600 dark:text-blue-300 mt-1 truncate">T: ${escapeHtml(subj.titular_teacher_name)}</div>` : ''}
+                                    ${subj.suplente_teacher_name ? `<div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">S: ${escapeHtml(subj.suplente_teacher_name)}</div>` : ''}
                                 </button>
                             `;
                         }
@@ -219,6 +242,8 @@
             document.getElementById('day').value = subj.day || '';
             document.getElementById('start_time').value = subj.start_time || '';
             document.getElementById('end_time').value = subj.end_time || '';
+            document.getElementById('titular_teacher_id').value = subj.titular_teacher_id || '';
+            document.getElementById('suplente_teacher_id').value = subj.suplente_teacher_id || '';
 
             const enrolledCount = subj.students ? subj.students.length : 0;
             if (enrolledCount > 0) {
@@ -272,6 +297,8 @@
                 day: 'Lunes',
                 start_time: defaultStart,
                 end_time: defaultEnd,
+                titular_teacher_id: '',
+                suplente_teacher_id: '',
                 students: []
             });
         });
@@ -287,6 +314,8 @@
             const day = document.getElementById('day').value;
             const start_time = document.getElementById('start_time').value;
             const end_time = document.getElementById('end_time').value;
+            const titular_teacher_id = document.getElementById('titular_teacher_id').value || null;
+            const suplente_teacher_id = document.getElementById('suplente_teacher_id').value || null;
 
             if (!start_time || !end_time || start_time >= end_time) {
                 Swal.fire({ icon: 'warning', title: 'Horas inválidas', text: 'La hora de inicio debe ser menor que la hora de fin.'});
@@ -312,7 +341,7 @@
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({ subject_type_id, capacity, day, start_time, end_time })
+                body: JSON.stringify({ subject_type_id, capacity, day, start_time, end_time, titular_teacher_id, suplente_teacher_id })
             })
             .then(r => {
                 if (!r.ok) return r.text().then(t => { throw new Error(t || 'Network response not ok'); });

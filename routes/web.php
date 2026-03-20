@@ -12,6 +12,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\MedicalCheckupController;
+use App\Http\Controllers\TeacherController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -20,6 +21,17 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+// Teachers (Profesores)
+Route::get('/teachers', [TeacherController::class, 'index'])->name('teachers.index');
+Route::get('/teachers/create', [TeacherController::class, 'create'])->name('teachers.create');
+Route::post('/teachers', [TeacherController::class, 'store'])->name('teachers.store');
+Route::get('/teachers/{teacher}', [TeacherController::class, 'show'])->name('teachers.show');
+Route::get('/teachers/{teacher}/edit', [TeacherController::class, 'edit'])->name('teachers.edit');
+Route::put('/teachers/{teacher}', [TeacherController::class, 'update'])->name('teachers.update');
+Route::delete('/teachers/{teacher}', [TeacherController::class, 'destroy'])->name('teachers.destroy');
+Route::post('/teachers/{teacher}/assign-class', [TeacherController::class, 'assignClass'])->name('teachers.assignClass');
+Route::post('/teachers/{teacher}/unassign-class', [TeacherController::class, 'unassignClass'])->name('teachers.unassignClass');
 
 Route::get('/students', [StudentController::class, 'index'])->name('students.index');
 Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
