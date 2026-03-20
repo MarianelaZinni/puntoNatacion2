@@ -111,7 +111,7 @@
                             <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Alumno</th>
                             <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Fecha</th>
                             <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Periodo</th>
-                            <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Método</th>
+                            <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Tipo</th>                          <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Método</th>
                             <th class="text-right text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Monto (AR$)</th>
                             <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Notas</th>
                             <th class="text-center text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Acciones</th>
@@ -141,6 +141,21 @@
                                     {{ $periodLabel }}
                                 </td>
 
+                                 {{-- Columna: Tipo de pago --}}
+                                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
+                                    @php
+                                        $typeLabels = \App\Models\Payment::paymentTypes();
+                                        $typeLabel  = $typeLabels[$payment->payment_type ?? 'normal'] ?? 'Pago normal';
+                                    @endphp
+                                    <span class="inline-block px-2 py-0.5 rounded text-xs font-medium
+                                        @if(($payment->payment_type ?? 'normal') === 'medio_mes') bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300
+                                        @elseif(($payment->payment_type ?? 'normal') === 'con_recargo') bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300
+                                        @else bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300
+                                        @endif">
+                                        {{ $typeLabel }}
+                                    </span>
+                                </td>
+                                
                                 <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
                                     {{ $payment->paymentMethod->name ?? 'N/A' }}
                                 </td>

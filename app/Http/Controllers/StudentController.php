@@ -56,23 +56,11 @@ class StudentController extends Controller
                $student->next_unpaid_period = $calc['next_unpaid_period'];
                $student->has_debt = ($calc['debt'] > 0);
 
-               // También indicamos si ya pagó el mes actual en su totalidad
-               $student->paid_this_month = false;
-               if (!empty($student->monthly_amount)) {
-                   $nowYm = Carbon::now()->format('Y-m');
-                   $paidThisMonth = collect($student->payments)->reduce(function ($carry, $p) use ($nowYm) {
-                       $pPeriod = null;
-                       if (!empty($p->payment_period)) {
-                           try { $pPeriod = Carbon::parse($p->payment_period)->format('Y-m'); } catch (\Throwable $e) { $pPeriod = null; }
-                       } else {
-                           try { $pPeriod = Carbon::parse($p->payment_date)->format('Y-m'); } catch (\Throwable $e) { $pPeriod = null; }
-                       }
-                       if ($pPeriod === $nowYm) return $carry + (float)$p->amount;
-                       return $carry;
-                   }, 0.0);
-
-                   $student->paid_this_month = ($paidThisMonth >= $student->monthly_amount && $student->monthly_amount > 0);
-               }
+               // Un periodo se considera pagado si existe al menos un registro de pago,
+               // independientemente del monto. Usamos el helper del modelo que implementa
+               // esta regla de negocio de manera consistente.
+               $nowYm = Carbon::now()->format('Y-m');
+               $student->paid_this_month = $student->isPeriodFullyPaid($nowYm);
 
                // Determinar estado (status) según las reglas:
                // - "deudor"   => si debe algún mes anterior OR (estamos > dia 10 y no pagó el mes en curso)
@@ -85,7 +73,6 @@ class StudentController extends Controller
                // 3) else if paid_this_month => 'al_dia'
                // 4) else if today > 10 => 'deudor' (mes actual vencido)
                // 5) else => 'pendiente' (antes del día 11, sin deuda previa)
-               $nowYm = Carbon::now()->format('Y-m');
                $unpaidPeriods = is_array($student->unpaid_periods) ? $student->unpaid_periods : [];
                $hasPreviousUnpaid = collect($unpaidPeriods)->contains(function ($p) use ($nowYm) {
                    return ($p['period'] ?? '') !== $nowYm;
