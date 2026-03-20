@@ -33,32 +33,40 @@ class PaymentController extends Controller
             $student->unpaid_periods = $calc['unpaid_periods'];
             $student->next_unpaid_period = $calc['next_unpaid_period'];
             $student->has_debt = ($calc['debt'] > 0);
-            // Un periodo está "pagado" si tiene al menos un registro de pago
-            $student->paid_this_month = $student->isPeriodPaid($todayYm);
+            $student->paid_this_month = $student->isPeriodFullyPaid($todayYm, $student->monthly_amount);
 
-            // selectable_periods: sólo periodos sin ningún pago registrado
-            // (ya calculados en unpaid_periods por el modelo con el nuevo criterio)
+            // Construir selectable_periods esperado por el frontend:
+            // transformamos unpaid_periods a {period, paid, deficit, monthly_amount}
             $selectable = [];
-            foreach ($calc['unpaid_periods'] as $up) {
-                $selectable[] = [
-                    'period'  => $up['period'] ?? null,
-                    'paid'    => false,
-                    'deficit' => isset($up['deficit']) ? (float)$up['deficit'] : 0.0,
-                ];
+            if (!empty($calc['unpaid_periods']) && is_array($calc['unpaid_periods'])) {
+                foreach ($calc['unpaid_periods'] as $up) {
+                    $ma = isset($up['monthly_amount']) ? (float)$up['monthly_amount'] : (isset($up['deficit']) ? (float)$up['deficit'] : 0.0);
+                    $selectable[] = [
+                        'period'         => $up['period'] ?? null,
+                        'paid'           => false,
+                        'deficit'        => $ma,
+                        'monthly_amount' => $ma,
+                    ];
+                }
             }
 
-            // Si el mes actual no está en la lista (aún no venció el día de corte)
-            // lo añadimos igualmente para que el usuario pueda adelantar el pago.
-            $hasCurrent = collect($selectable)->contains(fn ($item) => ($item['period'] ?? null) === $todayYm);
+            // Si el mes actual no está en la lista y el mes actual no está pagado,
+            // añadimos el periodo actual como opción.
+            $hasCurrent = collect($selectable)->contains(function ($item) use ($todayYm) {
+                return isset($item['period']) && $item['period'] === $todayYm;
+            });
 
             if (!$hasCurrent && !$student->paid_this_month) {
+                $ma = (float)($student->monthly_amount ?? 0);
                 array_unshift($selectable, [
-                    'period'  => $todayYm,
-                    'paid'    => false,
-                    'deficit' => 0.0,
+                    'period'         => $todayYm,
+                    'paid'           => false,
+                    'deficit'        => $ma,
+                    'monthly_amount' => $ma,
                 ]);
             }
 
+            // Guardamos para que la vista lo utilice en data-selectable
             $student->selectable_periods = $selectable;
         } else {
             $student->debt = 0;
@@ -74,13 +82,10 @@ class PaymentController extends Controller
     // Métodos de pago para el select
     $paymentMethods = PaymentMethod::orderBy('name')->get();
 
-    // Porcentaje de recargo configurable
-    $surchargePercentage = (float) config('business.payment_surcharge_percentage', 10);
-
     // student_id pasado por query (al venir desde students.index)
     $selectedStudentId = $request->query('student_id');
 
-    return view('payments.index', compact('students', 'paymentMethods', 'selectedStudentId', 'surchargePercentage'));
+    return view('payments.index', compact('students', 'paymentMethods', 'selectedStudentId'));
     }
 
     /**
@@ -95,6 +100,7 @@ class PaymentController extends Controller
             'payment_method_id' => 'nullable|exists:payment_methods,id',
             // recibimos el periodo como 'YYYY-MM' vía select
             'payment_period' => ['required','regex:/^\d{4}-\d{2}$/'],
+            'payment_type' => ['required', 'in:normal,medio_mes,con_recargo'],
             'notes' => 'nullable|string|max:1000',
         ]);
 
@@ -117,6 +123,7 @@ $student = Student::with(['subjects.subjectType'])->find($data['student_id']);
              'expected_amount' => $expectedAmount, 
             'payment_date' => $data['payment_date'],
             'payment_period' => $periodCarbon->toDateString(),
+            'payment_type' => $data['payment_type'],
             'payment_method_id' => $data['payment_method_id'] ?? null,
             'notes' => $data['notes'] ?? null,
         ]);
@@ -258,6 +265,7 @@ $student = Student::with(['subjects.subjectType'])->find($data['student_id']);
             'payment_date' => 'required|date',
             'payment_method_id' => 'nullable|exists:payment_methods,id',
             'payment_period' => ['required','regex:/^\d{4}-\d{2}$/'],
+            'payment_type' => ['required', 'in:normal,medio_mes,con_recargo'],
             'notes' => 'nullable|string|max:1000',
         ]);
         
@@ -284,6 +292,7 @@ $student = Student::with(['subjects.subjectType'])->find($data['student_id']);
             'expected_amount' => $expectedAmount,
             'payment_date' => $data['payment_date'],
             'payment_period' => $periodCarbon->toDateString(),
+            'payment_type' => $data['payment_type'],
             'payment_method_id' => $data['payment_method_id'] ?? null,
             'notes' => $data['notes'] ?? null,
         ]);

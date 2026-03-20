@@ -3,19 +3,19 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Día de vencimiento de cuotas
+    | Día de vencimiento de deuda
     |--------------------------------------------------------------------------
-    | Día del mes a partir del cual se considera que la cuota del mes corriente
-    | está vencida y se agrega a la deuda del alumno.
+    | Día del mes a partir del cual el mes actual se considera adeudado.
+    | Por ejemplo, con el valor 10: si hoy es 15 de marzo, marzo ya es una deuda.
     */
     'debt_due_day' => env('DEBT_DUE_DAY', 10),
 
     /*
     |--------------------------------------------------------------------------
-    | Porcentaje de recargo por pago tardío
+    | Tasa de recargo
     |--------------------------------------------------------------------------
-    | Porcentaje adicional que se aplica al monto normal de la cuota cuando el
-    | alumno elige la opción "pago con recargo". Ejemplo: 10 = 10%.
+    | Porcentaje de recargo aplicado al tipo de pago "con recargo".
+    | Ejemplo: 0.10 equivale al 10% de recargo sobre la cuota mensual.
     */
-    'payment_surcharge_percentage' => env('PAYMENT_SURCHARGE_PERCENTAGE', 10),
+    'surcharge_rate' => env('PAYMENT_SURCHARGE_RATE', 0.10),
 ];
