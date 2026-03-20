@@ -89,6 +89,9 @@ class Student extends Authenticatable
      * Devuelve true si existe AL MENOS UN pago registrado para el periodo dado,
      * independientemente del monto abonado.
      *
+     * También devuelve true si el periodo está en pausa para este alumno,
+     * ya que los periodos pausados no generan deuda.
+     *
      * Esta es la regla de negocio: un periodo se considera pagado si tiene
      * cualquier pago asociado, sin importar el monto total.
      */
@@ -97,6 +100,11 @@ class Student extends Authenticatable
         if (!$period) return false;
 
         $c = $this->normalizePeriodToCarbon($period);
+
+        // A paused period is treated as "paid" (no debt generated)
+        if ($this->isPeriodPaused($c)) {
+            return true;
+        }
 
         if ($this->relationLoaded('payments')) {
             return $this->payments->contains(function ($p) use ($c) {
@@ -113,6 +121,27 @@ class Student extends Authenticatable
         return $this->payments()
             ->whereYear('payment_period', $c->year)
             ->whereMonth('payment_period', $c->month)
+            ->exists();
+    }
+
+    /**
+     * Returns true if the given period is paused for this student.
+     */
+    protected function isPeriodPaused(Carbon $c): bool
+    {
+        if ($this->relationLoaded('pauses')) {
+            return $this->pauses->contains(function ($pause) use ($c) {
+                try {
+                    return Carbon::parse($pause->pause_period)->format('Y-m') === $c->format('Y-m');
+                } catch (\Throwable $e) {
+                    return false;
+                }
+            });
+        }
+
+        return $this->pauses()
+            ->whereYear('pause_period', $c->year)
+            ->whereMonth('pause_period', $c->month)
             ->exists();
     }
 
@@ -141,6 +170,9 @@ public function calculateDebtFromCreationUsingCurrentMonthly(): array
             $q->with('subjectType')->withCount('students')->orderBy('start_time');
         }]);
     }
+    if (! $this->relationLoaded('pauses')) {
+        $this->load('pauses');
+    }
 
     $monthlyAmount = $this->currentMonthlyAmount();
 
@@ -166,6 +198,7 @@ public function calculateDebtFromCreationUsingCurrentMonthly(): array
     $end = Carbon::now()->startOfMonth();
 
     $payments = $this->payments ?? collect();
+    $pauses   = $this->pauses   ?? collect();
 
     $unpaidPeriods = [];
     $selectablePeriods = [];
@@ -179,6 +212,20 @@ public function calculateDebtFromCreationUsingCurrentMonthly(): array
 
     while ($cursor->lte($end)) {
         $periodKey = $cursor->format('Y-m');
+
+        // Periodos pausados: no generan deuda ni aparecen en listas de impagos
+        $isPaused = $pauses->contains(function ($pause) use ($cursor) {
+            try {
+                return Carbon::parse($pause->pause_period)->format('Y-m') === $cursor->format('Y-m');
+            } catch (\Throwable $e) {
+                return false;
+            }
+        });
+
+        if ($isPaused) {
+            $cursor->addMonth();
+            continue;
+        }
 
         // Un periodo es IMPAGO si NO existe ningún pago registrado para él,
         // independientemente del monto total abonado.
@@ -343,5 +390,13 @@ protected function calculateEffectiveDebtStartDate(Carbon $creationDate, ?Carbon
     public function medicalCheckups()
     {
         return $this->hasMany(MedicalCheckup::class);
+    }
+
+    /**
+     * Períodos de pausa del alumno.
+     */
+    public function pauses()
+    {
+        return $this->hasMany(StudentPause::class);
     }
 }
