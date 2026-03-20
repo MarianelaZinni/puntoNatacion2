@@ -33,27 +33,23 @@ class PaymentController extends Controller
             $student->unpaid_periods = $calc['unpaid_periods'];
             $student->next_unpaid_period = $calc['next_unpaid_period'];
             $student->has_debt = ($calc['debt'] > 0);
-            $student->paid_this_month = $student->isPeriodFullyPaid($todayYm, $student->monthly_amount);
+            // Un periodo está "pagado" si tiene al menos un registro de pago
+            $student->paid_this_month = $student->isPeriodPaid($todayYm);
 
-            // Construir selectable_periods esperado por el frontend:
-            // transformamos unpaid_periods a {period, paid, deficit}
+            // selectable_periods: sólo periodos sin ningún pago registrado
+            // (ya calculados en unpaid_periods por el modelo con el nuevo criterio)
             $selectable = [];
-            if (!empty($calc['unpaid_periods']) && is_array($calc['unpaid_periods'])) {
-                foreach ($calc['unpaid_periods'] as $up) {
-                    // suponemos que $up tiene keys 'period' (YYYY-MM) y 'deficit' (numeric)
-                    $selectable[] = [
-                        'period'  => $up['period'] ?? null,
-                        'paid'    => false,
-                        'deficit' => isset($up['deficit']) ? (float)$up['deficit'] : 0.0,
-                    ];
-                }
+            foreach ($calc['unpaid_periods'] as $up) {
+                $selectable[] = [
+                    'period'  => $up['period'] ?? null,
+                    'paid'    => false,
+                    'deficit' => isset($up['deficit']) ? (float)$up['deficit'] : 0.0,
+                ];
             }
 
-            // Si el mes actual no está en la lista y el mes actual no está totalmente pagado,
-            // añadimos el periodo actual como opción (con deficit 0, el JS usará monthly_amount si corresponde).
-            $hasCurrent = collect($selectable)->contains(function ($item) use ($todayYm) {
-                return isset($item['period']) && $item['period'] === $todayYm;
-            });
+            // Si el mes actual no está en la lista (aún no venció el día de corte)
+            // lo añadimos igualmente para que el usuario pueda adelantar el pago.
+            $hasCurrent = collect($selectable)->contains(fn ($item) => ($item['period'] ?? null) === $todayYm);
 
             if (!$hasCurrent && !$student->paid_this_month) {
                 array_unshift($selectable, [
@@ -63,7 +59,6 @@ class PaymentController extends Controller
                 ]);
             }
 
-            // Guardamos para que la vista lo utilice en data-selectable
             $student->selectable_periods = $selectable;
         } else {
             $student->debt = 0;
@@ -79,10 +74,13 @@ class PaymentController extends Controller
     // Métodos de pago para el select
     $paymentMethods = PaymentMethod::orderBy('name')->get();
 
+    // Porcentaje de recargo configurable
+    $surchargePercentage = (float) config('business.payment_surcharge_percentage', 10);
+
     // student_id pasado por query (al venir desde students.index)
     $selectedStudentId = $request->query('student_id');
 
-    return view('payments.index', compact('students', 'paymentMethods', 'selectedStudentId'));
+    return view('payments.index', compact('students', 'paymentMethods', 'selectedStudentId', 'surchargePercentage'));
     }
 
     /**

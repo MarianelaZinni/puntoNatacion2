@@ -75,7 +75,7 @@
                     </div>
                 </div>
 
-                <!-- Período del pago (select con sólo periodos adeudados + periodo actual si NO está pagado) -->
+                <!-- Período del pago (sólo periodos sin ningún pago registrado) -->
                 <div>
                     <label for="payment_period" class="block text-base font-medium text-gray-700 dark:text-gray-300">
                         Período (mes/año)
@@ -87,10 +87,34 @@
                         <option value="{{ $defaultPeriod }}">{{ $defaultPeriod }}</option>
                     </select>
 
-                    <p class="text-xs text-gray-500 mt-1">Seleccioná el mes adeudado a pagar. Incluimos el período actual solo si no está totalmente pagado.</p>
+                    <p class="text-xs text-gray-500 mt-1">Se muestran solo los períodos sin pago registrado.</p>
                     @error('payment_period')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
+                </div>
+
+                <!-- Tipo de pago -->
+                <div class="sm:col-span-2">
+                    <span class="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Tipo de pago
+                    </span>
+                    <div id="payment-type-group" class="flex flex-wrap gap-3">
+                        <label class="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-md border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 hover:border-[#29b1dc] has-[:checked]:border-[#29b1dc] has-[:checked]:bg-[#29b1dc]/10 transition">
+                            <input type="radio" name="payment_type" value="normal" class="accent-[#29b1dc]" checked>
+                            <span class="text-sm font-medium text-gray-800 dark:text-gray-100">Pago normal</span>
+                            <span id="label-normal" class="ml-1 text-sm text-gray-500 dark:text-gray-400"></span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-md border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 hover:border-[#29b1dc] has-[:checked]:border-[#29b1dc] has-[:checked]:bg-[#29b1dc]/10 transition">
+                            <input type="radio" name="payment_type" value="medio_mes" class="accent-[#29b1dc]">
+                            <span class="text-sm font-medium text-gray-800 dark:text-gray-100">Pago medio mes</span>
+                            <span id="label-medio-mes" class="ml-1 text-sm text-gray-500 dark:text-gray-400"></span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-md border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 hover:border-[#29b1dc] has-[:checked]:border-[#29b1dc] has-[:checked]:bg-[#29b1dc]/10 transition">
+                            <input type="radio" name="payment_type" value="con_recargo" class="accent-[#29b1dc]">
+                            <span class="text-sm font-medium text-gray-800 dark:text-gray-100">Pago con recargo</span>
+                            <span id="label-con-recargo" class="ml-1 text-sm text-gray-500 dark:text-gray-400"></span>
+                        </label>
+                    </div>
                 </div>
 
                 <!-- Monto a pagar -->
@@ -101,6 +125,7 @@
                     <input type="number" id="amount" name="amount" required min="0" step="0.01"
                            value="{{ old('amount') }}"
                            class="mt-2 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 shadow-sm">
+                    <p class="text-xs text-gray-500 mt-1">Se completa automáticamente según el tipo de pago seleccionado. Podés modificarlo.</p>
                     @error('amount')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -170,55 +195,72 @@
         const submitBtn = document.getElementById('submit-payment-btn');
         const paidBadge = document.getElementById('paid-month-badge');
         const periodSelect = document.getElementById('payment_period');
+        const paymentTypeRadios = document.querySelectorAll('input[name="payment_type"]');
+
+        // Porcentaje de recargo configurado en el servidor
+        const surchargePercentage = {!! json_encode((float) $surchargePercentage) !!};
 
         const formatter = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const hadOldAmount = {!! json_encode(old('amount') ? true : false) !!};
-        const hadOldPeriod = {!! json_encode(old('payment_period') ? true : false) !!};
         const todayYm = new Date().toISOString().slice(0,7); // YYYY-MM
 
-        function parseDebtRaw(opt) {
-            if (!opt) return 0;
-            const raw = opt.getAttribute('data-debt') || '0';
-            const parsed = parseFloat(raw.replace(',', '.')) || 0;
-            return parsed;
+        // Calcula los montos de los 3 tipos de pago a partir del monto mensual
+        function getPaymentAmounts(monthlyAmount) {
+            const normal = monthlyAmount;
+            const medioMes = monthlyAmount / 2;
+            const conRecargo = monthlyAmount * (1 + surchargePercentage / 100);
+            return { normal, medioMes, conRecargo };
+        }
+
+        // Actualiza las etiquetas de los tipos de pago con los montos calculados
+        function updatePaymentTypeLabels(monthlyAmount) {
+            const amounts = getPaymentAmounts(monthlyAmount);
+            const labelNormal = document.getElementById('label-normal');
+            const labelMedioMes = document.getElementById('label-medio-mes');
+            const labelConRecargo = document.getElementById('label-con-recargo');
+
+            if (monthlyAmount > 0) {
+                labelNormal.textContent = `($${formatter.format(amounts.normal)})`;
+                labelMedioMes.textContent = `($${formatter.format(amounts.medioMes)})`;
+                labelConRecargo.textContent = `($${formatter.format(amounts.conRecargo)} — ${surchargePercentage}% recargo)`;
+            } else {
+                labelNormal.textContent = '';
+                labelMedioMes.textContent = '';
+                labelConRecargo.textContent = '';
+            }
+        }
+
+        // Devuelve el monto correspondiente al tipo de pago seleccionado
+        function getSelectedPaymentAmount(monthlyAmount) {
+            const checked = document.querySelector('input[name="payment_type"]:checked');
+            const type = checked ? checked.value : 'normal';
+            const amounts = getPaymentAmounts(monthlyAmount);
+            if (type === 'medio_mes') return amounts.medioMes;
+            if (type === 'con_recargo') return amounts.conRecargo;
+            return amounts.normal;
         }
 
         function buildOption(p) {
             const opt = document.createElement('option');
             opt.value = p.period;
-            opt.textContent = `${p.period} — Adeuda: $${formatter.format(p.deficit)}`;
-            opt.setAttribute('data-deficit', (p.deficit || 0));
+            // Mostrar solo el periodo (sin monto de déficit, según nuevo criterio)
+            opt.textContent = p.period;
             return opt;
         }
 
-        function populatePeriodSelectFromSelectable(selectableArray, paidThisMonthFlag) {
-            // selectableArray: array of {period, paid, deficit}
+        function populatePeriodSelect(selectableArray, paidThisMonthFlag) {
             periodSelect.innerHTML = '';
-
-            const currentYm = todayYm;
             let list = Array.isArray(selectableArray) ? selectableArray.slice() : [];
 
-            // If the current period is fully paid for this student (paidThisMonthFlag === true),
-            // REMOVE the current period from the selectable list.
+            // Si el alumno ya pagó el mes actual, excluirlo de la lista
             if (paidThisMonthFlag) {
-                list = list.filter(x => x.period !== currentYm);
-            } else {
-                // ensure current is first (if present) otherwise we will later insert default
-                if (!list.find(x => x.period === currentYm)) {
-                    // Insert current with deficit 0 (will be overwritten if real deficit known)
-                    list.unshift({ period: currentYm, paid: 0, deficit: 0 });
-                } else {
-                    // move current to the front
-                    list = list.filter(x => x.period !== currentYm);
-                    list.unshift(selectableArray.find(x => x.period === currentYm));
-                }
+                list = list.filter(x => x.period !== todayYm);
             }
 
-            // After filtering, if no selectable periods remain, show a disabled option.
             if (!list.length) {
                 const opt = document.createElement('option');
                 opt.value = '';
-                opt.textContent = 'No hay periodos disponibles para este alumno';
+                opt.textContent = 'No hay periodos impagos para este alumno';
                 opt.disabled = true;
                 opt.selected = true;
                 periodSelect.appendChild(opt);
@@ -226,7 +268,6 @@
                 return;
             }
 
-            // populate the options
             list.forEach((p, idx) => {
                 const opt = buildOption(p);
                 if (idx === 0) opt.selected = true;
@@ -236,18 +277,32 @@
             periodSelect.disabled = false;
         }
 
+        function getCurrentMonthlyAmount() {
+            const opt = studentSelect.options[studentSelect.selectedIndex];
+            if (!opt) return 0;
+            return parseFloat(opt.getAttribute('data-monthly-amount') || 0) || 0;
+        }
+
+        function updateAmountFromPaymentType() {
+            const monthlyAmount = getCurrentMonthlyAmount();
+            if (monthlyAmount > 0) {
+                amountInput.value = getSelectedPaymentAmount(monthlyAmount).toFixed(2);
+            }
+        }
+
         function updateSelectedDebt() {
             const opt = studentSelect.options[studentSelect.selectedIndex];
-            if (!opt) {
+            if (!opt || !opt.value) {
                 debtDisplay.textContent = '—';
                 paidBadge.style.display = 'none';
                 periodSelect.innerHTML = `<option value="">Seleccionar alumno primero</option>`;
                 periodSelect.disabled = true;
                 submitBtn.disabled = false;
+                updatePaymentTypeLabels(0);
                 return;
             }
 
-            const debtRaw = parseDebtRaw(opt);
+            const debtRaw = parseFloat(opt.getAttribute('data-debt') || '0') || 0;
             const debtDisplayText = opt.getAttribute('data-debt-display') || (debtRaw > 0 ? ('$' + formatter.format(debtRaw)) : '—');
             const paidThisMonth = opt.getAttribute('data-paid-this-month') === '1';
             const monthlyAmount = parseFloat(opt.getAttribute('data-monthly-amount') || 0) || 0;
@@ -259,53 +314,29 @@
             debtDisplay.textContent = debtDisplayText;
 
             // Mostrar badge si pagó mes actual
-            if (paidThisMonth) {
-                paidBadge.style.display = 'inline-block';
-            } else {
-                paidBadge.style.display = 'none';
-            }
+            paidBadge.style.display = paidThisMonth ? 'inline-block' : 'none';
 
-            // Poblar select con periodos seleccionables; si pagó este mes se excluye el mes actual
-            populatePeriodSelectFromSelectable(selectable, paidThisMonth);
+            // Poblar select con periodos sin ningún pago
+            populatePeriodSelect(selectable, paidThisMonth);
 
-            // Precargar amount si no hay old value: usar deficit del periodo seleccionado
-            if (!hadOldPeriod) {
-                const selOpt = periodSelect.options[periodSelect.selectedIndex];
-                if (selOpt && !periodSelect.disabled) {
-                    const deficit = parseFloat(selOpt.getAttribute('data-deficit') || 0) || 0;
-                    if (!hadOldAmount && (!amountInput.value || amountInput.value === '')) {
-                        if (deficit > 0) {
-                            amountInput.value = deficit.toFixed(2);
-                        } else if (selOpt.value === todayYm && monthlyAmount > 0) {
-                            // allow paying current month even if deficit 0
-                            amountInput.value = monthlyAmount.toFixed(2);
-                        } else {
-                            amountInput.value = debtRaw > 0 ? debtRaw.toFixed(2) : '';
-                        }
-                    }
+            // Actualizar etiquetas de tipos de pago con montos calculados
+            updatePaymentTypeLabels(monthlyAmount);
+
+            // Precargar monto según tipo de pago seleccionado (si no hay old value)
+            if (!hadOldAmount) {
+                if (monthlyAmount > 0) {
+                    amountInput.value = getSelectedPaymentAmount(monthlyAmount).toFixed(2);
+                } else {
+                    amountInput.value = '';
                 }
             }
 
-            // Habilitar / deshabilitar submit según deuda total o posibilidad de pago del periodo actual.
-            // Permitimos registrar pago si existe deuda total o si monthlyAmount>0 (para permitir pago del mes actual)
-            submitBtn.disabled = (debtRaw <= 0 && monthlyAmount <= 0);
+            submitBtn.disabled = (periodSelect.disabled && debtRaw <= 0);
         }
 
-        // Cuando cambie el periodo seleccionado actualizamos monto si el usuario no puso nada
-        periodSelect.addEventListener('change', function () {
-            const opt = periodSelect.options[periodSelect.selectedIndex];
-            if (!opt) return;
-            const deficit = parseFloat(opt.getAttribute('data-deficit') || 0) || 0;
-            if (!hadOldAmount && (!amountInput.value || amountInput.value === '')) {
-                if (deficit > 0) amountInput.value = deficit.toFixed(2);
-                else {
-                    const studentOpt = studentSelect.options[studentSelect.selectedIndex];
-                    const monthlyAmount = parseFloat(studentOpt.getAttribute('data-monthly-amount') || 0) || 0;
-                    if (opt.value === todayYm && monthlyAmount > 0) {
-                        amountInput.value = monthlyAmount.toFixed(2);
-                    }
-                }
-            }
+        // Al cambiar tipo de pago, actualizar monto automáticamente
+        paymentTypeRadios.forEach(radio => {
+            radio.addEventListener('change', updateAmountFromPaymentType);
         });
 
         if (studentSelect) {

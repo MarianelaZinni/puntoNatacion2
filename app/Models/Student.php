@@ -86,40 +86,47 @@ class Student extends Authenticatable
     }
 
     /**
-     * Determina si un periodo está totalmente abonado teniendo en cuenta
-     * el monto mensual esperado ($monthlyAmount). Si $monthlyAmount es null
-     * intenta calcularlo con PriceCalculator usando subjects si están cargados.
+     * Determina si un periodo tiene al menos un pago registrado.
+     * Un periodo se considera "pagado" si existe al menos un registro de pago
+     * asociado, independientemente del monto total abonado.
+     */
+    public function isPeriodPaid($period): bool
+    {
+        if (!$period) return false;
+        $c = $this->normalizePeriodToCarbon($period);
+
+        // Si los pagos ya están cargados en memoria, usarlos directamente
+        if ($this->relationLoaded('payments')) {
+            return $this->payments->contains(function ($p) use ($c) {
+                $pPeriod = null;
+                if (!empty($p->payment_period)) {
+                    try { $pPeriod = Carbon::parse($p->payment_period)->startOfMonth(); } catch (\Throwable $e) {}
+                } elseif (!empty($p->payment_date)) {
+                    try { $pPeriod = Carbon::parse($p->payment_date)->startOfMonth(); } catch (\Throwable $e) {}
+                }
+                return $pPeriod && $pPeriod->format('Y-m') === $c->format('Y-m');
+            });
+        }
+
+        return $this->payments()
+            ->where(function ($q) use ($c) {
+                $q->whereYear('payment_period', $c->year)
+                  ->whereMonth('payment_period', $c->month);
+            })
+            ->exists();
+    }
+
+    /**
+     * Alias de isPeriodPaid() para compatibilidad con código existente.
+     * Un periodo está "pagado" si existe al menos un pago registrado para él,
+     * sin importar el monto.
      *
-     * Nota: si monthlyAmount es 0 consideramos "no pagado" (no marcamos como pagado),
-     * porque no tiene sentido marcar como pagado cuando la cuota es nula.
+     * @param mixed $period
+     * @param mixed $monthlyAmount Ignorado (conservado por firma de API).
      */
     public function isPeriodFullyPaid($period, $monthlyAmount = null): bool
     {
-        if (!$period) return false;
-
-        $paid = $this->paidAmountForPeriod($period);
-
-        if ($monthlyAmount === null) {
-            if (! $this->relationLoaded('subjects')) {
-                $this->load(['subjects' => function ($q) {
-                    $q->with('subjectType')->withCount('students')->orderBy('start_time');
-                }]);
-            }
-            try {
-                $summary = (new PriceCalculator())->calculate($this->subjects ?? collect());
-                $monthlyAmount = $summary['total'] ?? 0.0;
-            } catch (\Throwable $e) {
-                // si no podemos calcular, consideramos pagado sólo si hay un pago
-                return $paid > 0;
-            }
-        }
-
-        // Si monthlyAmount <= 0 no marcamos pagado (evita falsos positivos)
-        if ((float)$monthlyAmount <= 0) {
-            return false;
-        }
-
-        return ($paid >= (float)$monthlyAmount);
+        return $this->isPeriodPaid($period);
     }
 
     /**
@@ -184,8 +191,8 @@ public function calculateDebtFromCreationUsingCurrentMonthly(): array
     while ($cursor->lte($end)) {
         $periodKey = $cursor->format('Y-m');
 
-        // Sumar pagos cuyo payment_period coincide con este mes
-        $paid = $payments->reduce(function ($carry, $p) use ($cursor) {
+        // Filtrar pagos que corresponden a este periodo
+        $periodPayments = $payments->filter(function ($p) use ($cursor) {
             $pPeriod = null;
             if (!empty($p->payment_period)) {
                 try {
@@ -200,47 +207,51 @@ public function calculateDebtFromCreationUsingCurrentMonthly(): array
                     $pPeriod = null;
                 }
             }
+            return $pPeriod && $pPeriod->format('Y-m') === $cursor->format('Y-m');
+        });
 
-            if ($pPeriod && $pPeriod->format('Y-m') === $cursor->format('Y-m')) {
-                return $carry + (float) $p->amount;
-            }
-            return $carry;
-        }, 0.0);
+        // Un periodo es "impago" si no tiene ningún pago registrado,
+        // sin importar el monto. (Nuevo criterio por período, no por monto.)
+        $hasPayment = $periodPayments->isNotEmpty();
+        $paid = $periodPayments->sum(fn ($p) => (float) $p->amount);
+        // Déficit referencial: si no hay ningún pago, se debe el monto completo.
+        // Los periodos con al menos un pago no aparecen en las listas de impagos,
+        // por lo que su déficit no se usa.
+        $deficit = max(0.0, (float) $monthlyAmount - $paid);
 
-        $deficit = max(0.0, $monthlyAmount - $paid);
-
-        // Si es el mes actual, solo lo marcamos adeudado (en unpaidPeriods) si includeCurrentAsDue === true
+        // Si es el mes actual, solo lo marcamos adeudado si includeCurrentAsDue === true
         if ($cursor->format('Y-m') === $end->format('Y-m')) {
-            if ($includeCurrentAsDue && $deficit > 0) {
+            if ($includeCurrentAsDue && !$hasPayment) {
                 $unpaidPeriods[] = [
                     'period' => $periodKey,
                     'paid' => round($paid, 2),
                     'deficit' => round($deficit, 2),
                 ];
-                $totalDebt += $deficit;
+                $totalDebt += $monthlyAmount;
             }
-            // Para selectablePeriods incluimos igualmente el mes actual (aunque no esté vencido)
-            $selectablePeriods[] = [
-                'period' => $periodKey,
-                'paid' => round($paid, 2),
-                'deficit' => round($deficit, 2),
-            ];
+            // Para selectablePeriods incluimos el mes actual si no tiene pagos
+            if (!$hasPayment) {
+                $selectablePeriods[] = [
+                    'period' => $periodKey,
+                    'paid' => round($paid, 2),
+                    'deficit' => round($deficit, 2),
+                ];
+            }
         } else {
-            // meses anteriores: se consideran adeudados si deficit > 0
-            if ($deficit > 0) {
+            // Meses anteriores: se consideran adeudados si no tienen ningún pago
+            if (!$hasPayment) {
                 $unpaidPeriods[] = [
                     'period' => $periodKey,
                     'paid' => round($paid, 2),
                     'deficit' => round($deficit, 2),
                 ];
-                $totalDebt += $deficit;
+                $totalDebt += $monthlyAmount;
+                $selectablePeriods[] = [
+                    'period' => $periodKey,
+                    'paid' => round($paid, 2),
+                    'deficit' => round($deficit, 2),
+                ];
             }
-            // También van a selectablePeriods todos los meses adeudados
-            $selectablePeriods[] = [
-                'period' => $periodKey,
-                'paid' => round($paid, 2),
-                'deficit' => round($deficit, 2),
-            ];
         }
 
         $cursor->addMonth();
