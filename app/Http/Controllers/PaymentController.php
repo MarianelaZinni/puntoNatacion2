@@ -36,30 +36,33 @@ class PaymentController extends Controller
             $student->paid_this_month = $student->isPeriodFullyPaid($todayYm, $student->monthly_amount);
 
             // Construir selectable_periods esperado por el frontend:
-            // transformamos unpaid_periods a {period, paid, deficit}
+            // transformamos unpaid_periods a {period, paid, deficit, monthly_amount}
             $selectable = [];
             if (!empty($calc['unpaid_periods']) && is_array($calc['unpaid_periods'])) {
                 foreach ($calc['unpaid_periods'] as $up) {
-                    // suponemos que $up tiene keys 'period' (YYYY-MM) y 'deficit' (numeric)
+                    $ma = isset($up['monthly_amount']) ? (float)$up['monthly_amount'] : (isset($up['deficit']) ? (float)$up['deficit'] : 0.0);
                     $selectable[] = [
-                        'period'  => $up['period'] ?? null,
-                        'paid'    => false,
-                        'deficit' => isset($up['deficit']) ? (float)$up['deficit'] : 0.0,
+                        'period'         => $up['period'] ?? null,
+                        'paid'           => false,
+                        'deficit'        => $ma,
+                        'monthly_amount' => $ma,
                     ];
                 }
             }
 
-            // Si el mes actual no está en la lista y el mes actual no está totalmente pagado,
-            // añadimos el periodo actual como opción (con deficit 0, el JS usará monthly_amount si corresponde).
+            // Si el mes actual no está en la lista y el mes actual no está pagado,
+            // añadimos el periodo actual como opción.
             $hasCurrent = collect($selectable)->contains(function ($item) use ($todayYm) {
                 return isset($item['period']) && $item['period'] === $todayYm;
             });
 
             if (!$hasCurrent && !$student->paid_this_month) {
+                $ma = (float)($student->monthly_amount ?? 0);
                 array_unshift($selectable, [
-                    'period'  => $todayYm,
-                    'paid'    => false,
-                    'deficit' => 0.0,
+                    'period'         => $todayYm,
+                    'paid'           => false,
+                    'deficit'        => $ma,
+                    'monthly_amount' => $ma,
                 ]);
             }
 
@@ -97,6 +100,7 @@ class PaymentController extends Controller
             'payment_method_id' => 'nullable|exists:payment_methods,id',
             // recibimos el periodo como 'YYYY-MM' vía select
             'payment_period' => ['required','regex:/^\d{4}-\d{2}$/'],
+            'payment_type' => ['required', 'in:normal,medio_mes,con_recargo'],
             'notes' => 'nullable|string|max:1000',
         ]);
 
@@ -119,6 +123,7 @@ $student = Student::with(['subjects.subjectType'])->find($data['student_id']);
              'expected_amount' => $expectedAmount, 
             'payment_date' => $data['payment_date'],
             'payment_period' => $periodCarbon->toDateString(),
+            'payment_type' => $data['payment_type'],
             'payment_method_id' => $data['payment_method_id'] ?? null,
             'notes' => $data['notes'] ?? null,
         ]);
@@ -260,6 +265,7 @@ $student = Student::with(['subjects.subjectType'])->find($data['student_id']);
             'payment_date' => 'required|date',
             'payment_method_id' => 'nullable|exists:payment_methods,id',
             'payment_period' => ['required','regex:/^\d{4}-\d{2}$/'],
+            'payment_type' => ['required', 'in:normal,medio_mes,con_recargo'],
             'notes' => 'nullable|string|max:1000',
         ]);
         
@@ -286,6 +292,7 @@ $student = Student::with(['subjects.subjectType'])->find($data['student_id']);
             'expected_amount' => $expectedAmount,
             'payment_date' => $data['payment_date'],
             'payment_period' => $periodCarbon->toDateString(),
+            'payment_type' => $data['payment_type'],
             'payment_method_id' => $data['payment_method_id'] ?? null,
             'notes' => $data['notes'] ?? null,
         ]);

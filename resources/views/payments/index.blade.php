@@ -75,7 +75,7 @@
                     </div>
                 </div>
 
-                <!-- Período del pago (select con sólo periodos adeudados + periodo actual si NO está pagado) -->
+                <!-- Período del pago (periodos sin ningún pago registrado) -->
                 <div>
                     <label for="payment_period" class="block text-base font-medium text-gray-700 dark:text-gray-300">
                         Período (mes/año)
@@ -87,8 +87,25 @@
                         <option value="{{ $defaultPeriod }}">{{ $defaultPeriod }}</option>
                     </select>
 
-                    <p class="text-xs text-gray-500 mt-1">Seleccioná el mes adeudado a pagar. Incluimos el período actual solo si no está totalmente pagado.</p>
+                    <p class="text-xs text-gray-500 mt-1">Solo se muestran los períodos sin ningún pago registrado.</p>
                     @error('payment_period')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Tipo de pago -->
+                <div>
+                    <label for="payment_type" class="block text-base font-medium text-gray-700 dark:text-gray-300">
+                        Tipo de pago
+                    </label>
+                    <select id="payment_type" name="payment_type" required
+                            class="mt-2 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 shadow-sm">
+                        <option value="normal"      {{ old('payment_type', 'normal') === 'normal'      ? 'selected' : '' }}>Pago normal</option>
+                        <option value="medio_mes"   {{ old('payment_type') === 'medio_mes'   ? 'selected' : '' }}>Pago medio mes</option>
+                        <option value="con_recargo" {{ old('payment_type') === 'con_recargo' ? 'selected' : '' }}>Pago con recargo ({{ number_format(config('business.surcharge_rate', 0.10) * 100, 0) }}%)</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">El monto se calcula automáticamente según el tipo elegido.</p>
+                    @error('payment_type')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -164,57 +181,68 @@
     @push('scripts')
     <script>
     (function () {
-        const studentSelect = document.getElementById('student_id');
-        const debtDisplay = document.getElementById('selected-debt-display');
-        const amountInput = document.getElementById('amount');
-        const submitBtn = document.getElementById('submit-payment-btn');
-        const paidBadge = document.getElementById('paid-month-badge');
-        const periodSelect = document.getElementById('payment_period');
+        const studentSelect   = document.getElementById('student_id');
+        const debtDisplay     = document.getElementById('selected-debt-display');
+        const amountInput     = document.getElementById('amount');
+        const submitBtn       = document.getElementById('submit-payment-btn');
+        const paidBadge       = document.getElementById('paid-month-badge');
+        const periodSelect    = document.getElementById('payment_period');
+        const paymentTypeSelect = document.getElementById('payment_type');
 
-        const formatter = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const hadOldAmount = {!! json_encode(old('amount') ? true : false) !!};
-        const hadOldPeriod = {!! json_encode(old('payment_period') ? true : false) !!};
-        const todayYm = new Date().toISOString().slice(0,7); // YYYY-MM
+        const formatter     = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const hadOldAmount  = {!! json_encode(old('amount') ? true : false) !!};
+        const hadOldPeriod  = {!! json_encode(old('payment_period') ? true : false) !!};
+        const todayYm       = new Date().toISOString().slice(0,7); // YYYY-MM
+        const surchargeRate = {{ config('business.surcharge_rate', 0.10) }};
+
+        /**
+         * Calcula el monto según el tipo de pago y la cuota mensual.
+         */
+        function calculateAmountForType(monthlyAmount, paymentType) {
+            if (!monthlyAmount || monthlyAmount <= 0) return 0;
+            switch (paymentType) {
+                case 'medio_mes':   return monthlyAmount / 2;
+                case 'con_recargo': return monthlyAmount * (1 + surchargeRate);
+                default:            return monthlyAmount; // normal
+            }
+        }
 
         function parseDebtRaw(opt) {
             if (!opt) return 0;
             const raw = opt.getAttribute('data-debt') || '0';
-            const parsed = parseFloat(raw.replace(',', '.')) || 0;
-            return parsed;
+            return parseFloat(raw.replace(',', '.')) || 0;
         }
 
         function buildOption(p) {
             const opt = document.createElement('option');
             opt.value = p.period;
-            opt.textContent = `${p.period} — Adeuda: $${formatter.format(p.deficit)}`;
-            opt.setAttribute('data-deficit', (p.deficit || 0));
+            const displayAmount = p.monthly_amount || p.deficit || 0;
+            opt.textContent = `${p.period} — Cuota: $${formatter.format(displayAmount)}`;
+            opt.setAttribute('data-deficit',        (p.deficit        || p.monthly_amount || 0));
+            opt.setAttribute('data-monthly-amount', (p.monthly_amount || p.deficit        || 0));
             return opt;
         }
 
         function populatePeriodSelectFromSelectable(selectableArray, paidThisMonthFlag) {
-            // selectableArray: array of {period, paid, deficit}
             periodSelect.innerHTML = '';
 
-            const currentYm = todayYm;
             let list = Array.isArray(selectableArray) ? selectableArray.slice() : [];
 
-            // If the current period is fully paid for this student (paidThisMonthFlag === true),
-            // REMOVE the current period from the selectable list.
+            // Si el alumno ya pagó el mes actual, excluirlo de la lista
             if (paidThisMonthFlag) {
-                list = list.filter(x => x.period !== currentYm);
+                list = list.filter(x => x.period !== todayYm);
             } else {
-                // ensure current is first (if present) otherwise we will later insert default
-                if (!list.find(x => x.period === currentYm)) {
-                    // Insert current with deficit 0 (will be overwritten if real deficit known)
-                    list.unshift({ period: currentYm, paid: 0, deficit: 0 });
+                // Asegurar que el mes actual esté primero si no está ya en la lista
+                const currentEntry = list.find(x => x.period === todayYm);
+                if (!currentEntry) {
+                    // No lo agregamos si paidThisMonthFlag es false y no está: no hace falta
+                    // El modelo ya lo incluye en selectable_periods cuando no tiene pago
                 } else {
-                    // move current to the front
-                    list = list.filter(x => x.period !== currentYm);
-                    list.unshift(selectableArray.find(x => x.period === currentYm));
+                    // Mover el mes actual al frente
+                    list = [currentEntry, ...list.filter(x => x.period !== todayYm)];
                 }
             }
 
-            // After filtering, if no selectable periods remain, show a disabled option.
             if (!list.length) {
                 const opt = document.createElement('option');
                 opt.value = '';
@@ -226,7 +254,6 @@
                 return;
             }
 
-            // populate the options
             list.forEach((p, idx) => {
                 const opt = buildOption(p);
                 if (idx === 0) opt.selected = true;
@@ -236,9 +263,32 @@
             periodSelect.disabled = false;
         }
 
+        /**
+         * Actualiza el campo monto según el período y tipo de pago seleccionados.
+         */
+        function refreshAmount() {
+            if (hadOldAmount) return; // respetar valor anterior si venimos de un error de validación
+
+            const studentOpt    = studentSelect.options[studentSelect.selectedIndex];
+            const periodOpt     = periodSelect.options[periodSelect.selectedIndex];
+            const paymentType   = paymentTypeSelect ? paymentTypeSelect.value : 'normal';
+
+            if (!studentOpt || !studentOpt.value || !periodOpt || !periodOpt.value) return;
+
+            // Preferir monthly_amount del periodo; caer en monthly_amount del alumno
+            const periodMonthly = parseFloat(periodOpt.getAttribute('data-monthly-amount') || 0) || 0;
+            const studentMonthly = parseFloat(studentOpt.getAttribute('data-monthly-amount') || 0) || 0;
+            const monthlyAmount = periodMonthly || studentMonthly;
+
+            const calculatedAmount = calculateAmountForType(monthlyAmount, paymentType);
+            if (calculatedAmount > 0) {
+                amountInput.value = calculatedAmount.toFixed(2);
+            }
+        }
+
         function updateSelectedDebt() {
             const opt = studentSelect.options[studentSelect.selectedIndex];
-            if (!opt) {
+            if (!opt || !opt.value) {
                 debtDisplay.textContent = '—';
                 paidBadge.style.display = 'none';
                 periodSelect.innerHTML = `<option value="">Seleccionar alumno primero</option>`;
@@ -247,70 +297,44 @@
                 return;
             }
 
-            const debtRaw = parseDebtRaw(opt);
+            const debtRaw         = parseDebtRaw(opt);
             const debtDisplayText = opt.getAttribute('data-debt-display') || (debtRaw > 0 ? ('$' + formatter.format(debtRaw)) : '—');
-            const paidThisMonth = opt.getAttribute('data-paid-this-month') === '1';
-            const monthlyAmount = parseFloat(opt.getAttribute('data-monthly-amount') || 0) || 0;
-            const selectableJson = opt.getAttribute('data-selectable') || '[]';
+            const paidThisMonth   = opt.getAttribute('data-paid-this-month') === '1';
+            const monthlyAmount   = parseFloat(opt.getAttribute('data-monthly-amount') || 0) || 0;
+            const selectableJson  = opt.getAttribute('data-selectable') || '[]';
             let selectable;
             try { selectable = JSON.parse(selectableJson || '[]'); } catch (e) { selectable = []; }
 
-            // Mostrar deuda total
             debtDisplay.textContent = debtDisplayText;
 
-            // Mostrar badge si pagó mes actual
             if (paidThisMonth) {
                 paidBadge.style.display = 'inline-block';
             } else {
                 paidBadge.style.display = 'none';
             }
 
-            // Poblar select con periodos seleccionables; si pagó este mes se excluye el mes actual
             populatePeriodSelectFromSelectable(selectable, paidThisMonth);
 
-            // Precargar amount si no hay old value: usar deficit del periodo seleccionado
             if (!hadOldPeriod) {
-                const selOpt = periodSelect.options[periodSelect.selectedIndex];
-                if (selOpt && !periodSelect.disabled) {
-                    const deficit = parseFloat(selOpt.getAttribute('data-deficit') || 0) || 0;
-                    if (!hadOldAmount && (!amountInput.value || amountInput.value === '')) {
-                        if (deficit > 0) {
-                            amountInput.value = deficit.toFixed(2);
-                        } else if (selOpt.value === todayYm && monthlyAmount > 0) {
-                            // allow paying current month even if deficit 0
-                            amountInput.value = monthlyAmount.toFixed(2);
-                        } else {
-                            amountInput.value = debtRaw > 0 ? debtRaw.toFixed(2) : '';
-                        }
-                    }
-                }
+                refreshAmount();
             }
 
-            // Habilitar / deshabilitar submit según deuda total o posibilidad de pago del periodo actual.
-            // Permitimos registrar pago si existe deuda total o si monthlyAmount>0 (para permitir pago del mes actual)
             submitBtn.disabled = (debtRaw <= 0 && monthlyAmount <= 0);
         }
 
-        // Cuando cambie el periodo seleccionado actualizamos monto si el usuario no puso nada
+        // Recalcular monto cuando cambia el período o el tipo de pago
         periodSelect.addEventListener('change', function () {
-            const opt = periodSelect.options[periodSelect.selectedIndex];
-            if (!opt) return;
-            const deficit = parseFloat(opt.getAttribute('data-deficit') || 0) || 0;
-            if (!hadOldAmount && (!amountInput.value || amountInput.value === '')) {
-                if (deficit > 0) amountInput.value = deficit.toFixed(2);
-                else {
-                    const studentOpt = studentSelect.options[studentSelect.selectedIndex];
-                    const monthlyAmount = parseFloat(studentOpt.getAttribute('data-monthly-amount') || 0) || 0;
-                    if (opt.value === todayYm && monthlyAmount > 0) {
-                        amountInput.value = monthlyAmount.toFixed(2);
-                    }
-                }
-            }
+            if (!hadOldAmount) refreshAmount();
         });
+
+        if (paymentTypeSelect) {
+            paymentTypeSelect.addEventListener('change', function () {
+                refreshAmount();
+            });
+        }
 
         if (studentSelect) {
             studentSelect.addEventListener('change', updateSelectedDebt);
-            // initialize on load if a student is preselected
             setTimeout(updateSelectedDebt, 20);
         }
     })();
