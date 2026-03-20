@@ -69,43 +69,49 @@
                 <ul class="divide-y divide-gray-200 dark:divide-gray-700">
                     @foreach($subject->students as $student)
                     @php
-                        // If there's an existing record, use it; otherwise default to present (true)
+                        // If there's an existing record, use it; otherwise default to absent (false)
                         $isPresent = array_key_exists($student->id, $existing)
                             ? (bool) $existing[$student->id]
-                            : true;
+                            : false;
                     @endphp
-                    <li class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 dark:hover:bg-zinc-800 transition attendance-row"
-                        data-present="{{ $isPresent ? '1' : '0' }}">
+                    <li class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 dark:hover:bg-zinc-800 transition attendance-row">
 
-                        <div class="flex items-center gap-4">
-                            {{-- Presence toggle checkbox --}}
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    name="present_students[]"
-                                    value="{{ $student->id }}"
-                                    class="sr-only peer attendance-checkbox"
-                                    {{ $isPresent ? 'checked' : '' }}
-                                >
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#29b1dc] rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
-                            </label>
+                        {{-- Hidden checkbox used for form submission --}}
+                        <input
+                            type="checkbox"
+                            name="present_students[]"
+                            value="{{ $student->id }}"
+                            class="sr-only attendance-checkbox"
+                            {{ $isPresent ? 'checked' : '' }}
+                        >
 
-                            {{-- Student info --}}
-                            <div>
-                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $student->name }}</p>
-                                @if($student->dni)
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">DNI: {{ $student->dni }}</p>
-                                @endif
-                            </div>
+                        {{-- Student info --}}
+                        <div>
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $student->name }}</p>
+                            @if($student->dni)
+                                <p class="text-xs text-gray-500 dark:text-gray-400">DNI: {{ $student->dni }}</p>
+                            @endif
                         </div>
 
-                        {{-- Status badge --}}
-                        <span class="attendance-badge text-xs font-semibold px-2.5 py-1 rounded-full
-                            {{ $isPresent
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' }}">
-                            {{ $isPresent ? 'Presente' : 'Ausente' }}
-                        </span>
+                        {{-- Per-row Presente / Ausente segmented buttons --}}
+                        <div class="inline-flex rounded-lg overflow-hidden border border-gray-200 dark:border-zinc-700 text-sm font-medium">
+                            <button type="button"
+                                    data-action="present"
+                                    class="row-btn-present px-4 py-1.5 transition
+                                        {{ $isPresent
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-white dark:bg-zinc-900 text-gray-500 dark:text-gray-400 hover:bg-green-50 dark:hover:bg-green-900/20' }}">
+                                ✓ Presente
+                            </button>
+                            <button type="button"
+                                    data-action="absent"
+                                    class="row-btn-absent border-l border-gray-200 dark:border-zinc-700 px-4 py-1.5 transition
+                                        {{ !$isPresent
+                                            ? 'bg-red-500 text-white'
+                                            : 'bg-white dark:bg-zinc-900 text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20' }}">
+                                ✗ Ausente
+                            </button>
+                        </div>
                     </li>
                     @endforeach
                 </ul>
@@ -137,56 +143,58 @@
     @push('scripts')
     <script>
     (function () {
-        // --- Toggle badge color when checkbox changes ---
-        function updateRow(checkbox) {
-            const li     = checkbox.closest('li.attendance-row');
-            const badge  = li.querySelector('.attendance-badge');
-            const present = checkbox.checked;
+        /**
+         * Mark a row as present (true) or absent (false).
+         * Updates the hidden checkbox, button highlight states, and the summary.
+         */
+        function setRow(li, present) {
+            const checkbox  = li.querySelector('.attendance-checkbox');
+            const btnPresent = li.querySelector('.row-btn-present');
+            const btnAbsent  = li.querySelector('.row-btn-absent');
+
+            checkbox.checked = present;
 
             if (present) {
-                badge.textContent = 'Presente';
-                badge.className = 'attendance-badge text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300';
+                btnPresent.className = 'row-btn-present px-4 py-1.5 transition bg-green-500 text-white';
+                btnAbsent.className  = 'row-btn-absent border-l border-gray-200 dark:border-zinc-700 px-4 py-1.5 transition bg-white dark:bg-zinc-900 text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20';
             } else {
-                badge.textContent = 'Ausente';
-                badge.className = 'attendance-badge text-xs font-semibold px-2.5 py-1 rounded-full bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
+                btnPresent.className = 'row-btn-present px-4 py-1.5 transition bg-white dark:bg-zinc-900 text-gray-500 dark:text-gray-400 hover:bg-green-50 dark:hover:bg-green-900/20';
+                btnAbsent.className  = 'row-btn-absent border-l border-gray-200 dark:border-zinc-700 px-4 py-1.5 transition bg-red-500 text-white';
             }
         }
 
         function updateSummary() {
-            const boxes   = document.querySelectorAll('.attendance-checkbox');
-            let present   = 0;
+            const boxes = document.querySelectorAll('.attendance-checkbox');
+            let present = 0;
             boxes.forEach(cb => { if (cb.checked) present++; });
             document.getElementById('count-present').textContent = present;
             document.getElementById('count-absent').textContent  = boxes.length - present;
         }
 
-        // Attach listeners
-        document.querySelectorAll('.attendance-checkbox').forEach(cb => {
-            cb.addEventListener('change', function () {
-                updateRow(this);
+        // Per-row buttons
+        document.querySelectorAll('.attendance-row').forEach(li => {
+            li.querySelector('.row-btn-present')?.addEventListener('click', function () {
+                setRow(li, true);
+                updateSummary();
+            });
+            li.querySelector('.row-btn-absent')?.addEventListener('click', function () {
+                setRow(li, false);
                 updateSummary();
             });
         });
 
         // Bulk buttons
         document.getElementById('mark-all-present')?.addEventListener('click', function () {
-            document.querySelectorAll('.attendance-checkbox').forEach(cb => {
-                cb.checked = true;
-                updateRow(cb);
-            });
+            document.querySelectorAll('.attendance-row').forEach(li => setRow(li, true));
             updateSummary();
         });
-
         document.getElementById('mark-all-absent')?.addEventListener('click', function () {
-            document.querySelectorAll('.attendance-checkbox').forEach(cb => {
-                cb.checked = false;
-                updateRow(cb);
-            });
+            document.querySelectorAll('.attendance-row').forEach(li => setRow(li, false));
             updateSummary();
         });
 
         // Form spinner on save
-        const form = document.getElementById('attendance-form');
+        const form    = document.getElementById('attendance-form');
         const saveBtn = document.getElementById('save-btn');
         const spinner = document.getElementById('save-spinner');
         form?.addEventListener('submit', function () {
