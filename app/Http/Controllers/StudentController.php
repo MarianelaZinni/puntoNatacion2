@@ -28,7 +28,8 @@ class StudentController extends Controller
            'subjects' => function ($q) {
                $q->with('subjectType')->withCount('students')->orderBy('start_time');
            },
-           'payments'
+           'payments',
+           'pauses',
        ]);
 
        if ($search) {

@@ -64,6 +64,13 @@ Route::post('students/{student}/enroll', [StudentController::class, 'enrollClass
 
 Route::post('students/{student}/unenroll', [StudentController::class, 'unenrollClass'])
     ->name('students.unenroll');
+
+// Student pauses (períodos de pausa)
+Route::get('students/{student}/pauses', [App\Http\Controllers\StudentPauseController::class, 'index'])->name('students.pauses.index');
+Route::post('students/{student}/pauses', [App\Http\Controllers\StudentPauseController::class, 'store'])->name('students.pauses.store');
+Route::get('students/{student}/pauses/{pause}/edit', [App\Http\Controllers\StudentPauseController::class, 'edit'])->name('students.pauses.edit');
+Route::put('students/{student}/pauses/{pause}', [App\Http\Controllers\StudentPauseController::class, 'update'])->name('students.pauses.update');
+Route::delete('students/{student}/pauses/{pause}', [App\Http\Controllers\StudentPauseController::class, 'destroy'])->name('students.pauses.destroy');
     
 // Rutas para tipos de pago (ABM)
 Route::resource('payment_methods', PaymentMethodController::class)->except(['show'])->middleware(['auth', 'verified']);

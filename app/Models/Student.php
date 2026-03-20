@@ -141,6 +141,9 @@ public function calculateDebtFromCreationUsingCurrentMonthly(): array
             $q->with('subjectType')->withCount('students')->orderBy('start_time');
         }]);
     }
+    if (! $this->relationLoaded('pauses')) {
+        $this->load('pauses');
+    }
 
     $monthlyAmount = $this->currentMonthlyAmount();
 
@@ -179,6 +182,14 @@ public function calculateDebtFromCreationUsingCurrentMonthly(): array
 
     while ($cursor->lte($end)) {
         $periodKey = $cursor->format('Y-m');
+
+        // Skip this month entirely if it overlaps with any pause period.
+        $pauses = $this->pauses ?? collect();
+        $isPaused = $pauses->contains(fn ($pause) => $pause->overlapsMonth($cursor));
+        if ($isPaused) {
+            $cursor->addMonth();
+            continue;
+        }
 
         // Un periodo es IMPAGO si NO existe ningún pago registrado para él,
         // independientemente del monto total abonado.
@@ -343,5 +354,24 @@ protected function calculateEffectiveDebtStartDate(Carbon $creationDate, ?Carbon
     public function medicalCheckups()
     {
         return $this->hasMany(MedicalCheckup::class);
+    }
+
+    /**
+     * Periodos de pausa del alumno.
+     */
+    public function pauses()
+    {
+        return $this->hasMany(StudentPause::class)->orderBy('start_date');
+    }
+
+    /**
+     * Returns true if the student is currently on pause.
+     */
+    public function isCurrentlyPaused(): bool
+    {
+        return $this->pauses()
+            ->where('start_date', '<=', Carbon::today())
+            ->where('end_date', '>=', Carbon::today())
+            ->exists();
     }
 }

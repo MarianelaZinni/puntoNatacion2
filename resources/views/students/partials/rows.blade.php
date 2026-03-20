@@ -9,9 +9,14 @@
     @php
         // payment_status values: 'deudor', 'pendiente', 'al_dia'
         $status = $student->payment_status ?? 'al_dia';
+        $paused = $student->isCurrentlyPaused();
     @endphp
     <td class="px-4 py-3 text-center">
-        @if($status === 'deudor')
+        @if($paused)
+            <span title="Pausado" class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-amber-100 text-amber-700" aria-label="Pausado">
+                <flux:icon name="pause-circle" class="h-5 w-5" />
+            </span>
+        @elseif($status === 'deudor')
             <span title="Deudor" class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-red-100 text-red-700" aria-label="Deudor">
                 <flux:icon name="x-circle" class="h-5 w-5" />
             </span>
@@ -114,6 +119,15 @@
                 <span class="sr-only">Revisión médica</span>
                 <flux:icon name="heart" class="h-5 w-5" />
                         </a>
+
+            {{-- Períodos de pausa --}}
+            <a href="{{ route('students.pauses.index', $student) }}"
+               title="Períodos de pausa de {{ $student->name }}"
+               aria-label="Períodos de pausa de {{ $student->name }}"
+               class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-amber-100 dark:hover:bg-amber-900 text-amber-600 dark:text-amber-300">
+                <span class="sr-only">Pausas</span>
+                <flux:icon name="pause-circle" class="h-5 w-5" />
+            </a>
         </div>
     </td>
 </tr>
