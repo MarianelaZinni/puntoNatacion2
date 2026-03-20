@@ -15,7 +15,8 @@ class Subject extends Model
         'start_time',
         'end_time',
         'capacity',
-        // ...
+        'titular_teacher_id',
+        'suplente_teacher_id',
     ];
 
     /**
@@ -25,6 +26,22 @@ class Subject extends Model
     public function subjectType()
     {
         return $this->belongsTo(\App\Models\SubjectType::class, 'subject_type_id');
+    }
+
+    /**
+     * Profesor titular de la clase.
+     */
+    public function titularTeacher()
+    {
+        return $this->belongsTo(\App\Models\Teacher::class, 'titular_teacher_id');
+    }
+
+    /**
+     * Profesor suplente de la clase.
+     */
+    public function suplenteTeacher()
+    {
+        return $this->belongsTo(\App\Models\Teacher::class, 'suplente_teacher_id');
     }
 
     /**
