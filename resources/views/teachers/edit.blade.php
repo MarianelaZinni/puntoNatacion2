@@ -1,5 +1,5 @@
 <x-layouts.app title="Editar Profesor">
-    <div class="max-w-3xl mx-auto py-8 px-4">
+    <div class="max-w-4xl mx-auto py-8 px-4">
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Editar Profesor</h1>
         </div>
@@ -154,6 +154,143 @@
                 </div>
             </div>
         </form>
+    </div>
+
+    {{-- ============================================================ --}}
+    {{-- Sección: Clases asignadas + asignar nueva clase              --}}
+    {{-- ============================================================ --}}
+    <div class="max-w-4xl mx-auto px-4 pb-12 space-y-6">
+
+        {{-- Panel: Clases actualmente asignadas --}}
+        <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Clases asignadas</h2>
+
+            @php
+                $allAssigned = collect();
+                foreach ($teacher->titularSubjects as $s) {
+                    $allAssigned->push(['subject' => $s, 'role' => 'titular']);
+                }
+                foreach ($teacher->suplenteSubjects as $s) {
+                    $allAssigned->push(['subject' => $s, 'role' => 'suplente']);
+                }
+                $allAssigned = $allAssigned->sortBy(fn($a) => $a['subject']->day . $a['subject']->start_time);
+            @endphp
+
+            @if($allAssigned->isEmpty())
+                <p class="text-sm text-gray-500 dark:text-gray-400">No tiene clases asignadas todavía.</p>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tipo</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Día</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Horario</th>
+                                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Rol</th>
+                                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            @foreach($allAssigned as $item)
+                            @php $s = $item['subject']; $role = $item['role']; @endphp
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                <td class="px-4 py-2 text-gray-700 dark:text-gray-200">{{ $s->subjectType->description ?? '—' }}</td>
+                                <td class="px-4 py-2 text-gray-700 dark:text-gray-200 capitalize">{{ $s->day }}</td>
+                                <td class="px-4 py-2 text-gray-700 dark:text-gray-200">{{ substr($s->start_time, 0, 5) }} – {{ substr($s->end_time, 0, 5) }}</td>
+                                <td class="px-4 py-2 text-center">
+                                    @if($role === 'titular')
+                                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">Titular</span>
+                                    @else
+                                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">Suplente</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-2 text-center">
+                                    <form action="{{ route('teachers.unassignClass', $teacher) }}" method="POST" class="inline">
+                                        @csrf
+                                        <input type="hidden" name="subject_id" value="{{ $s->id }}">
+                                        <input type="hidden" name="role" value="{{ $role }}">
+                                        <button type="submit"
+                                                onclick="return confirm('¿Desasignar esta clase?')"
+                                                class="inline-flex items-center gap-1 px-3 py-1 rounded text-xs text-white bg-red-500 hover:bg-red-600 transition">
+                                            <flux:icon name="x-mark" class="h-3 w-3" />
+                                            Desasignar
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+
+        {{-- Panel: Asignar nueva clase --}}
+        <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Asignar clase</h2>
+
+            @php
+                // Already-assigned subject IDs per role (to disable options in the dropdown)
+                $titularIds   = $teacher->titularSubjects->pluck('id')->toArray();
+                $suplenteIds  = $teacher->suplenteSubjects->pluck('id')->toArray();
+
+                // Available subjects: those with at least one free (or already-this-teacher) slot
+                $assignableSubjects = $availableSubjects->filter(function ($s) use ($titularIds, $suplenteIds, $teacher) {
+                    // Only include if there is at least one role this teacher can still take
+                    $canTakeTitular   = is_null($s->titular_teacher_id) || $s->titular_teacher_id === $teacher->id;
+                    $canTakeSuplente  = is_null($s->suplente_teacher_id) || $s->suplente_teacher_id === $teacher->id;
+                    $alreadyTitular   = in_array($s->id, $titularIds);
+                    $alreadySuplente  = in_array($s->id, $suplenteIds);
+                    // Exclude if already occupying both roles (edge-case) or no slot left
+                    if ($alreadyTitular && $alreadySuplente) return false;
+                    return $canTakeTitular || $canTakeSuplente;
+                });
+            @endphp
+
+            @if($assignableSubjects->isEmpty())
+                <p class="text-sm text-gray-500 dark:text-gray-400">No hay clases disponibles para asignar (todas las clases ya tienen ambos profesores asignados).</p>
+            @else
+                <form action="{{ route('teachers.assignClass', $teacher) }}" method="POST" class="flex flex-wrap items-end gap-4">
+                    @csrf
+
+                    <div class="flex-1 min-w-[220px]">
+                        <label for="subject_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Clase</label>
+                        <select name="subject_id" id="subject_id" required
+                                class="block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-[#29b1dc] text-sm">
+                            <option value="">Seleccionar clase...</option>
+                            @foreach($assignableSubjects as $s)
+                                @php
+                                    $label = ($s->subjectType->description ?? 'Sin tipo')
+                                           . ' — ' . $s->day
+                                           . ' ' . substr($s->start_time, 0, 5)
+                                           . '–' . substr($s->end_time, 0, 5);
+                                    $alreadyTitular  = in_array($s->id, $titularIds);
+                                    $alreadySuplente = in_array($s->id, $suplenteIds);
+                                    if ($alreadyTitular)   $label .= ' (ya titular)';
+                                    if ($alreadySuplente)  $label .= ' (ya suplente)';
+                                @endphp
+                                <option value="{{ $s->id }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="min-w-[160px]">
+                        <label for="role" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol</label>
+                        <select name="role" id="role" required
+                                class="block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-[#29b1dc] text-sm">
+                            <option value="titular">Titular</option>
+                            <option value="suplente">Suplente</option>
+                        </select>
+                    </div>
+
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition text-sm">
+                        <flux:icon name="plus" class="h-4 w-4" />
+                        Asignar
+                    </button>
+                </form>
+            @endif
+        </div>
     </div>
 
     @push('scripts')

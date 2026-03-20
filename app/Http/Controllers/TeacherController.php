@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Subject;
 use App\Models\Teacher;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -92,7 +93,30 @@ class TeacherController extends Controller
 
     public function edit(Teacher $teacher)
     {
-        return view('teachers.edit', compact('teacher'));
+        // Load the teacher's currently assigned subjects (titular + suplente)
+        $teacher->load(['titularSubjects.subjectType', 'suplenteSubjects.subjectType']);
+
+        // Available subjects: those where at least one slot is free OR already held by this teacher.
+        // Specifically: classes that have no teacher at all, OR where this teacher already occupies one slot
+        // (so they can also be assigned to the other slot).
+        // This excludes classes where BOTH slots are taken by other teachers.
+        $availableSubjects = Subject::with('subjectType')
+            ->where(function ($q) use ($teacher) {
+                $q->where(function ($q2) use ($teacher) {
+                    // titular slot is free or belongs to this teacher
+                    $q2->whereNull('titular_teacher_id')
+                       ->orWhere('titular_teacher_id', $teacher->id);
+                })->orWhere(function ($q2) use ($teacher) {
+                    // suplente slot is free or belongs to this teacher
+                    $q2->whereNull('suplente_teacher_id')
+                       ->orWhere('suplente_teacher_id', $teacher->id);
+                });
+            })
+            ->orderBy('day')
+            ->orderBy('start_time')
+            ->get();
+
+        return view('teachers.edit', compact('teacher', 'availableSubjects'));
     }
 
     public function update(Request $request, Teacher $teacher)
@@ -110,6 +134,66 @@ class TeacherController extends Controller
 
         return redirect()->route('teachers.index')
                          ->with('success', 'Profesor actualizado correctamente.');
+    }
+
+    /**
+     * Assign a class to the teacher as titular or suplente.
+     * Route: POST /teachers/{teacher}/assign-class
+     */
+    public function assignClass(Request $request, Teacher $teacher)
+    {
+        $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+            'role'       => 'required|in:titular,suplente',
+        ]);
+
+        $subject = Subject::findOrFail($request->subject_id);
+        $role    = $request->role;
+        $field   = $role === 'titular' ? 'titular_teacher_id' : 'suplente_teacher_id';
+
+        // Check slot is free or already belongs to this teacher
+        if ($subject->$field !== null && $subject->$field !== $teacher->id) {
+            return redirect()->route('teachers.edit', $teacher)
+                ->with('error', "Esa clase ya tiene un profesor {$role} asignado.");
+        }
+
+        // Prevent assigning as both titular AND suplente of the same class
+        $otherField = $role === 'titular' ? 'suplente_teacher_id' : 'titular_teacher_id';
+        $otherRole  = $role === 'titular' ? 'suplente' : 'titular';
+        if ($subject->$otherField === $teacher->id) {
+            return redirect()->route('teachers.edit', $teacher)
+                ->with('error', "El profesor ya está asignado a esa clase como {$otherRole}.");
+        }
+
+        $subject->update([$field => $teacher->id]);
+
+        return redirect()->route('teachers.edit', $teacher)
+            ->with('success', "Clase asignada correctamente como {$role}.");
+    }
+
+    /**
+     * Remove the teacher from a class (either as titular or suplente).
+     * Route: POST /teachers/{teacher}/unassign-class
+     */
+    public function unassignClass(Request $request, Teacher $teacher)
+    {
+        $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+            'role'       => 'required|in:titular,suplente',
+        ]);
+
+        $subject = Subject::findOrFail($request->subject_id);
+        $field   = $request->role === 'titular' ? 'titular_teacher_id' : 'suplente_teacher_id';
+
+        if ($subject->$field !== $teacher->id) {
+            return redirect()->route('teachers.edit', $teacher)
+                ->with('error', 'El profesor no está asignado a esa clase como ' . $request->role . '.');
+        }
+
+        $subject->update([$field => null]);
+
+        return redirect()->route('teachers.edit', $teacher)
+            ->with('success', 'Clase desasignada correctamente.');
     }
 
     public function destroy(Teacher $teacher)
