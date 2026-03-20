@@ -93,6 +93,15 @@
                             {{ __('Clases') }}
                         </flux:navlist.item>
 
+                         <flux:navlist.item
+                            icon="clipboard-document-check"
+                            :href="route('attendance.index')"
+                            :current="request()->routeIs('attendance.*')"
+                            wire:navigate
+                        >
+                            {{ __('Asistencia') }}
+                        </flux:navlist.item>
+                        
                         <flux:navlist.item
                             icon="currency-dollar"
                             :href="route('subject-prices.index')"

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentMethodController;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +34,10 @@ Route::delete('/teachers/{teacher}', [TeacherController::class, 'destroy'])->nam
 Route::post('/teachers/{teacher}/assign-class', [TeacherController::class, 'assignClass'])->name('teachers.assignClass');
 Route::post('/teachers/{teacher}/unassign-class', [TeacherController::class, 'unassignClass'])->name('teachers.unassignClass');
 
+// Attendance (Lista / Asistencia)
+Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+Route::get('/attendance/take', [AttendanceController::class, 'take'])->name('attendance.take');
+Route::post('/attendance/store', [AttendanceController::class, 'store'])->name('attendance.store');
 Route::get('/students', [StudentController::class, 'index'])->name('students.index');
 Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
 Route::post('/students', [StudentController::class, 'store'])->name('students.store');
