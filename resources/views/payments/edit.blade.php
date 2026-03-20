@@ -109,6 +109,24 @@
                     @enderror
                 </div>
 
+                <!-- Tipo de pago -->
+                <div>
+                    <label for="payment_type" class="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Tipo de Pago <span class="text-red-500">*</span>
+                    </label>
+                    <select id="payment_type" name="payment_type" required
+                            class="block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-[#29b1dc] focus:ring focus:ring-[#29b1dc] focus:ring-opacity-50">
+                        @foreach(\App\Models\Payment::paymentTypes() as $value => $label)
+                            <option value="{{ $value }}" {{ old('payment_type', $payment->payment_type ?? 'normal') === $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('payment_type')
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <!-- Notas -->
                 <div class="sm:col-span-2">
                     <label for="notes" class="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
