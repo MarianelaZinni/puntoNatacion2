@@ -12,10 +12,16 @@
                     &mdash; <span class="font-medium">{{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</span>
                 </p>
             </div>
-            <a href="{{ route('attendance.index') }}"
-               class="inline-flex items-center px-4 py-2 rounded text-sm text-white bg-gray-500 hover:bg-gray-600 transition">
-                ← Volver
-            </a>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('dashboard') }}"
+                   class="inline-flex items-center px-4 py-2 rounded text-sm text-white bg-gray-400 hover:bg-gray-500 transition">
+                    ⌂ Tablero
+                </a>
+                <a href="{{ route('attendance.index') }}"
+                   class="inline-flex items-center px-4 py-2 rounded text-sm text-white bg-gray-500 hover:bg-gray-600 transition">
+                    ← Asistencia
+                </a>
+            </div>
         </div>
 
         @if(session('success'))

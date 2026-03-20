@@ -177,18 +177,12 @@
 
             container.innerHTML = html;
 
-            // attach click handlers (use subjects array already injected to lookup by id)
+            // attach click handlers — navigate to attendance/take for today
             container.querySelectorAll('[data-subject-id]').forEach(btn => {
                 btn.addEventListener('click', function () {
                     const subjId = btn.getAttribute('data-subject-id');
-                    // find in preloaded subjects
-                    const subj = subjects.find(s => String(s.id) === String(subjId));
-                    if (subj) {
-                        openStudentsModalFromData(subj);
-                    } else {
-                        // fallback: fetch from server if not preloaded
-                        openStudentsModal(subjId);
-                    }
+                    const today  = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+                    window.location.href = `/attendance/take?subject_id=${encodeURIComponent(subjId)}&date=${encodeURIComponent(today)}`;
                 });
             });
         }
