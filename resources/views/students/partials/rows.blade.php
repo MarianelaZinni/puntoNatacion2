@@ -7,7 +7,7 @@
 
     <!-- Estado column -->
     @php
-        // payment_status values: 'deudor', 'pendiente', 'al_dia'
+        // payment_status values: 'deudor', 'pendiente', 'al_dia', 'pausado'
         $status = $student->payment_status ?? 'al_dia';
     @endphp
     <td class="px-4 py-3 text-center">
@@ -18,6 +18,10 @@
         @elseif($status === 'pendiente')
             <span title="Pago pendiente" class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-amber-100 text-amber-700" aria-label="Pago pendiente">
                 <flux:icon name="exclamation-circle" class="h-5 w-5" />
+            </span>
+        @elseif($status === 'pausado')
+            <span title="Pausado este mes" class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-700" aria-label="Pausado este mes">
+                <flux:icon name="pause-circle" class="h-5 w-5" />
             </span>
         @else
             <span title="Al día" class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-700" aria-label="Al día">
@@ -114,6 +118,15 @@
                 <span class="sr-only">Revisión médica</span>
                 <flux:icon name="heart" class="h-5 w-5" />
                         </a>
+
+            {{-- Botón Períodos de Pausa --}}
+            <a href="{{ route('student_pauses.index', ['student_id' => $student->id]) }}"
+               title="Pausas de {{ $student->name }}"
+               aria-label="Períodos de pausa de {{ $student->name }}"
+               class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-300">
+                <span class="sr-only">Períodos de pausa</span>
+                <flux:icon name="pause-circle" class="h-5 w-5" />
+            </a>
         </div>
     </td>
 </tr>

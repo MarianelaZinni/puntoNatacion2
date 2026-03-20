@@ -46,8 +46,6 @@
 
                 <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
 
-                <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
-
                 {{-- Group: Profesores --}}
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Profesores</div>

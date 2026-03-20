@@ -23,12 +23,13 @@ class StudentController extends Controller
 
        $query = Student::query();
 
-       // eager load subjects (with subjectType) and payments to compute deuda
+       // eager load subjects (with subjectType), payments and pauses to compute deuda
        $query->with([
            'subjects' => function ($q) {
                $q->with('subjectType')->withCount('students')->orderBy('start_time');
            },
-           'payments'
+           'payments',
+           'pauses',
        ]);
 
        if ($search) {
@@ -62,17 +63,28 @@ class StudentController extends Controller
                $nowYm = Carbon::now()->format('Y-m');
                $student->paid_this_month = $student->isPeriodFullyPaid($nowYm);
 
+               // Verificar si el mes actual está pausado
+               $isCurrentMonthPaused = $student->pauses->contains(function ($pause) use ($nowYm) {
+                   try {
+                       return \Carbon\Carbon::parse($pause->pause_period)->format('Y-m') === $nowYm;
+                   } catch (\Throwable $e) {
+                       return false;
+                   }
+               });
+
                // Determinar estado (status) según las reglas:
+               // - "pausado"   => si el mes actual está pausado (no genera deuda)
                // - "deudor"   => si debe algún mes anterior OR (estamos > dia 10 y no pagó el mes en curso)
                // - "pendiente"=> si estamos <= dia 10 y no pagó el mes en curso y no debe meses anteriores
                // - "al_dia"   => si pagó todos los periodos anteriores y el mes actual
                //
                // Regla simplificada aplicada:
                // 1) Si monthly_amount <= 0 => 'al_dia' (no corresponde deuda)
-               // 2) else if has previous unpaid months => 'deudor'
-               // 3) else if paid_this_month => 'al_dia'
-               // 4) else if today > 10 => 'deudor' (mes actual vencido)
-               // 5) else => 'pendiente' (antes del día 11, sin deuda previa)
+               // 2) else if mes actual pausado => 'pausado' (o 'al_dia' si no hay deuda previa)
+               // 3) else if has previous unpaid months => 'deudor'
+               // 4) else if paid_this_month => 'al_dia'
+               // 5) else if today > 10 => 'deudor' (mes actual vencido)
+               // 6) else => 'pendiente' (antes del día 11, sin deuda previa)
                $unpaidPeriods = is_array($student->unpaid_periods) ? $student->unpaid_periods : [];
                $hasPreviousUnpaid = collect($unpaidPeriods)->contains(function ($p) use ($nowYm) {
                    return ($p['period'] ?? '') !== $nowYm;
@@ -81,6 +93,8 @@ class StudentController extends Controller
 
                if (empty($student->monthly_amount) || (float)$student->monthly_amount <= 0) {
                    $student->payment_status = 'al_dia';
+               } elseif ($isCurrentMonthPaused && !$hasPreviousUnpaid) {
+                   $student->payment_status = 'pausado';
                } elseif ($hasPreviousUnpaid) {
                    $student->payment_status = 'deudor';
                } elseif ($student->paid_this_month) {

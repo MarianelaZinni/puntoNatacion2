@@ -14,6 +14,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\MedicalCheckupController;
 use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\StudentPauseController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -73,6 +74,15 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/profile', 'settings.profile')->name('profile.edit');
     Volt::route('settings/password', 'settings.password')->name('password.edit');
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');
+});
+
+// Student Pauses (períodos de pausa)
+Route::middleware(['web'])->group(function () {
+    Route::get('/student-pauses', [StudentPauseController::class, 'index'])->name('student_pauses.index');
+    Route::post('/student-pauses', [StudentPauseController::class, 'store'])->name('student_pauses.store');
+    Route::get('/student-pauses/{studentPause}/edit', [StudentPauseController::class, 'edit'])->name('student_pauses.edit');
+    Route::put('/student-pauses/{studentPause}', [StudentPauseController::class, 'update'])->name('student_pauses.update');
+    Route::delete('/student-pauses/{studentPause}', [StudentPauseController::class, 'destroy'])->name('student_pauses.destroy');
 });
 
 Route::middleware(['web'])->group(function () {
