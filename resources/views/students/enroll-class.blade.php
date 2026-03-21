@@ -1,6 +1,6 @@
 <x-layouts.app title="Anotar alumno en clase">
     <div class="max-w-3xl mx-auto py-8 px-4">
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Anotar a {{ $student->name }}</h1>
             <a href="{{ route('students.index') }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition">
                 Volver

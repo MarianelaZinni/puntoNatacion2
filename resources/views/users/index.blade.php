@@ -1,6 +1,6 @@
 <x-layouts.app title="Usuarios">
     <div class="max-w-5xl mx-auto py-8 px-4">
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Gestión de Usuarios</h1>
             <a href="{{ route('users.create') }}"
                class="inline-flex items-center gap-2 px-4 py-2 bg-[#29b1dc] hover:bg-[#24a8cf] text-white rounded shadow transition focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc]">

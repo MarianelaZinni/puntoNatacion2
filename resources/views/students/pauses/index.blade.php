@@ -2,7 +2,7 @@
     <div class="max-w-3xl mx-auto py-8 px-4">
 
         {{-- Header --}}
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <div>
                 <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Períodos de pausa</h1>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">

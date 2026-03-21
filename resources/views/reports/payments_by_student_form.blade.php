@@ -1,5 +1,5 @@
 <x-layouts.app title="Reporte: Pagos por alumno">
-    <div class="max-w-3xl mx-auto py-8">
+    <div class="max-w-3xl mx-auto py-8 px-4">
         <h2 class="text-lg font-semibold mb-4">Pagos por alumno</h2>
 
         <form id="payments-by-student-form" action="{{ route('reports.payments_by_student.view') }}" method="GET" class="space-y-3">

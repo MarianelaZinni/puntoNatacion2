@@ -1,6 +1,6 @@
 <x-layouts.app title="Historial de pagos">
-    <div class="max-w-6xl mx-auto py-8">
-        <div class="flex items-center justify-between mb-6">
+    <div class="max-w-6xl mx-auto py-8 px-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Historial de pagos</h1>
 
             <form method="GET" action="{{ route('payments.history') }}" class="flex items-center gap-2">

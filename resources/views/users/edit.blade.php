@@ -1,6 +1,6 @@
 <x-layouts.app title="Editar Usuario">
     <div class="max-w-2xl mx-auto py-8 px-4">
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Editar Usuario</h1>
             <a href="{{ route('users.index') }}"
                class="px-4 py-2 text-sm text-white bg-gray-500 hover:bg-gray-600 rounded transition">

@@ -1,6 +1,6 @@
 <x-layouts.app title="Profesores">
     <div class="max-w-6xl mx-auto py-8 px-4">
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">PROFESORES</h1>
 
             <a href="{{ route('teachers.create') }}"
@@ -10,7 +10,7 @@
             </a>
         </div>
 
-        <div class="mb-4 flex items-center gap-4">
+        <div class="mb-4 flex flex-wrap items-center gap-3">
             <label for="teacher-search" class="sr-only">Buscar por nombre</label>
             <input
                 id="teacher-search"

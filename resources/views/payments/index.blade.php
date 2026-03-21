@@ -1,6 +1,6 @@
 <x-layouts.app title="Registrar pagos">
-    <div class="max-w-4xl mx-auto py-8">
-        <div class="flex items-center justify-between mb-6">
+    <div class="max-w-4xl mx-auto py-8 px-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Registro de pagos</h1>
         </div>
 
