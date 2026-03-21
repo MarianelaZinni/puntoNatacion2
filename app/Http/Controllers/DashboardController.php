@@ -13,6 +13,16 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        $user = auth()->user();
+
+        // Redirect role-specific users to their own portals
+        if ($user && $user->isAlumno()) {
+            return redirect()->route('portal.student');
+        }
+        if ($user && $user->isProfesor()) {
+            return redirect()->route('portal.teacher');
+        }
+
         // Eager load para evitar N+1 (subjectType y students)
         $subjects = Subject::with(['subjectType', 'students'])->get();
 
