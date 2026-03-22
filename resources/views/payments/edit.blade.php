@@ -1,6 +1,6 @@
 <x-layouts.app title="Editar pago">
     <div class="max-w-3xl mx-auto py-8 px-4">
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Editar Pago</h1>
         </div>
 
@@ -159,7 +159,7 @@
         <!-- Información adicional sobre el pago -->
         <div class="mt-6 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-4 shadow-sm">
             <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Información del Pago</h2>
-            <dl class="grid grid-cols-2 gap-3 text-sm">
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <div>
                     <dt class="text-gray-500 dark:text-gray-400">ID del Pago:</dt>
                     <dd class="text-gray-900 dark:text-gray-100 font-medium">{{ $payment->id }}</dd>

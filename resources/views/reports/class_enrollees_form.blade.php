@@ -1,5 +1,5 @@
 <x-layouts.app title="Reporte: Inscriptos por clase">
-    <div class="max-w-3xl mx-auto py-8">
+     <div class="max-w-3xl mx-auto py-8 px-4">
         <h2 class="text-lg font-semibold mb-4">Seleccioná una clase</h2>
 
         <form id="class-enrollees-form" action="{{ route('reports.class_enrollees.view') }}" method="GET" class="flex gap-2 items-center">

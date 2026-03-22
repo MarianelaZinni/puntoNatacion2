@@ -1,6 +1,6 @@
 <x-layouts.app title="Reportes">
-    <div class="max-w-4xl mx-auto py-8">
-        <div class="mb-6 flex items-center justify-between">
+    <div class="max-w-4xl mx-auto py-8 px-4">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-2xl font-semibold">Reportes</h1>
         </div>
 

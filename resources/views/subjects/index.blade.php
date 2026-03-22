@@ -1,6 +1,6 @@
 <x-layouts.app title="Calendario de Clases">
-    <div class="max-w-5xl mx-auto py-8">
-        <div class="flex items-center justify-between mb-6">
+    <div class="max-w-5xl mx-auto py-8 px-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Calendario de Clases</h1>
 
             <button id="new-class-btn" class="inline-flex items-center gap-2 px-4 py-2 bg-[#29b1dc] hover:bg-[#24a8cf] text-white rounded shadow transition focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc]">
@@ -15,8 +15,8 @@
         </div>
 
         <!-- Modal para editar/crear clase -->
-        <div id="class-modal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
-            <form id="class-form" class="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-md space-y-4">
+        <div id="class-modal" class="fixed inset-0 bg-black/40 flex items-start sm:items-center justify-center z-50 hidden overflow-y-auto p-4">
+            <form id="class-form" class="bg-white dark:bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-md space-y-4 my-auto">
                 <h2 class="text-xl font-bold mb-2" id="modal-title">Editar Clase</h2>
                 <input type="hidden" name="id" id="id">
 

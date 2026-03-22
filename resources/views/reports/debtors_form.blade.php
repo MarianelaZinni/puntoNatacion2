@@ -1,5 +1,5 @@
 <x-layouts.app title="Reporte: Alumnos deudores">
-    <div class="max-w-3xl mx-auto py-8">
+     <div class="max-w-3xl mx-auto py-8 px-4">
         <h2 class="text-lg font-semibold mb-4">Alumnos deudores</h2>
 
         <form id="debtors-form" action="{{ route('reports.debtors.view') }}" method="GET" class="flex items-center gap-2">
