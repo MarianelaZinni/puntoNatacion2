@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Subject;
 use App\Models\SubjectPrice;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -13,6 +13,33 @@ class DashboardController extends Controller
      */
     public function index()
     {
+
+     /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        
+        // Redirect role-specific users to their own portals
+        if ($user) {
+            $isAlumno = method_exists($user, 'isAlumno')
+                ? $user->isAlumno()
+                : (($user->role ?? $user->tipo ?? null) === 'alumno');
+
+            $isProfesor = method_exists($user, 'isProfesor')
+                ? $user->isProfesor()
+                : (($user->role ?? $user->tipo ?? null) === 'profesor');
+
+            if ($isAlumno) {
+                return redirect()->route('portal.student');
+            }
+
+            if ($isProfesor) {
+                return redirect()->route('portal.teacher');
+            }
+        }
+
+        // Eager load para evitar N+1 (subjectType y students)
+        $subjects = Subject::with(['subjectType', 'students'])->get();
+
+
         // Eager load para evitar N+1 (subjectType y students)
         $subjects = Subject::with(['subjectType', 'students'])->get();
 
