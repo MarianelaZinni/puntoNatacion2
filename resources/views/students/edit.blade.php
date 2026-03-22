@@ -258,6 +258,11 @@
         </div>
         {{-- end classes section --}}
 
+        {{-- ASISTENCIA RECIENTE --}}
+        <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
+            @include('students.partials.recent_attendance')
+        </div>
+
         {{-- Actions --}}
         <div class="mt-6 flex items-center justify-end gap-3">
             <a href="{{ route('students.index') }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition">

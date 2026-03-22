@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\SubjectPrice;
+use App\Models\Attendance;
 use App\Services\PriceCalculator;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -205,7 +206,15 @@ class StudentController extends Controller
             }
         }
 
-        return view('students.show', compact('student', 'priceSummary', 'subjectPricesForJs'));
+        // Load last 10 attendance records for this student across all their subjects
+        $recentAttendance = Attendance::where('student_id', $student->id)
+            ->with(['subject.subjectType'])
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->limit(10)
+            ->get();
+
+        return view('students.show', compact('student', 'priceSummary', 'subjectPricesForJs', 'recentAttendance'));
     }
 
     /**
@@ -238,7 +247,15 @@ class StudentController extends Controller
             }
         }
 
-        return view('students.edit', compact('student', 'subjects', 'priceSummary', 'subjectPricesForJs'));
+        // Load last 10 attendance records for this student across all their subjects
+        $recentAttendance = Attendance::where('student_id', $student->id)
+            ->with(['subject.subjectType'])
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->limit(10)
+            ->get();
+
+        return view('students.edit', compact('student', 'subjects', 'priceSummary', 'subjectPricesForJs', 'recentAttendance'));
     }
 
 
