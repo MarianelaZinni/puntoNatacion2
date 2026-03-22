@@ -76,7 +76,6 @@
 
     @push('scripts')
     <!-- SweetAlert2 CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         /**
@@ -87,52 +86,22 @@
          */
         window.confirmDelete = function (btn) {
             const methodName = btn.getAttribute('data-method-name') || 'este método de pago';
-            // Safety: ensure Swal is available
-            if (typeof Swal === 'undefined') {
-                // fallback browser confirm
-                const form = btn.closest('form');
-                if (typeof Swal !== 'undefined') {
-    Swal.fire({
-        title: '¿Eliminar este método de pago?',
-        html: `<div class="text-left">
-            <p class="mb-2">Método: <strong>${methodName}</strong></p>
-            <p class="mt-3 text-sm text-gray-600">Esta acción no se puede deshacer.</p>
-        </div>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#e53e3e',
-        cancelButtonColor: '#6B7280',
-        confirmButtonText: 'Sí, eliminar',
-        cancelButtonText: 'Cancelar',
-        focusCancel: true
-    }).then((result) => {
-        if (result.isConfirmed) {
-            form.submit();
-        }
-    });
-} else {
-    // Fallback to native confirm
-    if (confirm('¿Estás seguro? Esta acción no se puede deshacer.')) {
-        form.submit();
-    }
-}
-                return;
-            }
-
+            const form = btn.closest('form');
             Swal.fire({
-                title: '¿Estás seguro?',
-                text: "¡Esta acción no se puede deshacer!",
+                title: '¿Eliminar este método de pago?',
+                html: `<div class="text-left">
+                    <p class="mb-2">Método: <strong>${methodName}</strong></p>
+                    <p class="mt-3 text-sm text-gray-600">Esta acción no se puede deshacer.</p>
+                </div>`,
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
+                confirmButtonColor: '#e53e3e',
+                cancelButtonColor: '#6B7280',
                 confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar'
+                cancelButtonText: 'Cancelar',
+                focusCancel: true
             }).then((result) => {
-                if (result.isConfirmed) {
-                    const form = btn.closest('form');
-                    if (form) form.submit();
-                }
+                if (result.isConfirmed && form) form.submit();
             });
         };
 

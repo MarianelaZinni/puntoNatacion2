@@ -23,7 +23,11 @@
                 const btnPdf = document.getElementById('download-pdf');
 
         btnPdf.addEventListener('click', function () {
-            if (!select.value) { alert('Seleccioná una clase'); select.focus(); return; }
+            if (!select.value) {
+                Swal.fire({ icon: 'warning', title: 'Atención', text: 'Seleccioná una clase', confirmButtonColor: '#29b1dc' });
+                select.focus();
+                return;
+            }
             const url = new URL("{{ route('reports.class_enrollees.pdf') }}", window.location.origin);
             url.searchParams.set('subject_id', select.value);
             window.open(url.toString(), '_blank');

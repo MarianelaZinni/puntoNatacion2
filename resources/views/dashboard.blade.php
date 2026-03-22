@@ -215,9 +215,7 @@
                 modalEl.classList.remove('hidden');
             } catch (err) {
                 console.error(err);
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo mostrar la información.' });
-                }
+                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo mostrar la información.' });
             }
         }
 
@@ -247,9 +245,7 @@
                 modalEl.classList.remove('hidden');
             } catch (err) {
                 console.error(err);
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la información de la clase.' });
-                }
+                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la información de la clase.' });
             }
         }
 

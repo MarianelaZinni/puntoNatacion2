@@ -157,7 +157,6 @@
 
     @push('scripts')
     <!-- SweetAlert2 (CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -170,8 +169,7 @@
             const checkupPeriod = form.dataset.checkupPeriod || '';
             const checkupStatus = form.dataset.checkupStatus || '';
 
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
+            Swal.fire({
                     title: '¿Eliminar esta revisión médica?',
                     html: `<div class="text-left">
                         <p class="mb-2">Fecha: <strong>${checkupDate}</strong></p>
@@ -191,12 +189,6 @@
                         form.submit();
                     }
                 });
-            } else {
-                // Fallback to native confirm
-                if (confirm('¿Estás seguro de que querés eliminar esta revisión médica? Esta acción no se puede deshacer.')) {
-                    form.submit();
-                }
-            }
         };
 
         // Flash message auto-dismiss
