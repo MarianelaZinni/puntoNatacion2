@@ -385,9 +385,7 @@
     </div>
 
     @push('scripts')
-    <!-- SweetAlert2 (CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+    
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Confirm delete student with SweetAlert2
@@ -395,39 +393,7 @@
             const form = btn.closest('form');
             if (!form) return;
 
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: '¿Estás seguro?',
-                    text: 'Se eliminará el alumno y todos sus datos asociados. Esta acción no se puede deshacer.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#e53e3e',
-                    cancelButtonColor: '#6B7280',
-                    confirmButtonText: 'Sí, eliminar',
-                    cancelButtonText: 'Cancelar',
-                    focusCancel: true
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit();
-                    }
-                });
-            } else {
-                // Fallback to native confirm
-                if (confirm('¿Seguro que querés eliminar este alumno? Esta acción no se puede deshacer.')) {
-                    form.submit();
-                }
-            }
-        };
-
-        // Confirm delete payment with SweetAlert2
-        window.confirmDeletePayment = function (btn) {
-            const form = btn.closest('form');
-            if (!form) return;
-
-            const paymentAmount = form.dataset.paymentAmount || '';
-            const paymentPeriod = form.dataset.paymentPeriod || '';
-
-            if (typeof Swal !== 'undefined') {
+           
                 Swal.fire({
                     title: '¿Eliminar este pago?',
                     html: `<div class="text-left">

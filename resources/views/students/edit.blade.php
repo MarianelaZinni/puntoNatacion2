@@ -284,9 +284,7 @@
     </div>
 
     @push('scripts')
-    <!-- SweetAlert2 (CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+    
     <script>
     (function () {
         const form = document.getElementById('student-form');
@@ -344,13 +342,6 @@
         // Confirm unenroll and use AJAX to perform unenroll and refresh quota
         window.confirmUnenroll = function(e, formEl) {
             e.preventDefault();
-            if (typeof Swal === 'undefined') {
-                // fallback to native confirm + submit (full page)
-                if (confirm('¿Seguro que querés desinscribir al alumno de esta clase?')) {
-                    formEl.submit();
-                }
-                return false;
-            }
 
             Swal.fire({
                 title: 'Desinscribir',

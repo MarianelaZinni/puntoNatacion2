@@ -209,8 +209,8 @@
                                         @csrf
                                         <input type="hidden" name="subject_id" value="{{ $s->id }}">
                                         <input type="hidden" name="role" value="{{ $role }}">
-                                        <button type="submit"
-                                                onclick="return confirm('¿Desasignar esta clase?')"
+                                       <button type="button"
+                                                onclick="confirmUnassign(event, this)"
                                                 class="inline-flex items-center gap-1 px-3 py-1 rounded text-xs text-white bg-red-500 hover:bg-red-600 transition">
                                             <flux:icon name="x-mark" class="h-3 w-3" />
                                             Desasignar
@@ -295,6 +295,25 @@
 
     @push('scripts')
     <script>
+        function confirmUnassign(e, btn) {
+        e.preventDefault();
+        const form = btn.closest('form');
+        Swal.fire({
+            title: '¿Desasignar clase?',
+            text: '¿Seguro que querés desasignar esta clase al profesor?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e53e3e',
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: 'Sí, desasignar',
+            cancelButtonText: 'Cancelar',
+            focusCancel: true
+        }).then((result) => {
+            if (result.isConfirmed) form.submit();
+        });
+    }
+
+    
     (function () {
         const form = document.getElementById('teacher-form');
         const saveBtn = document.getElementById('save-btn');

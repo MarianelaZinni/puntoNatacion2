@@ -213,8 +213,7 @@
     </div>
     
     @push('scripts')
-    <!-- SweetAlert2 (CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     
     <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -227,7 +226,7 @@
             const paymentPeriod = form.dataset.paymentPeriod || '';
             const studentName = form.dataset.studentName || '';
 
-            if (typeof Swal !== 'undefined') {
+           
                 Swal.fire({
                     title: '¿Eliminar este pago?',
                     html: `<div class="text-left">
@@ -251,12 +250,7 @@
                         form.submit();
                     }
                 });
-            } else {
-                // Fallback to native confirm
-                if (confirm('¿Estás seguro de que querés eliminar este pago? Esta acción no se puede deshacer.')) {
-                    form.submit();
-                }
-            }
+            
         };
         
         // Flash message auto-dismiss
