@@ -4,138 +4,87 @@ namespace App\Http\Controllers;
 
 use App\Models\Student;
 use App\Models\StudentPause;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class StudentPauseController extends Controller
 {
     /**
-     * Show the list of pause periods for a student.
+     * List all pauses for the given student.
      */
-    public function index(Request $request)
+    public function index(Student $student)
     {
-        $studentId = $request->query('student_id');
-
-        if (!$studentId) {
-            return redirect()->route('students.index')
-                ->with('error', 'Debe seleccionar un alumno.');
-        }
-
-        $student = Student::findOrFail($studentId);
-
-        $pauses = StudentPause::where('student_id', $studentId)
-            ->orderBy('pause_period', 'desc')
-            ->get();
-
-        return view('student_pauses.index', compact('student', 'pauses'));
+        $pauses = $student->pauses()->orderBy('start_date', 'desc')->get();
+        return view('students.pauses.index', compact('student', 'pauses'));
     }
 
     /**
-     * Store a new pause period for a student.
+     * Store a new pause period.
      */
-    public function store(Request $request)
+    public function store(Request $request, Student $student)
     {
         $data = $request->validate([
-            'student_id'   => 'required|exists:students,id',
-            'pause_period' => ['required', 'regex:/^\d{4}-\d{2}$/'],
+            'start_date' => 'required|date_format:Y-m-d',
+            'end_date'   => 'required|date_format:Y-m-d',
+            'reason'     => 'nullable|string|max:255',
         ]);
 
-        try {
-            $periodCarbon = Carbon::createFromFormat('Y-m', $data['pause_period'])->startOfMonth();
-            $data['pause_period'] = $periodCarbon->toDateString();
-        } catch (\Throwable $e) {
-            return redirect()->back()->withInput()
-                ->with('error', 'Período inválido. Use formato YYYY-MM.');
+        if ($data['end_date'] < $data['start_date']) {
+            return back()->withErrors(['end_date' => 'La fecha fin debe ser posterior o igual a la fecha inicio.'])->withInput();
         }
 
-        // Check for duplicate
-        $exists = StudentPause::where('student_id', $data['student_id'])
-            ->where('pause_period', $data['pause_period'])
-            ->exists();
+        $student->pauses()->create($data);
 
-        if ($exists) {
-            return redirect()->back()->withInput()
-                ->with('error', 'Ya existe una pausa registrada para ese período.');
-        }
-
-        StudentPause::create($data);
-
-        return redirect()->route('student_pauses.index', ['student_id' => $data['student_id']])
-            ->with('success', 'Período de pausa registrado correctamente.');
+        return redirect()->route('students.pauses.index', $student)
+            ->with('success', 'Período de pausa creado correctamente.');
     }
 
     /**
-     * Show the edit form for a pause period.
-     * Only allowed if the pause period has not yet passed.
+     * Show the edit form for an existing pause.
      */
-    public function edit(StudentPause $studentPause)
+    public function edit(Student $student, StudentPause $pause)
     {
-        if ($studentPause->isPast()) {
-            return redirect()->route('student_pauses.index', ['student_id' => $studentPause->student_id])
-                ->with('error', 'No se puede editar una pausa de un período ya pasado.');
-        }
+        abort_if($pause->student_id !== $student->id, 404);
+        abort_unless($pause->isEditable(), 403, 'Este período de pausa ya finalizó y no puede modificarse.');
 
-        $studentPause->load('student');
-        $periodFormatted = Carbon::parse($studentPause->pause_period)->format('Y-m');
-
-        return view('student_pauses.edit', compact('studentPause', 'periodFormatted'));
+        return view('students.pauses.edit', compact('student', 'pause'));
     }
 
     /**
-     * Update an existing pause period.
-     * Only allowed if the original pause period has not yet passed.
+     * Update an existing pause.
      */
-    public function update(Request $request, StudentPause $studentPause)
+    public function update(Request $request, Student $student, StudentPause $pause)
     {
-        if ($studentPause->isPast()) {
-            return redirect()->route('student_pauses.index', ['student_id' => $studentPause->student_id])
-                ->with('error', 'No se puede modificar una pausa de un período ya pasado.');
-        }
+        abort_if($pause->student_id !== $student->id, 404);
+        abort_unless($pause->isEditable(), 403, 'Este período de pausa ya finalizó y no puede modificarse.');
 
         $data = $request->validate([
-            'pause_period' => ['required', 'regex:/^\d{4}-\d{2}$/'],
+            'start_date' => 'required|date_format:Y-m-d',
+            'end_date'   => 'required|date_format:Y-m-d',
+            'reason'     => 'nullable|string|max:255',
         ]);
 
-        try {
-            $periodCarbon = Carbon::createFromFormat('Y-m', $data['pause_period'])->startOfMonth();
-            $data['pause_period'] = $periodCarbon->toDateString();
-        } catch (\Throwable $e) {
-            return redirect()->back()->withInput()
-                ->with('error', 'Período inválido. Use formato YYYY-MM.');
+        if ($data['end_date'] < $data['start_date']) {
+            return back()->withErrors(['end_date' => 'La fecha fin debe ser posterior o igual a la fecha inicio.'])->withInput();
         }
 
-        // Check for duplicate (excluding current record)
-        $exists = StudentPause::where('student_id', $studentPause->student_id)
-            ->where('pause_period', $data['pause_period'])
-            ->where('id', '!=', $studentPause->id)
-            ->exists();
+        $pause->update($data);
 
-        if ($exists) {
-            return redirect()->back()->withInput()
-                ->with('error', 'Ya existe una pausa registrada para ese período.');
-        }
-
-        $studentPause->update($data);
-
-        return redirect()->route('student_pauses.index', ['student_id' => $studentPause->student_id])
-            ->with('success', 'Pausa actualizada correctamente.');
+        return redirect()->route('students.pauses.index', $student)
+            ->with('success', 'Período de pausa actualizado correctamente.');
     }
 
     /**
-     * Delete a pause period.
-     * Only allowed if the pause period has not yet passed.
+     * Delete a pause period (only while editable).
      */
-    public function destroy(StudentPause $studentPause)
+    public function destroy(Student $student, StudentPause $pause)
     {
-        if ($studentPause->isPast()) {
-            return redirect()->route('student_pauses.index', ['student_id' => $studentPause->student_id])
-                ->with('error', 'No se puede eliminar una pausa de un período ya pasado.');
-        }
+        abort_if($pause->student_id !== $student->id, 404);
+        abort_unless($pause->isEditable(), 403, 'Este período de pausa ya finalizó y no puede eliminarse.');
 
-        $studentId = $studentPause->student_id;
-        $studentPause->delete();
+        $pause->delete();
 
-        return redirect()->route('student_pauses.index', ['student_id' => $studentId])
-            ->with('success', 'Pausa eliminada correctamente.');
+        return redirect()->route('students.pauses.index', $student)
+            ->with('success', 'Período de pausa eliminado correctamente.');
     }
 }

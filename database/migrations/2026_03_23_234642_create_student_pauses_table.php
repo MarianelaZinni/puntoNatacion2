@@ -10,12 +10,11 @@ return new class extends Migration
     {
         Schema::create('student_pauses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
-            $table->date('pause_period'); // stored as YYYY-MM-01 (first day of the month)
+            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
+            $table->date('start_date');
+            $table->date('end_date');
+            $table->string('reason')->nullable();
             $table->timestamps();
-
-            // Prevent duplicate pauses for the same student/period
-            $table->unique(['student_id', 'pause_period']);
         });
     }
 

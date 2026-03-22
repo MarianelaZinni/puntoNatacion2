@@ -2,18 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class StudentPause extends Model
 {
-    protected $fillable = [
-        'student_id',
-        'pause_period',
-    ];
+    use HasFactory;
+
+    protected $fillable = ['student_id', 'start_date', 'end_date', 'reason'];
 
     protected $casts = [
-        'pause_period' => 'date',
+        'start_date' => 'date',
+        'end_date'   => 'date',
     ];
 
     public function student()
@@ -22,35 +23,30 @@ class StudentPause extends Model
     }
 
     /**
-     * A pause period is considered "past" when its month is before the current month.
-     * Past pauses cannot be edited or deleted.
+     * A pause can only be edited or deleted while its end_date has not yet passed.
      */
-    public function isPast(): bool
+    public function isEditable(): bool
     {
-        return Carbon::parse($this->pause_period)->startOfMonth()->lt(Carbon::now()->startOfMonth());
+        return $this->end_date->gte(Carbon::today());
     }
 
     /**
-     * Returns the period formatted as MM/YYYY for display.
+     * Returns true if the pause is currently active (today falls within the range).
      */
-    public function getPeriodFormattedAttribute(): string
+    public function isActive(): bool
     {
-        try {
-            return Carbon::parse($this->pause_period)->format('m/Y');
-        } catch (\Throwable $e) {
-            return '-';
-        }
+        $today = Carbon::today();
+        return $this->start_date->lte($today) && $this->end_date->gte($today);
     }
 
     /**
-     * Returns the period as YYYY-MM (for use in month inputs).
+     * Returns true if this pause overlaps the given calendar month.
+     *
+     * @param Carbon $monthStart  The first day of the month (startOfMonth).
      */
-    public function getPeriodYmAttribute(): string
+    public function overlapsMonth(Carbon $monthStart): bool
     {
-        try {
-            return Carbon::parse($this->pause_period)->format('Y-m');
-        } catch (\Throwable $e) {
-            return '';
-        }
+        $monthEnd = $monthStart->copy()->endOfMonth();
+        return $this->start_date->lte($monthEnd) && $this->end_date->gte($monthStart);
     }
 }

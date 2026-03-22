@@ -96,12 +96,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('students/{student}/enroll', [StudentController::class, 'enrollClass'])->name('students.enroll');
         Route::post('students/{student}/unenroll', [StudentController::class, 'unenrollClass'])->name('students.unenroll');
 
-        // Student pauses
-        Route::get('students/{student}/pauses', [App\Http\Controllers\StudentPauseController::class, 'index'])->name('students.pauses.index');
-        Route::post('students/{student}/pauses', [App\Http\Controllers\StudentPauseController::class, 'store'])->name('students.pauses.store');
-        Route::get('students/{student}/pauses/{pause}/edit', [App\Http\Controllers\StudentPauseController::class, 'edit'])->name('students.pauses.edit');
-        Route::put('students/{student}/pauses/{pause}', [App\Http\Controllers\StudentPauseController::class, 'update'])->name('students.pauses.update');
-        Route::delete('students/{student}/pauses/{pause}', [App\Http\Controllers\StudentPauseController::class, 'destroy'])->name('students.pauses.destroy');
+       // Student pauses (períodos de pausa)
+Route::get('students/{student}/pauses', [App\Http\Controllers\StudentPauseController::class, 'index'])->name('students.pauses.index');
+Route::post('students/{student}/pauses', [App\Http\Controllers\StudentPauseController::class, 'store'])->name('students.pauses.store');
+Route::get('students/{student}/pauses/{pause}/edit', [App\Http\Controllers\StudentPauseController::class, 'edit'])->name('students.pauses.edit');
+Route::put('students/{student}/pauses/{pause}', [App\Http\Controllers\StudentPauseController::class, 'update'])->name('students.pauses.update');
+Route::delete('students/{student}/pauses/{pause}', [App\Http\Controllers\StudentPauseController::class, 'destroy'])->name('students.pauses.destroy');
 
         // Subjects
         Route::get('/subjects', [SubjectController::class, 'index'])->name('subjects.index');
