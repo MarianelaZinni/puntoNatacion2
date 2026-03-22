@@ -99,8 +99,8 @@
                                     <p class="text-xs text-gray-500 dark:text-gray-400">DNI: {{ $student->dni }}</p>
                                 @endif
                             </div>
-                            <a href="{{ route('students.show', $student) }}"
-                               title="Ver ficha de {{ $student->name }}"
+                            <a href="{{ route('students.edit', $student) }}"
+                               title="Editar ficha de {{ $student->name }}"
                                class="inline-flex items-center justify-center h-7 w-7 rounded-full text-[#29b1dc] hover:bg-[#29b1dc]/10 transition"
                                target="_blank">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
