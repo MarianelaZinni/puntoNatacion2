@@ -171,6 +171,9 @@
                 @endif
             </div>
 
+             {{-- ASISTENCIA RECIENTE --}}
+            @include('students.partials.recent_attendance')
+            
             {{-- HISTORIAL DE PAGOS --}}
             <div class="mt-8">
                 <div class="flex items-center justify-between mb-4">
