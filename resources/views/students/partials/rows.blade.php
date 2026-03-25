@@ -7,12 +7,12 @@
 
     <!-- Estado column -->
     @php
-        // payment_status values: 'deudor', 'pendiente', 'al_dia', 'pausado'
+        // payment_status values: 'deudor', 'pendiente', 'al_dia'
         $status = $student->payment_status ?? 'al_dia';
         $paused = $student->isCurrentlyPaused();
     @endphp
     <td class="px-4 py-3 text-center">
-       @if($paused)
+        @if($paused)
             <span title="Pausado" class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-amber-100 text-amber-700" aria-label="Pausado">
                 <flux:icon name="pause-circle" class="h-5 w-5" />
             </span>
@@ -24,10 +24,6 @@
             <span title="Pago pendiente" class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-amber-100 text-amber-700" aria-label="Pago pendiente">
                 <flux:icon name="exclamation-circle" class="h-5 w-5" />
             </span>
-        @elseif($status === 'pausado')
-            <span title="Pausado este mes" class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-700" aria-label="Pausado este mes">
-                <flux:icon name="pause-circle" class="h-5 w-5" />
-            </span>
         @else
             <span title="Al día" class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-green-100 text-green-700" aria-label="Al día">
                 <flux:icon name="check-circle" class="h-5 w-5" />
@@ -36,102 +32,118 @@
     </td>
 
     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
-        <div class="flex flex-wrap items-center justify-center gap-2">
+        @php
+            $debt = isset($student->debt) ? (float)$student->debt : 0.0;
+            $paidThisMonth = !empty($student->paid_this_month);
+            $hasUnpaid = !empty($student->unpaid_periods) && is_array($student->unpaid_periods) && count($student->unpaid_periods) > 0;
+        @endphp
 
-            <!-- Ver (eye) -->
-            <a href="{{ route('students.show', $student) }}"
-               title="Ver {{ $student->name }}"
-               aria-label="Ver {{ $student->name }}"
-               class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-300">
-                <span class="sr-only">Ver</span>
-                <flux:icon name="eye" class="h-5 w-5" />
-            </a>
+        {{-- Dropdown de acciones --}}
+        <div class="relative flex justify-center" data-actions-dropdown>
+            <button type="button"
+                    data-dropdown-toggle
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    class="inline-flex items-center justify-center h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#29b1dc]"
+                    title="Acciones para {{ $student->name }}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                </svg>
+                <span class="sr-only">Acciones</span>
+            </button>
 
-            <!-- Editar (pencil-square) -->
-            <a href="{{ route('students.edit', $student) }}"
-               title="Editar {{ $student->name }}"
-               aria-label="Editar {{ $student->name }}"
-               class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-yellow-100 dark:hover:bg-yellow-900 text-yellow-600 dark:text-yellow-300">
-                <span class="sr-only">Editar</span>
-                <flux:icon name="pencil-square" class="h-5 w-5" />
-            </a>
+            {{-- Menú desplegable --}}
+            <div data-dropdown-menu
+                 class="hidden absolute right-0 z-20 mt-10 w-52 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 py-1"
+                 role="menu">
 
-             <!-- Eliminar (user-minus) - form required for DELETE -->
-            <form action="{{ route('students.destroy', $student) }}" method="POST" class="inline">
-                @csrf
-                @method('DELETE')
-                <button type="button"
-                        onclick="confirmDelete(this)"
-                        title="Eliminar {{ $student->name }}"
-                        aria-label="Eliminar {{ $student->name }}"
-                        class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-400 border-0">
-                    <span class="sr-only">Eliminar</span>
-                    <flux:icon name="user-minus" class="h-5 w-5" />
-                </button>
-            </form>
-
-            <!-- Anotar a clase (clipboard-document-check) -->
-            <a href="{{ route('students.enrollClassForm', $student) }}"
-               title="Anotar a clase {{ $student->name }}"
-               aria-label="Anotar a clase {{ $student->name }}"
-               class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-green-100 dark:hover:bg-green-900 text-green-600 dark:text-green-300">
-                <span class="sr-only">Anotar a clase</span>
-                <flux:icon name="clipboard-document-check" class="h-5 w-5" />
-            </a>
-
-            <!-- Registrar pago (currency-dollar) -->
-            @php
-                $debt = isset($student->debt) ? (float)$student->debt : 0.0;
-                $paidThisMonth = !empty($student->paid_this_month);
-                // comprobar si tiene periodos impagos
-                $hasUnpaid = !empty($student->unpaid_periods) && is_array($student->unpaid_periods) && count($student->unpaid_periods) > 0;
-            @endphp
-
-            @if($paidThisMonth && !$hasUnpaid)
-                {{-- Si pagó este mes y NO tiene periodos impagos, inhabilitar --}}
-                <span title="Ya pagó este mes" class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-green-100 text-green-800" aria-label="Pagó este mes">
-                    <flux:icon name="currency-dollar" class="h-5 w-5" />
-                </span>
-            @elseif($debt <= 0 && !$hasUnpaid)
-                {{-- Sin deuda y sin periodos impagos --}}
-                <button disabled title="Sin deuda" aria-label="Sin deuda" class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-gray-200 dark:bg-zinc-700 text-gray-500">
-                    <flux:icon name="currency-dollar" class="h-5 w-5" />
-                </button>
-            @else
-                {{-- Si tiene deuda total o periodos impagos, permitimos registrar pago --}}
-                <a href="{{ route('payments.index', ['student_id' => $student->id]) }}"
-                   title="Registrar pago de {{ $student->name }}"
-                   aria-label="Registrar pago de {{ $student->name }}"
-                   class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200">
-                    <span class="sr-only">Registrar pago</span>
-                    <flux:icon name="currency-dollar" class="h-5 w-5" />
+                {{-- Ver --}}
+                <a href="{{ route('students.show', $student) }}"
+                   role="menuitem"
+                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-700 dark:hover:text-blue-300">
+                    <flux:icon name="eye" class="h-4 w-4 shrink-0" />
+                    Ver alumno
                 </a>
-            @endif
 
-            <!-- Historial de pagos (new action) -->
-            <a href="{{ route('payments.history', ['student_id' => $student->id]) }}"
-               title="Historial de pagos de {{ $student->name }}"
-               aria-label="Historial de pagos de {{ $student->name }}"
-               class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-600 dark:text-indigo-300">
-                <span class="sr-only">Historial de pagos</span>
-                <flux:icon name="clock" class="h-5 w-5" />
-            </a>
+                {{-- Editar --}}
+                <a href="{{ route('students.edit', $student) }}"
+                   role="menuitem"
+                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-yellow-50 dark:hover:bg-yellow-900/40 hover:text-yellow-700 dark:hover:text-yellow-300">
+                    <flux:icon name="pencil-square" class="h-4 w-4 shrink-0" />
+                    Editar
+                </a>
 
-            {{-- Botón Revisión Médica (NUEVO) --}}
-                        <a href="{{ route('medical_checkups.index', ['student_id' => $student->id]) }}"
-                            class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-lime-100 dark:hover:bg-lime-900 text-lime-600 dark:text-lime-300">
-                <span class="sr-only">Revisión médica</span>
-                <flux:icon name="heart" class="h-5 w-5" />
-                        </a>
+                {{-- Anotar a clase --}}
+                <a href="{{ route('students.enrollClassForm', $student) }}"
+                   role="menuitem"
+                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-green-900/40 hover:text-green-700 dark:hover:text-green-300">
+                    <flux:icon name="clipboard-document-check" class="h-4 w-4 shrink-0" />
+                    Anotar a clase
+                </a>
 
-                     {{-- Períodos de pausa --}}
-            <a href="{{ route('students.pauses.index', $student) }}"
-               title="Períodos de pausa de {{ $student->name }}"
-               aria-label="Períodos de pausa de {{ $student->name }}"
-               class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-amber-100 dark:hover:bg-amber-900 text-amber-600 dark:text-amber-300">
-                <span class="sr-only">Pausas</span>
-                <flux:icon name="pause-circle" class="h-5 w-5" />
-            </a>
+                {{-- Registrar pago --}}
+                @if($paidThisMonth && !$hasUnpaid)
+                    <span role="menuitem"
+                          class="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 dark:text-gray-500 cursor-default"
+                          title="Ya pagó este mes">
+                        <flux:icon name="currency-dollar" class="h-4 w-4 shrink-0" />
+                        Registrar pago <span class="ml-auto text-xs text-green-600 dark:text-green-400">✓</span>
+                    </span>
+                @elseif($debt <= 0 && !$hasUnpaid)
+                    <span role="menuitem"
+                          class="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 dark:text-gray-500 cursor-default"
+                          title="Sin deuda">
+                        <flux:icon name="currency-dollar" class="h-4 w-4 shrink-0" />
+                        Registrar pago
+                    </span>
+                @else
+                    <a href="{{ route('payments.index', ['student_id' => $student->id]) }}"
+                       role="menuitem"
+                       class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <flux:icon name="currency-dollar" class="h-4 w-4 shrink-0" />
+                        Registrar pago
+                    </a>
+                @endif
+
+                {{-- Historial de pagos --}}
+                <a href="{{ route('payments.history', ['student_id' => $student->id]) }}"
+                   role="menuitem"
+                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 hover:text-indigo-700 dark:hover:text-indigo-300">
+                    <flux:icon name="clock" class="h-4 w-4 shrink-0" />
+                    Historial de pagos
+                </a>
+
+                {{-- Revisión Médica --}}
+                <a href="{{ route('medical_checkups.index', ['student_id' => $student->id]) }}"
+                   role="menuitem"
+                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-lime-50 dark:hover:bg-lime-900/40 hover:text-lime-700 dark:hover:text-lime-300">
+                    <flux:icon name="heart" class="h-4 w-4 shrink-0" />
+                    Revisión médica
+                </a>
+
+                {{-- Períodos de pausa --}}
+                <a href="{{ route('students.pauses.index', $student) }}"
+                   role="menuitem"
+                   class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-amber-900/40 hover:text-amber-700 dark:hover:text-amber-300">
+                    <flux:icon name="pause-circle" class="h-4 w-4 shrink-0" />
+                    Períodos de pausa
+                </a>
+
+                <div class="my-1 border-t border-gray-100 dark:border-gray-800"></div>
+
+                {{-- Eliminar --}}
+                <form action="{{ route('students.destroy', $student) }}" method="POST" class="block">
+                    @csrf
+                    @method('DELETE')
+                    <button type="button"
+                            onclick="confirmDelete(this)"
+                            role="menuitem"
+                            class="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40">
+                        <flux:icon name="user-minus" class="h-4 w-4 shrink-0" />
+                        Eliminar alumno
+                    </button>
+                </form>
+            </div>
         </div>
     </td>
 </tr>

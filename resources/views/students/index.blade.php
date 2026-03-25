@@ -1,6 +1,6 @@
 <x-layouts.app title="Alumnos">
     <div class="max-w-6xl mx-auto py-8 px-4">
-       <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">ALUMNOS</h1>
 
             <a href="{{ route('students.create') }}"
@@ -113,7 +113,6 @@
     </div>
 
     @push('scripts')
-    
     <script>
     (function () {
         const searchInput = document.getElementById('student-search');
@@ -197,7 +196,6 @@
 
                 // Re-attach handlers for new pagination links and delete buttons
                 attachPaginationHandlers();
-                attachDeleteConfirmHandlers();
                 updateSortIndicators();
             } catch (err) {
                 console.error('Fetch error', err);
@@ -249,42 +247,9 @@
             });
         }
 
-        // Delete confirm handlers (SweetAlert)
-        function attachDeleteConfirmHandlers() {
-            const deleteButtons = document.querySelectorAll('form button[onclick="confirmDelete(this)"], button[onclick="confirmDelete(this)"]');
-            deleteButtons.forEach(btn => {
-                // We already attach onclick inline, but ensure duplicate protection:
-                btn.removeEventListener('click', window._confirmDeleteWrapped);
-                const handler = function (e) {
-                    e.preventDefault();
-                    Swal.fire({
-                        title: '¿Estás seguro?',
-                        text: "¡Esta acción no se puede deshacer!",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
-                        confirmButtonText: 'Sí, eliminar',
-                        cancelButtonText: 'Cancelar'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            const form = btn.closest('form');
-                            if (form) form.submit();
-                        }
-                    });
-                };
-                // store to allow removal
-                window._confirmDeleteWrapped = handler;
-                btn.addEventListener('click', handler);
-            });
-        }
-
         // Inicial setup
         updateSortIndicators();
         attachPaginationHandlers();
-        attachDeleteConfirmHandlers();
-
-        // Handle back/forward navigation (restaurar estado)
         window.addEventListener('popstate', function () {
             const params = new URLSearchParams(window.location.search);
             state.search = params.get('search') || '';
@@ -296,6 +261,72 @@
             fetchAndRender();
         });
     })();
+    </script>
+    <script>
+    // ── Global confirmDelete (called from inline onclick in rows) ─────────────
+    window.confirmDelete = function (btn) {
+        const form = btn.closest('form');
+        if (!form) return;
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: '¡Esta acción no se puede deshacer!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e53e3e',
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            focusCancel: true
+        }).then((result) => {
+            if (result.isConfirmed) form.submit();
+        });
+    };
+
+    // ── Actions dropdown (event delegation – works after AJAX re-renders) ────
+    document.addEventListener('click', function (e) {
+        const toggleBtn = e.target.closest('[data-dropdown-toggle]');
+
+        if (toggleBtn) {
+            e.stopPropagation();
+            const container = toggleBtn.closest('[data-actions-dropdown]');
+            const menu = container ? container.querySelector('[data-dropdown-menu]') : null;
+            if (!menu) return;
+
+            const isOpen = !menu.classList.contains('hidden');
+
+            // Close every other open menu first
+            document.querySelectorAll('[data-dropdown-menu]:not(.hidden)').forEach(m => {
+                m.classList.add('hidden');
+                const tb = m.closest('[data-actions-dropdown]')?.querySelector('[data-dropdown-toggle]');
+                if (tb) tb.setAttribute('aria-expanded', 'false');
+            });
+
+            // Toggle this one
+            if (!isOpen) {
+                menu.classList.remove('hidden');
+                toggleBtn.setAttribute('aria-expanded', 'true');
+            }
+            return;
+        }
+
+        // Click outside – close all open menus
+        document.querySelectorAll('[data-dropdown-menu]:not(.hidden)').forEach(m => {
+            m.classList.add('hidden');
+            const tb = m.closest('[data-actions-dropdown]')?.querySelector('[data-dropdown-toggle]');
+            if (tb) tb.setAttribute('aria-expanded', 'false');
+        });
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('[data-dropdown-menu]:not(.hidden)').forEach(m => {
+                m.classList.add('hidden');
+                const tb = m.closest('[data-actions-dropdown]')?.querySelector('[data-dropdown-toggle]');
+                if (tb) tb.setAttribute('aria-expanded', 'false');
+            });
+        }
+    });
     </script>
     <script>
 document.addEventListener('DOMContentLoaded', function () {
