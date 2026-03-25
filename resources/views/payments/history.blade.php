@@ -3,9 +3,9 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Historial de pagos</h1>
 
-            <form method="GET" action="{{ route('payments.history') }}" class="flex items-center gap-2">
+            <form method="GET" action="{{ route('payments.history') }}" class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 <label for="student_id" class="sr-only">Filtrar por alumno</label>
-                <select name="student_id" id="student_id" class="rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-2">
+                <select name="student_id" id="student_id" class="w-full sm:w-auto rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-2">
                     <option value="">— Todos los alumnos —</option>
                     @foreach($students as $s)
                         <option value="{{ $s->id }}" {{ (string)($studentId ?? '') === (string)$s->id ? 'selected' : '' }}>
@@ -17,18 +17,18 @@
                 {{-- Period filter: desde / hasta (type="month") --}}
                 <label for="period_from" class="sr-only">Periodo desde</label>
                 <input type="month" id="period_from" name="period_from" value="{{ request('period_from') ?? '' }}"
-                       class="rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                       class="w-full sm:w-auto rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-2"
                        title="Periodo desde (YYYY-MM)">
 
                 <label for="period_to" class="sr-only">Periodo hasta</label>
                 <input type="month" id="period_to" name="period_to" value="{{ request('period_to') ?? '' }}"
-                       class="rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-2"
+                       class="w-full sm:w-auto rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-3 py-2"
                        title="Periodo hasta (YYYY-MM)">
 
-                <button type="submit" class="px-3 py-2 rounded bg-[#29b1dc] text-white hover:bg-[#24a8cf]">Filtrar</button>
+                <button type="submit" class="w-full sm:w-auto px-3 py-2 rounded bg-[#29b1dc] text-white hover:bg-[#24a8cf]">Filtrar</button>
 
                 @if(!empty($studentId) || request()->hasAny(['period_from','period_to']))
-                    <a href="{{ route('payments.history') }}" class="text-sm text-gray-600 dark:text-gray-300 underline ml-2">Quitar filtro</a>
+                    <a href="{{ route('payments.history') }}" class="text-sm text-gray-600 dark:text-gray-300 underline">Quitar filtro</a>
                 @endif
             </form>
         </div>
@@ -98,7 +98,7 @@
             </div>
         @endif
 
-        <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
+        <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-3 sm:p-6 shadow-sm">
             @if($payments->isEmpty())
                 <div class="p-4 bg-gray-50 dark:bg-zinc-900/40 rounded border border-gray-100 dark:border-zinc-700 text-gray-700 dark:text-gray-200">
                     No se encontraron pagos.
