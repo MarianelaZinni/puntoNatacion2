@@ -52,6 +52,10 @@ Route::middleware(['auth'])->group(function () {
     // ── Students list (admin + enfermeria) ───────────────────────────────────
     Route::middleware('role:admin,enfermeria')->group(function () {
         Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+    });
+
+    // ── Student detail view (admin + enfermeria + profesor) ──────────────────
+    Route::middleware('role:admin,enfermeria,profesor')->group(function () {
         Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
     });
 
