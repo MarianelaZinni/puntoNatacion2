@@ -1,4 +1,5 @@
 <x-layouts.app title="Ver alumno">
+    @php $userRole = auth()->user()->role ?? ''; @endphp
     <div class="max-w-3xl mx-auto py-8 px-4">
        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Datos del Alumno</h1>
@@ -205,7 +206,8 @@
                             $canRegisterPayment = ($debtAmount > 0) || (!empty($selectable) && count($selectable) > 0);
                         @endphp
 
-                        {{-- Botón para registrar pago preseleccionando el alumno --}}
+                        {{-- Botón para registrar pago preseleccionando el alumno (solo admin) --}}
+                        @if($userRole === 'admin')
                         <a href="{{ route('payments.index', ['student_id' => $student->id]) }}"
                            class="inline-flex items-center gap-2 px-4 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none"
                            @unless($canRegisterPayment) aria-disabled="true" onclick="event.preventDefault();" style="opacity:0.6;pointer-events:none;" @endunless>
@@ -216,6 +218,7 @@
                         <a href="{{ route('payments.history', ['search' => $student->name]) }}" class="text-sm text-gray-600 dark:text-gray-300 underline">
                             Ver historial completo
                         </a>
+                        @endif
                     </div>
                 </div>
 
@@ -287,7 +290,9 @@
                                         <th class="px-3 py-2 text-left">Método</th>
                                         <th class="px-3 py-2 text-right">Monto (AR$)</th>
                                         <th class="px-3 py-2 text-left">Notas</th>
+                                        @if($userRole === 'admin')
                                         <th class="px-3 py-2 text-center">Acciones</th>
+                                        @endif
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -321,7 +326,8 @@
                                                 {{ $payment->notes ?? '-' }}
                                             </td>
                                             
-                                            {{-- Columna: Acciones (NUEVA) --}}
+                                            {{-- Columna: Acciones (solo admin) --}}
+                                            @if($userRole === 'admin')
                                             <td class="px-3 py-3 text-center">
                                                 <div class="flex items-center justify-center gap-1.5">
                                                     {{-- Botón Editar --}}
@@ -350,6 +356,7 @@
                                                     </form>
                                                 </div>
                                             </td>
+                                            @endif
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -361,10 +368,17 @@
 
             {{-- Actions --}}
             <div class="mt-6 pt-3 flex flex-wrap items-center justify-end gap-3">
+                @if(in_array($userRole, ['admin', 'enfermeria']))
                 <a href="{{ route('students.index') }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition text-base">
                     Volver
                 </a>
+                @else
+                <a href="{{ route('attendance.index') }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition text-base">
+                    Volver
+                </a>
+                @endif
 
+                @if($userRole === 'admin')
                 <a href="{{ route('students.edit', $student) }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition text-base">
                     Editar
                 </a>
@@ -380,6 +394,7 @@
                         Eliminar
                     </button>
                 </form>
+                @endif
             </div>
         </div>
     </div>
