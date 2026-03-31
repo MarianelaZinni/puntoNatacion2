@@ -121,13 +121,13 @@
                     Revisión médica
                 </a>
 
-                {{-- Períodos de pausa --}}
+                {{-- Períodos de pausa 
                 <a href="{{ route('students.pauses.index', $student) }}"
                    role="menuitem"
                    class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-amber-900/40 hover:text-amber-700 dark:hover:text-amber-300">
                     <flux:icon name="pause-circle" class="h-4 w-4 shrink-0" />
                     Períodos de pausa
-                </a>
+                </a>--}}
 
                 <div class="my-1 border-t border-gray-100 dark:border-gray-800"></div>
 
