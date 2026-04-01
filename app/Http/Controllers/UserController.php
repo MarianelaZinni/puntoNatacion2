@@ -47,11 +47,12 @@ class UserController extends Controller
         ]);
 
         $user = User::create([
-            'name'       => $data['name'],
-            'email'      => $data['email'],
-            'password'   => Hash::make($data['password']),
-            'role'       => $data['role'],
-            'teacher_id' => ($data['role'] === 'profesor') ? ($data['teacher_id'] ?? null) : null,
+            'name'              => $data['name'],
+            'email'             => $data['email'],
+            'password'          => Hash::make($data['password']),
+            'role'              => $data['role'],
+            'teacher_id'        => ($data['role'] === 'profesor') ? ($data['teacher_id'] ?? null) : null,
+            'email_verified_at' => now(),
         ]);
 
         if ($data['role'] === 'alumno' && ! empty($data['student_ids'])) {

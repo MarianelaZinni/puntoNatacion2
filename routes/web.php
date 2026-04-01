@@ -54,6 +54,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/students', [StudentController::class, 'index'])->name('students.index');
     });
 
+    // ── Students create/store must be defined BEFORE the {student} wildcard ───
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
+        Route::post('/students', [StudentController::class, 'store'])->name('students.store');
+    });
+
     // ── Student detail view (admin + enfermeria + profesor) ──────────────────
     Route::middleware('role:admin,enfermeria,profesor')->group(function () {
         Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
@@ -90,9 +96,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/teachers/{teacher}/assign-class', [TeacherController::class, 'assignClass'])->name('teachers.assignClass');
         Route::post('/teachers/{teacher}/unassign-class', [TeacherController::class, 'unassignClass'])->name('teachers.unassignClass');
 
-        // Students CRUD (admin only for create/edit/delete)
-        Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
-        Route::post('/students', [StudentController::class, 'store'])->name('students.store');
+        // Students CRUD (admin only for edit/delete/enroll - create/store defined earlier before wildcard)
         Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
         Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
         Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');

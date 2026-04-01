@@ -158,7 +158,7 @@
                 @endif
 
                 {{-- ── SISTEMA (admin only) ────────────────────────────────────── --}}
-                <!--@if($role === 'admin')
+                @if($role === 'admin')
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Sistema</div>
                     <flux:navlist.group>
@@ -171,7 +171,6 @@
                     </flux:navlist.group>
                 </div>
                 @endif
-            -->
             </flux:navlist>
             @endauth
 
