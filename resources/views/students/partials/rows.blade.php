@@ -89,7 +89,7 @@
                         <flux:icon name="currency-dollar" class="h-4 w-4 shrink-0" />
                         Registrar pago <span class="ml-auto text-xs text-green-600 dark:text-green-400">✓</span>
                     </span>
-                @elseif($debt <= 0 && !$hasUnpaid)
+                 @elseif($debt <= 0 && !$hasUnpaid && $status !== 'pendiente')
                     <span role="menuitem"
                           class="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 dark:text-gray-500 cursor-default"
                           title="Sin deuda">
