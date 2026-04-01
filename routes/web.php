@@ -5,7 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\StudentPortalController;
 use App\Http\Controllers\TeacherPortalController;
-use App\Http\Controllers\UserController;
+// use App\Http\Controllers\UserController;  // TODO: re-habilitar con el sistema de roles
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Volt;
@@ -25,65 +25,70 @@ Route::get('/', function () {
 })->name('home');
 
 // ─── ALL authenticated routes ────────────────────────────────────────────────
+// NOTA: Los middlewares de rol están comentados temporalmente para que todos
+// los usuarios autenticados puedan acceder a todas las funciones.
+// TODO: Re-habilitar los grupos con ->middleware('role:xxx') cuando se
+//       configure correctamente el sistema de roles.
 Route::middleware(['auth'])->group(function () {
 
-    // Dashboard (all authenticated roles)
+    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Settings (all roles)
+    // Settings
     Route::redirect('settings', 'settings/profile');
     Volt::route('settings/profile', 'settings.profile')->name('profile.edit');
     Volt::route('settings/password', 'settings.password')->name('password.edit');
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');
 
-    // ── Student portal (alumno role) ─────────────────────────────────────────
-    Route::middleware('role:alumno')->group(function () {
+    // ── Portals ──────────────────────────────────────────────────────────────
+    // Route::middleware('role:alumno')->group(function () {   // TODO: re-habilitar roles
         Route::get('/portal/student', [StudentPortalController::class, 'index'])->name('portal.student');
-    });
+    // });
 
-    // ── Teacher portal + attendance (profesor role) ──────────────────────────
-    Route::middleware('role:admin,profesor')->group(function () {
+    // Route::middleware('role:admin,profesor')->group(function () {   // TODO: re-habilitar roles
         Route::get('/portal/teacher', [TeacherPortalController::class, 'index'])->name('portal.teacher');
         Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
         Route::get('/attendance/take', [AttendanceController::class, 'take'])->name('attendance.take');
         Route::post('/attendance/store', [AttendanceController::class, 'store'])->name('attendance.store');
-    });
+    // });
 
-    // ── Students list (admin + enfermeria) ───────────────────────────────────
-    Route::middleware('role:admin,enfermeria')->group(function () {
+    // ── Students ─────────────────────────────────────────────────────────────
+    // Route::middleware('role:admin,enfermeria')->group(function () {   // TODO: re-habilitar roles
         Route::get('/students', [StudentController::class, 'index'])->name('students.index');
-    });
+    // });
 
-    // ── Students create/store must be defined BEFORE the {student} wildcard ───
-    Route::middleware('role:admin')->group(function () {
+    // Static student routes MUST come before the {student} wildcard
+    // Route::middleware('role:admin')->group(function () {   // TODO: re-habilitar roles
         Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
         Route::post('/students', [StudentController::class, 'store'])->name('students.store');
-    });
+    // });
 
-    // ── Student detail view (admin + enfermeria + profesor) ──────────────────
-    Route::middleware('role:admin,enfermeria,profesor')->group(function () {
+    // Route::middleware('role:admin,enfermeria,profesor')->group(function () {   // TODO: re-habilitar roles
         Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
-    });
+    // });
 
-    // ── Medical checkups: view + create + report (admin + enfermeria) ────────
-    Route::middleware('role:admin,enfermeria')->group(function () {
+    // ── Medical checkups ─────────────────────────────────────────────────────
+    // Route::middleware('role:admin,enfermeria')->group(function () {   // TODO: re-habilitar roles
         Route::get('/medical-checkups', [MedicalCheckupController::class, 'index'])->name('medical_checkups.index');
         Route::get('/medical-checkups/create', [MedicalCheckupController::class, 'create'])->name('medical_checkups.create');
         Route::post('/medical-checkups', [MedicalCheckupController::class, 'store'])->name('medical_checkups.store');
         Route::get('/medical-checkups/report', [MedicalCheckupController::class, 'report'])->name('medical_checkups.report');
         Route::get('/medical-checkups/report/pdf', [MedicalCheckupController::class, 'reportPdf'])->name('medical_checkups.report_pdf');
-    });
+    // });
 
-    // ── Admin-only routes ────────────────────────────────────────────────────
-    Route::middleware('role:admin')->group(function () {
+    // ── Previously admin-only routes (now open to all authenticated users) ───
+    // Route::middleware('role:admin')->group(function () {   // TODO: re-habilitar roles
 
-        // User management
+        // ── Gestión de usuarios - COMENTADO TEMPORALMENTE ─────────────────
+        // TODO: Re-habilitar cuando se configure correctamente el sistema de roles
+        /*
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        */
 
         // Teachers
         Route::get('/teachers', [TeacherController::class, 'index'])->name('teachers.index');
@@ -96,7 +101,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/teachers/{teacher}/assign-class', [TeacherController::class, 'assignClass'])->name('teachers.assignClass');
         Route::post('/teachers/{teacher}/unassign-class', [TeacherController::class, 'unassignClass'])->name('teachers.unassignClass');
 
-        // Students CRUD (admin only for edit/delete/enroll - create/store defined earlier before wildcard)
+        // Students CRUD
         Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
         Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
         Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
@@ -104,12 +109,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('students/{student}/enroll', [StudentController::class, 'enrollClass'])->name('students.enroll');
         Route::post('students/{student}/unenroll', [StudentController::class, 'unenrollClass'])->name('students.unenroll');
 
-       // Student pauses (períodos de pausa)
-Route::get('students/{student}/pauses', [App\Http\Controllers\StudentPauseController::class, 'index'])->name('students.pauses.index');
-Route::post('students/{student}/pauses', [App\Http\Controllers\StudentPauseController::class, 'store'])->name('students.pauses.store');
-Route::get('students/{student}/pauses/{pause}/edit', [App\Http\Controllers\StudentPauseController::class, 'edit'])->name('students.pauses.edit');
-Route::put('students/{student}/pauses/{pause}', [App\Http\Controllers\StudentPauseController::class, 'update'])->name('students.pauses.update');
-Route::delete('students/{student}/pauses/{pause}', [App\Http\Controllers\StudentPauseController::class, 'destroy'])->name('students.pauses.destroy');
+        // Student pauses
+        Route::get('students/{student}/pauses', [App\Http\Controllers\StudentPauseController::class, 'index'])->name('students.pauses.index');
+        Route::post('students/{student}/pauses', [App\Http\Controllers\StudentPauseController::class, 'store'])->name('students.pauses.store');
+        Route::get('students/{student}/pauses/{pause}/edit', [App\Http\Controllers\StudentPauseController::class, 'edit'])->name('students.pauses.edit');
+        Route::put('students/{student}/pauses/{pause}', [App\Http\Controllers\StudentPauseController::class, 'update'])->name('students.pauses.update');
+        Route::delete('students/{student}/pauses/{pause}', [App\Http\Controllers\StudentPauseController::class, 'destroy'])->name('students.pauses.destroy');
 
         // Subjects
         Route::get('/subjects', [SubjectController::class, 'index'])->name('subjects.index');
@@ -134,12 +139,12 @@ Route::delete('students/{student}/pauses/{pause}', [App\Http\Controllers\Student
         Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
         Route::get('/payments/history', [PaymentController::class, 'history'])->name('payments.history');
 
-        // Medical checkups: edit/delete (admin only)
+        // Medical checkups: edit/delete
         Route::get('/medical-checkups/{medicalCheckup}/edit', [MedicalCheckupController::class, 'edit'])->name('medical_checkups.edit');
         Route::put('/medical-checkups/{medicalCheckup}', [MedicalCheckupController::class, 'update'])->name('medical_checkups.update');
         Route::delete('/medical-checkups/{medicalCheckup}', [MedicalCheckupController::class, 'destroy'])->name('medical_checkups.destroy');
 
-        // Reports (all)
+        // Reports
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('/', [ReportController::class, 'index'])->name('index');
             Route::get('/class-enrollees', [ReportController::class, 'classEnrolleesForm'])->name('class_enrollees.form');
@@ -161,7 +166,8 @@ Route::delete('students/{student}/pauses/{pause}', [App\Http\Controllers\Student
 
         // Backup
         Route::get('/backup/download', [BackupController::class, 'download'])->name('backup.download');
-    });
+
+    // }); // end role:admin group
 
 }); // end auth middleware
 
