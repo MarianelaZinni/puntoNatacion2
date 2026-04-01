@@ -12,12 +12,13 @@
             </a>
 
             @auth
-            @php $role = auth()->user()->role ?? 'admin'; @endphp
+            {{-- TODO: Re-habilitar las condiciones por rol cuando se configure correctamente el sistema de roles --}}
+            {{-- @php $role = auth()->user()->role ?? 'admin'; @endphp --}}
 
             <flux:navlist variant="outline" class="px-2">
 
-                {{-- ── TABLERO (admin, enfermeria) ──────────────────────────────── --}}
-                @if(in_array($role, ['admin', 'enfermeria']))
+                {{-- ── TABLERO ──────────────────────────────────────────────────── --}}
+                {{-- @if(in_array($role, ['admin', 'enfermeria'])) --}}
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Tablero</div>
                     <flux:navlist.group>
@@ -27,36 +28,10 @@
                     </flux:navlist.group>
                 </div>
                 <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
-                @endif
+                {{-- @endif --}}
 
-                {{-- ── ALUMNO PORTAL ────────────────────────────────────────────── --}}
-                @if($role === 'alumno')
-                <div class="mt-2 mb-3 px-1">
-                    <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Mi Cuenta</div>
-                    <flux:navlist.group>
-                        <flux:navlist.item icon="user" :href="route('portal.student')" :current="request()->routeIs('portal.student')" wire:navigate>
-                            {{ __('Mi Portal') }}
-                        </flux:navlist.item>
-                    </flux:navlist.group>
-                </div>
-                <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
-                @endif
-
-                {{-- ── PROFESOR PORTAL ──────────────────────────────────────────── --}}
-                @if($role === 'profesor')
-                <div class="mt-2 mb-3 px-1">
-                    <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Mi Perfil</div>
-                    <flux:navlist.group>
-                        <flux:navlist.item icon="academic-cap" :href="route('portal.teacher')" :current="request()->routeIs('portal.teacher')" wire:navigate>
-                            {{ __('Mi Perfil') }}
-                        </flux:navlist.item>
-                    </flux:navlist.group>
-                </div>
-                <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
-                @endif
-
-                {{-- ── ALUMNOS (admin + enfermeria) ────────────────────────────── --}}
-                @if(in_array($role, ['admin', 'enfermeria']))
+                {{-- ── ALUMNOS ────────────────────────────────────────────────── --}}
+                {{-- @if(in_array($role, ['admin', 'enfermeria'])) --}}
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Alumnos</div>
                     <flux:navlist.group>
@@ -66,10 +41,10 @@
                     </flux:navlist.group>
                 </div>
                 <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
-                @endif
+                {{-- @endif --}}
 
-                {{-- ── PROFESORES (admin only) ─────────────────────────────────── --}}
-                @if($role === 'admin')
+                {{-- ── PROFESORES ──────────────────────────────────────────────── --}}
+                {{-- @if($role === 'admin') --}}
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Profesores</div>
                     <flux:navlist.group>
@@ -79,10 +54,10 @@
                     </flux:navlist.group>
                 </div>
                 <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
-                @endif
+                {{-- @endif --}}
 
-                {{-- ── ENFERMERÍA (admin + enfermeria) ─────────────────────────── --}}
-                @if(in_array($role, ['admin', 'enfermeria']))
+                {{-- ── ENFERMERÍA ───────────────────────────────────────────────── --}}
+                {{-- @if(in_array($role, ['admin', 'enfermeria'])) --}}
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Enfermería</div>
                     <flux:navlist.group>
@@ -92,38 +67,38 @@
                     </flux:navlist.group>
                 </div>
                 <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
-                @endif
+                {{-- @endif --}}
 
-                {{-- ── CLASES (admin) + Asistencia (admin + profesor) ──────────── --}}
-                @if(in_array($role, ['admin', 'profesor']))
+                {{-- ── CLASES ───────────────────────────────────────────────────── --}}
+                {{-- @if(in_array($role, ['admin', 'profesor'])) --}}
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Clases</div>
                     <flux:navlist.group>
-                        @if($role === 'admin')
+                        {{-- @if($role === 'admin') --}}
                         <flux:navlist.item icon="calendar-days" :href="route('subjects.index')" :current="request()->routeIs('subjects.*')" wire:navigate>
                             {{ __('Clases') }}
                         </flux:navlist.item>
-                        @endif
+                        {{-- @endif --}}
 
                         <flux:navlist.item icon="clipboard-document-check" :href="route('attendance.index')" :current="request()->routeIs('attendance.*')" wire:navigate>
                             {{ __('Asistencia') }}
                         </flux:navlist.item>
 
-                        @if($role === 'admin')
+                        {{-- @if($role === 'admin') --}}
                         <flux:navlist.item icon="currency-dollar" :href="route('subject-prices.index')" :current="request()->routeIs('subject-prices.*')" wire:navigate>
                             {{ __('Valores de las clases') }}
                         </flux:navlist.item>
                         <flux:navlist.item icon="credit-card" :href="route('payment_methods.index')" :current="request()->routeIs('payment_methods.*')" wire:navigate>
                             {{ __('Tipos de pago') }}
                         </flux:navlist.item>
-                        @endif
+                        {{-- @endif --}}
                     </flux:navlist.group>
                 </div>
                 <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
-                @endif
+                {{-- @endif --}}
 
-                {{-- ── PAGOS (admin only) ───────────────────────────────────────── --}}
-                @if($role === 'admin')
+                {{-- ── PAGOS ────────────────────────────────────────────────────── --}}
+                {{-- @if($role === 'admin') --}}
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Pagos</div>
                     <flux:navlist.group>
@@ -136,41 +111,38 @@
                     </flux:navlist.group>
                 </div>
                 <div class="border-t border-zinc-100 dark:border-zinc-800 my-2"></div>
-                @endif
+                {{-- @endif --}}
 
-                {{-- ── REPORTES (admin + enfermeria) ───────────────────────────── --}}
-                @if(in_array($role, ['admin', 'enfermeria']))
+                {{-- ── REPORTES ─────────────────────────────────────────────────── --}}
+                {{-- @if(in_array($role, ['admin', 'enfermeria'])) --}}
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Reportes</div>
                     <flux:navlist.group>
-                        @if($role === 'admin')
                         <flux:navlist.item icon="chart-bar" :href="route('reports.index')" :current="request()->routeIs('reports.index')" wire:navigate>
                             {{ __('Panel de reportes') }}
                         </flux:navlist.item>
-                        @else
-                        {{-- enfermeria: only medical report --}}
-                        <flux:navlist.item icon="heart" :href="route('medical_checkups.report')" :current="request()->routeIs('medical_checkups.report')" wire:navigate>
-                            {{ __('Reporte Médico') }}
-                        </flux:navlist.item>
-                        @endif
                     </flux:navlist.group>
                 </div>
-                @endif
+                {{-- @endif --}}
 
-                {{-- ── SISTEMA (admin only) ────────────────────────────────────── --}}
-                @if($role === 'admin')
+                {{-- ── SISTEMA (usuarios y roles) - COMENTADO TEMPORALMENTE ───────── --}}
+                {{-- TODO: Re-habilitar cuando se configure correctamente el sistema de roles --}}
+                {{--
+                @if($role === 'admin')--}}
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Sistema</div>
                     <flux:navlist.group>
-                        <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
+                       {{-- <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
                             {{ __('Usuarios y Roles') }}
-                        </flux:navlist.item>
+                        </flux:navlist.item>--}}
                         <flux:navlist.item icon="arrow-down-tray" href="{{ route('backup.download') }}">
                             {{ __('Backup de Base de Datos') }}
                         </flux:navlist.item>
                     </flux:navlist.group>
                 </div>
-                @endif
+               {{-- @endif
+                --}}
+
             </flux:navlist>
             @endauth
 
