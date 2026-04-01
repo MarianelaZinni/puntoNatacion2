@@ -88,9 +88,6 @@
                         <flux:navlist.item icon="currency-dollar" :href="route('subject-prices.index')" :current="request()->routeIs('subject-prices.*')" wire:navigate>
                             {{ __('Valores de las clases') }}
                         </flux:navlist.item>
-                        <flux:navlist.item icon="credit-card" :href="route('payment_methods.index')" :current="request()->routeIs('payment_methods.*')" wire:navigate>
-                            {{ __('Tipos de pago') }}
-                        </flux:navlist.item>
                         {{-- @endif --}}
                     </flux:navlist.group>
                 </div>
@@ -102,6 +99,9 @@
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Pagos</div>
                     <flux:navlist.group>
+                         <flux:navlist.item icon="credit-card" :href="route('payment_methods.index')" :current="request()->routeIs('payment_methods.*')" wire:navigate>
+                            {{ __('Tipos de pago') }}
+                        </flux:navlist.item>
                         <flux:navlist.item icon="banknotes" :href="route('payments.index')" :current="(request()->routeIs('payments.*') && ! request()->routeIs('payments.history'))" wire:navigate>
                             {{ __('Pagos') }}
                         </flux:navlist.item>
