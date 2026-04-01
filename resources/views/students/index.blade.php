@@ -283,50 +283,55 @@
     };
 
     // ── Actions dropdown (event delegation – works after AJAX re-renders) ────
-    document.addEventListener('click', function (e) {
-        const toggleBtn = e.target.closest('[data-dropdown-toggle]');
+    // Guard: only register once even when Livewire wire:navigate re-runs this script
+    if (!window._studentsDropdownListenerAttached) {
+        window._studentsDropdownListenerAttached = true;
 
-        if (toggleBtn) {
-            e.stopPropagation();
-            const container = toggleBtn.closest('[data-actions-dropdown]');
-            const menu = container ? container.querySelector('[data-dropdown-menu]') : null;
-            if (!menu) return;
+        document.addEventListener('click', function (e) {
+            const toggleBtn = e.target.closest('[data-dropdown-toggle]');
 
-            const isOpen = !menu.classList.contains('hidden');
+            if (toggleBtn) {
+                e.stopPropagation();
+                const container = toggleBtn.closest('[data-actions-dropdown]');
+                const menu = container ? container.querySelector('[data-dropdown-menu]') : null;
+                if (!menu) return;
 
-            // Close every other open menu first
-            document.querySelectorAll('[data-dropdown-menu]:not(.hidden)').forEach(m => {
-                m.classList.add('hidden');
-                const tb = m.closest('[data-actions-dropdown]')?.querySelector('[data-dropdown-toggle]');
-                if (tb) tb.setAttribute('aria-expanded', 'false');
-            });
+                const isOpen = !menu.classList.contains('hidden');
 
-            // Toggle this one
-            if (!isOpen) {
-                menu.classList.remove('hidden');
-                toggleBtn.setAttribute('aria-expanded', 'true');
+                // Close every other open menu first
+                document.querySelectorAll('[data-dropdown-menu]:not(.hidden)').forEach(m => {
+                    m.classList.add('hidden');
+                    const tb = m.closest('[data-actions-dropdown]')?.querySelector('[data-dropdown-toggle]');
+                    if (tb) tb.setAttribute('aria-expanded', 'false');
+                });
+
+                // Toggle this one
+                if (!isOpen) {
+                    menu.classList.remove('hidden');
+                    toggleBtn.setAttribute('aria-expanded', 'true');
+                }
+                return;
             }
-            return;
-        }
 
-        // Click outside – close all open menus
-        document.querySelectorAll('[data-dropdown-menu]:not(.hidden)').forEach(m => {
-            m.classList.add('hidden');
-            const tb = m.closest('[data-actions-dropdown]')?.querySelector('[data-dropdown-toggle]');
-            if (tb) tb.setAttribute('aria-expanded', 'false');
-        });
-    });
-
-    // Close on Escape key
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
+            // Click outside – close all open menus
             document.querySelectorAll('[data-dropdown-menu]:not(.hidden)').forEach(m => {
                 m.classList.add('hidden');
                 const tb = m.closest('[data-actions-dropdown]')?.querySelector('[data-dropdown-toggle]');
                 if (tb) tb.setAttribute('aria-expanded', 'false');
             });
-        }
-    });
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('[data-dropdown-menu]:not(.hidden)').forEach(m => {
+                    m.classList.add('hidden');
+                    const tb = m.closest('[data-actions-dropdown]')?.querySelector('[data-dropdown-toggle]');
+                    if (tb) tb.setAttribute('aria-expanded', 'false');
+                });
+            }
+        });
+    }
     </script>
     <script>
 document.addEventListener('DOMContentLoaded', function () {
