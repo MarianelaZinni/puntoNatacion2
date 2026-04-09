@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\Subject;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
@@ -95,18 +96,20 @@ class AttendanceController extends Controller
         }
 
         try {
-            foreach ($enrolledStudentIds as $studentId) {
-                Attendance::updateOrCreate(
-                    [
-                        'subject_id' => $subjectId,
-                        'student_id' => $studentId,
-                        'date'       => $date,
-                    ],
-                    [
-                        'present' => in_array($studentId, $presentIds),
-                    ]
-                );
-            }
+            DB::transaction(function () use ($enrolledStudentIds, $subjectId, $date, $presentIds) {
+                foreach ($enrolledStudentIds as $studentId) {
+                    Attendance::updateOrCreate(
+                        [
+                            'subject_id' => $subjectId,
+                            'student_id' => $studentId,
+                            'date'       => $date,
+                        ],
+                        [
+                            'present' => in_array($studentId, $presentIds),
+                        ]
+                    );
+                }
+            });
 
             return redirect()
                 ->route('attendance.take', ['subject_id' => $subjectId, 'date' => $date])
