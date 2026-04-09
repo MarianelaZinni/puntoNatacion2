@@ -98,10 +98,12 @@ class StudentController extends Controller
 
            if ($request->ajax() || $request->wantsJson()) {
                $rowsHtml = view('students.partials.rows', compact('students'))->render();
+               $cardsHtml = view('students.partials.cards', compact('students'))->render();
                $paginationHtml = view('students.partials.pagination', compact('students'))->render();
 
                return response()->json([
                    'rows' => $rowsHtml,
+                   'cards' => $cardsHtml,
                    'pagination' => $paginationHtml,
                ]);
            }

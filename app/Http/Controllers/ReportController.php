@@ -272,9 +272,112 @@ class ReportController extends Controller
         return view('reports.payments_by_student_page', $data);
     }
 
+    /**
+     * Fetch data for accounting report (all payments filtered by payment date range)
+     */
+    private function fetchAccountingData(Request $request): array
+    {
+        $dateFrom = $request->query('date_from');
+        $dateTo   = $request->query('date_to');
+
+        $query = Payment::with(['student', 'paymentMethod'])->orderBy('payment_date');
+
+        if ($dateFrom && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+            $query->whereDate('payment_date', '>=', $dateFrom);
+        }
+        if ($dateTo && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+            $query->whereDate('payment_date', '<=', $dateTo);
+        }
+
+        $payments = $query->get();
+        $total = $payments->sum('amount');
+
+        return [
+            'company'      => $this->companyName,
+            'payments'     => $payments,
+            'total'        => $total,
+            'date_from'    => $dateFrom,
+            'date_to'      => $dateTo,
+            'generated_at' => Carbon::now(),
+        ];
+    }
+
     //
-    // 4) Todos los alumnos
+    // 6) Reporte contable
     //
+    public function accountingForm()
+    {
+        return view('reports.accounting_form');
+    }
+
+    public function accountingPage(Request $request)
+    {
+        $data = $this->fetchAccountingData($request);
+        return view('reports.accounting_page', $data);
+    }
+
+    /**
+     * Export accounting report to CSV (opens natively in Excel).
+     */
+    public function accountingExcel(Request $request)
+    {
+        $data = $this->fetchAccountingData($request);
+        $payments = $data['payments'];
+        $total    = $data['total'];
+        $dateFrom = $data['date_from'];
+        $dateTo   = $data['date_to'];
+
+        $filename = 'reporte_contable';
+        if ($dateFrom) $filename .= '_desde_' . $dateFrom;
+        if ($dateTo)   $filename .= '_hasta_' . $dateTo;
+        $filename .= '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+            'Pragma'              => 'no-cache',
+            'Expires'             => '0',
+        ];
+
+        $callback = function () use ($payments, $total, $dateFrom, $dateTo) {
+            $file = fopen('php://output', 'w');
+
+            // UTF-8 BOM so Excel recognises encoding
+            fputs($file, "\xEF\xBB\xBF");
+
+            // Title rows
+            fputcsv($file, ['Reporte Contable – Punto Natación']);
+            if ($dateFrom || $dateTo) {
+                $period = 'Período: ' . ($dateFrom ? $dateFrom : '—') . ' al ' . ($dateTo ? $dateTo : '—');
+                fputcsv($file, [$period]);
+            }
+            fputcsv($file, ['Generado: ' . Carbon::now()->format('d/m/Y H:i')]);
+            fputcsv($file, []);
+
+            // Column headers
+            fputcsv($file, ['Alumno', 'DNI', 'Fecha de Pago', 'Monto', 'Medio de Pago']);
+
+            // Data rows
+            foreach ($payments as $p) {
+                fputcsv($file, [
+                    $p->student->name ?? '—',
+                    $p->student->dni  ?? '—',
+                    $p->payment_date  ? Carbon::parse($p->payment_date)->format('d/m/Y') : '—',
+                    number_format((float) $p->amount, 2, '.', ''),
+                    $p->paymentMethod->name ?? 'N/A',
+                ]);
+            }
+
+            // Total row
+            fputcsv($file, []);
+            fputcsv($file, ['TOTAL', '', '', number_format((float) $total, 2, '.', ''), '']);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
     public function allStudents(Request $request)
     {
         $data = $this->fetchAllStudentsData($request);

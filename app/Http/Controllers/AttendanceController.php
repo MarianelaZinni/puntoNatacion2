@@ -67,7 +67,7 @@ class AttendanceController extends Controller
     {
         $request->validate([
             'subject_id' => 'required|exists:subjects,id',
-            'date'       => 'required|date',
+            'date'       => 'required|date_format:Y-m-d',
         ]);
 
         $subjectId = (int) $request->subject_id;
@@ -83,6 +83,16 @@ class AttendanceController extends Controller
         $subject = Subject::with('students')->findOrFail($subjectId);
 
         $enrolledStudentIds = $subject->students->pluck('id')->toArray();
+
+        if (empty($enrolledStudentIds)) {
+            Log::warning('Intento de guardar asistencia en clase sin alumnos inscriptos', [
+                'subject_id' => $subjectId,
+                'date'       => $date,
+            ]);
+            return redirect()
+                ->route('attendance.take', ['subject_id' => $subjectId, 'date' => $date])
+                ->with('error', 'Esta clase no tiene alumnos inscriptos. No se guardó ningún registro.');
+        }
 
         try {
             foreach ($enrolledStudentIds as $studentId) {
@@ -106,10 +116,11 @@ class AttendanceController extends Controller
             Log::error('Error guardando asistencia: ' . $e->getMessage(), [
                 'subject_id' => $subjectId,
                 'date'       => $date,
+                'exception'  => $e,
             ]);
             return redirect()
                 ->route('attendance.take', ['subject_id' => $subjectId, 'date' => $date])
-                ->with('error', 'Ocurrió un error al guardar la asistencia.');
+                ->with('error', 'Ocurrió un error al guardar la asistencia: ' . $e->getMessage());
         }
     }
 }
