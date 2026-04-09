@@ -61,6 +61,43 @@ class AttendanceController extends Controller
     }
 
     /**
+     * Save (create or update) a single student's attendance record via AJAX.
+     * POST /attendance/store-single
+     */
+    public function storeSingle(Request $request)
+    {
+        $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+            'student_id' => 'required|exists:students,id',
+            'date'       => 'required|date_format:Y-m-d',
+            'present'    => 'required|boolean',
+        ]);
+
+        try {
+            Attendance::updateOrCreate(
+                [
+                    'subject_id' => (int) $request->subject_id,
+                    'student_id' => (int) $request->student_id,
+                    'date'       => $request->date,
+                ],
+                [
+                    'present' => (bool) $request->present,
+                ]
+            );
+
+            return response()->json(['ok' => true]);
+        } catch (\Throwable $e) {
+            Log::error('Error guardando asistencia individual: ' . $e->getMessage(), [
+                'subject_id' => $request->subject_id,
+                'student_id' => $request->student_id,
+                'date'       => $request->date,
+                'exception'  => $e,
+            ]);
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Save (create or update) attendance for a class on a given date.
      * POST /attendance/store
      */
