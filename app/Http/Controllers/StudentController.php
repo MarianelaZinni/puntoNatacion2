@@ -93,6 +93,15 @@ class StudentController extends Controller
                    $student->payment_status = 'pendiente';
                }
 
+               // Pre-compute can_pay flag to avoid duplicating this logic in blade partials.
+               $debt       = isset($student->debt) ? (float)$student->debt : 0.0;
+               $hasUnpaid  = !empty($student->unpaid_periods) && is_array($student->unpaid_periods) && count($student->unpaid_periods) > 0;
+               $status     = $student->payment_status;
+               $student->can_pay = !(
+                   ($student->paid_this_month && !$hasUnpaid) ||
+                   ($debt <= 0 && !$hasUnpaid && $status !== 'pendiente')
+               );
+
                return $student;
            });
 

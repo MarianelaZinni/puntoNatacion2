@@ -1,11 +1,9 @@
 @forelse($students as $student)
 @php
-    $status = $student->payment_status ?? 'al_dia';
-    $paused = $student->isCurrentlyPaused();
-    $debt = isset($student->debt) ? (float)$student->debt : 0.0;
+    $status       = $student->payment_status ?? 'al_dia';
+    $paused       = $student->isCurrentlyPaused();
     $paidThisMonth = !empty($student->paid_this_month);
-    $hasUnpaid = !empty($student->unpaid_periods) && is_array($student->unpaid_periods) && count($student->unpaid_periods) > 0;
-    $canPay = !($paidThisMonth && !$hasUnpaid) && !($debt <= 0 && !$hasUnpaid && $status !== 'pendiente');
+    $canPay       = !empty($student->can_pay);
 @endphp
 <div class="px-4 py-4 flex items-start gap-3 bg-white dark:bg-gray-900">
 

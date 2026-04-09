@@ -364,14 +364,14 @@ class ReportController extends Controller
                     $p->student->name ?? '—',
                     $p->student->dni  ?? '—',
                     $p->payment_date  ? Carbon::parse($p->payment_date)->format('d/m/Y') : '—',
-                    number_format((float) $p->amount, 2, '.', ''),
+                    '$' . number_format((float) $p->amount, 2, ',', '.'),
                     $p->paymentMethod->name ?? 'N/A',
                 ]);
             }
 
             // Total row
             fputcsv($file, []);
-            fputcsv($file, ['TOTAL', '', '', number_format((float) $total, 2, '.', ''), '']);
+            fputcsv($file, ['TOTAL', '', '', '$' . number_format((float) $total, 2, ',', '.'), '']);
 
             fclose($file);
         };
