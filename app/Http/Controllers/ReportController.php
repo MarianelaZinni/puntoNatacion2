@@ -8,6 +8,11 @@ use App\Models\Payment;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf; // barryvdh/laravel-dompdf facade
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Font;
 
 class ReportController extends Controller
 {
@@ -317,66 +322,111 @@ class ReportController extends Controller
     }
 
     /**
-     * Export accounting report to CSV (opens natively in Excel).
+     * Export accounting report to Excel (.xlsx).
      */
     public function accountingExcel(Request $request)
     {
-        $data = $this->fetchAccountingData($request);
+        $data     = $this->fetchAccountingData($request);
         $payments = $data['payments'];
         $total    = $data['total'];
         $dateFrom = $data['date_from'];
         $dateTo   = $data['date_to'];
 
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Reporte Contable');
+
+        // ── Title block ──────────────────────────────────────────────────────
+        $sheet->mergeCells('A1:E1');
+        $sheet->setCellValue('A1', 'Reporte Contable – Punto Natación');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $row = 2;
+        if ($dateFrom || $dateTo) {
+            $sheet->mergeCells("A{$row}:E{$row}");
+            $period = 'Período: ' . ($dateFrom ?: '—') . ' al ' . ($dateTo ?: '—');
+            $sheet->setCellValue("A{$row}", $period);
+            $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $row++;
+        }
+
+        $sheet->mergeCells("A{$row}:E{$row}");
+        $sheet->setCellValue("A{$row}", 'Generado: ' . Carbon::now()->format('d/m/Y H:i'));
+        $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $row += 2; // blank row
+
+        // ── Column headers ────────────────────────────────────────────────────
+        $headerRow = $row;
+        $headers = ['Alumno', 'DNI', 'Fecha de Pago', 'Monto', 'Medio de Pago'];
+        foreach ($headers as $col => $label) {
+            $cell = chr(65 + $col) . $headerRow;
+            $sheet->setCellValue($cell, $label);
+        }
+        $headerRange = "A{$headerRow}:E{$headerRow}";
+        $sheet->getStyle($headerRange)->getFont()->setBold(true)->setColor(
+            (new \PhpOffice\PhpSpreadsheet\Style\Color())->setRGB('FFFFFF')
+        );
+        $sheet->getStyle($headerRange)->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('1E40AF');
+        $sheet->getStyle($headerRange)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $row++;
+
+        // ── Data rows ─────────────────────────────────────────────────────────
+        foreach ($payments as $p) {
+            $sheet->setCellValue("A{$row}", $p->student->name ?? '—');
+            $sheet->setCellValue("B{$row}", $p->student->dni  ?? '—');
+            $sheet->setCellValue("C{$row}", $p->payment_date
+                ? Carbon::parse($p->payment_date)->format('d/m/Y')
+                : '—');
+            $sheet->setCellValue("D{$row}", (float) $p->amount);
+            $sheet->getStyle("D{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->setCellValue("E{$row}", $p->paymentMethod->name ?? 'N/A');
+
+            // Zebra striping
+            if ($row % 2 === 0) {
+                $sheet->getStyle("A{$row}:E{$row}")->getFill()
+                    ->setFillType(Fill::FILL_SOLID)
+                    ->getStartColor()->setRGB('EFF6FF');
+            }
+            $row++;
+        }
+
+        // ── Total row ─────────────────────────────────────────────────────────
+        $row++;
+        $sheet->setCellValue("C{$row}", 'TOTAL');
+        $sheet->setCellValue("D{$row}", (float) $total);
+        $sheet->getStyle("D{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle("C{$row}:E{$row}")->getFont()->setBold(true);
+        $sheet->getStyle("C{$row}:E{$row}")->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('DBEAFE');
+
+        // ── Column widths ─────────────────────────────────────────────────────
+        $sheet->getColumnDimension('A')->setWidth(30);
+        $sheet->getColumnDimension('B')->setWidth(15);
+        $sheet->getColumnDimension('C')->setWidth(16);
+        $sheet->getColumnDimension('D')->setWidth(14);
+        $sheet->getColumnDimension('E')->setWidth(20);
+
+        // ── Filename ──────────────────────────────────────────────────────────
         $filename = 'reporte_contable';
         if ($dateFrom) $filename .= '_desde_' . $dateFrom;
         if ($dateTo)   $filename .= '_hasta_' . $dateTo;
-        $filename .= '.csv';
+        $filename .= '.xlsx';
 
-        $headers = [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        // ── Stream to browser ─────────────────────────────────────────────────
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control'       => 'no-cache, no-store, must-revalidate',
             'Pragma'              => 'no-cache',
             'Expires'             => '0',
-        ];
-
-        $callback = function () use ($payments, $total, $dateFrom, $dateTo) {
-            $file = fopen('php://output', 'w');
-
-            // UTF-8 BOM so Excel recognises encoding
-            fputs($file, "\xEF\xBB\xBF");
-
-            // Title rows
-            fputcsv($file, ['Reporte Contable – Punto Natación']);
-            if ($dateFrom || $dateTo) {
-                $period = 'Período: ' . ($dateFrom ? $dateFrom : '—') . ' al ' . ($dateTo ? $dateTo : '—');
-                fputcsv($file, [$period]);
-            }
-            fputcsv($file, ['Generado: ' . Carbon::now()->format('d/m/Y H:i')]);
-            fputcsv($file, []);
-
-            // Column headers
-            fputcsv($file, ['Alumno', 'DNI', 'Fecha de Pago', 'Monto', 'Medio de Pago']);
-
-            // Data rows
-            foreach ($payments as $p) {
-                fputcsv($file, [
-                    $p->student->name ?? '—',
-                    $p->student->dni  ?? '—',
-                    $p->payment_date  ? Carbon::parse($p->payment_date)->format('d/m/Y') : '—',
-                    '$' . number_format((float) $p->amount, 2, ',', '.'),
-                    $p->paymentMethod->name ?? 'N/A',
-                ]);
-            }
-
-            // Total row
-            fputcsv($file, []);
-            fputcsv($file, ['TOTAL', '', '', '$' . number_format((float) $total, 2, ',', '.'), '']);
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        ]);
     }
     public function allStudents(Request $request)
     {
