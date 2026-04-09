@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\Subject;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
@@ -60,6 +61,43 @@ class AttendanceController extends Controller
     }
 
     /**
+     * Save (create or update) a single student's attendance record via AJAX.
+     * POST /attendance/store-single
+     */
+    public function storeSingle(Request $request)
+    {
+        $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+            'student_id' => 'required|exists:students,id',
+            'date'       => 'required|date_format:Y-m-d',
+            'present'    => 'required|boolean',
+        ]);
+
+        try {
+            Attendance::updateOrCreate(
+                [
+                    'subject_id' => (int) $request->subject_id,
+                    'student_id' => (int) $request->student_id,
+                    'date'       => $request->date,
+                ],
+                [
+                    'present' => (bool) $request->present,
+                ]
+            );
+
+            return response()->json(['ok' => true]);
+        } catch (\Throwable $e) {
+            Log::error('Error guardando asistencia individual: ' . $e->getMessage(), [
+                'subject_id' => $request->subject_id,
+                'student_id' => $request->student_id,
+                'date'       => $request->date,
+                'exception'  => $e,
+            ]);
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Save (create or update) attendance for a class on a given date.
      * POST /attendance/store
      */
@@ -67,7 +105,7 @@ class AttendanceController extends Controller
     {
         $request->validate([
             'subject_id' => 'required|exists:subjects,id',
-            'date'       => 'required|date',
+            'date'       => 'required|date_format:Y-m-d',
         ]);
 
         $subjectId = (int) $request->subject_id;
@@ -84,19 +122,31 @@ class AttendanceController extends Controller
 
         $enrolledStudentIds = $subject->students->pluck('id')->toArray();
 
+        if (empty($enrolledStudentIds)) {
+            Log::warning('Intento de guardar asistencia en clase sin alumnos inscriptos', [
+                'subject_id' => $subjectId,
+                'date'       => $date,
+            ]);
+            return redirect()
+                ->route('attendance.take', ['subject_id' => $subjectId, 'date' => $date])
+                ->with('error', 'Esta clase no tiene alumnos inscriptos. No se guardó ningún registro.');
+        }
+
         try {
-            foreach ($enrolledStudentIds as $studentId) {
-                Attendance::updateOrCreate(
-                    [
-                        'subject_id' => $subjectId,
-                        'student_id' => $studentId,
-                        'date'       => $date,
-                    ],
-                    [
-                        'present' => in_array($studentId, $presentIds),
-                    ]
-                );
-            }
+            DB::transaction(function () use ($enrolledStudentIds, $subjectId, $date, $presentIds) {
+                foreach ($enrolledStudentIds as $studentId) {
+                    Attendance::updateOrCreate(
+                        [
+                            'subject_id' => $subjectId,
+                            'student_id' => $studentId,
+                            'date'       => $date,
+                        ],
+                        [
+                            'present' => in_array($studentId, $presentIds),
+                        ]
+                    );
+                }
+            });
 
             return redirect()
                 ->route('attendance.take', ['subject_id' => $subjectId, 'date' => $date])
@@ -106,10 +156,11 @@ class AttendanceController extends Controller
             Log::error('Error guardando asistencia: ' . $e->getMessage(), [
                 'subject_id' => $subjectId,
                 'date'       => $date,
+                'exception'  => $e,
             ]);
             return redirect()
                 ->route('attendance.take', ['subject_id' => $subjectId, 'date' => $date])
-                ->with('error', 'Ocurrió un error al guardar la asistencia.');
+                ->with('error', 'Ocurrió un error al guardar la asistencia: ' . $e->getMessage());
         }
     }
 }

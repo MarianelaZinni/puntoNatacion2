@@ -50,6 +50,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
         Route::get('/attendance/take', [AttendanceController::class, 'take'])->name('attendance.take');
         Route::post('/attendance/store', [AttendanceController::class, 'store'])->name('attendance.store');
+        Route::post('/attendance/store-single', [AttendanceController::class, 'storeSingle'])->name('attendance.store-single');
     // });
 
     // ── Students ─────────────────────────────────────────────────────────────
@@ -162,6 +163,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/all-students/view', [ReportController::class, 'allStudentsPage'])->name('all_students.view');
             Route::get('/all-students/print', [ReportController::class, 'allStudents'])->name('all_students.print');
             Route::get('/all-students/pdf', [ReportController::class, 'allStudentsPdf'])->name('all_students.pdf');
+            Route::get('/accounting', [ReportController::class, 'accountingForm'])->name('accounting.form');
+            Route::get('/accounting/view', [ReportController::class, 'accountingPage'])->name('accounting.view');
+            Route::get('/accounting/excel', [ReportController::class, 'accountingExcel'])->name('accounting.excel');
         });
 
         // Backup

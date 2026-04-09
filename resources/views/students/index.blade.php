@@ -6,25 +6,29 @@
             <a href="{{ route('students.create') }}"
                class="inline-flex items-center gap-2 px-4 py-2 bg-[#29b1dc] hover:bg-[#24a8cf] text-white rounded shadow transition focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc]">
                  <flux:icon name="user-plus" class="h-5 w-5" />
-                Nuevo Alumno
+                <span class="hidden sm:inline">Nuevo Alumno</span>
+                <span class="sm:hidden">Nuevo</span>
             </a>
         </div>
 
-        <div class="mb-4 flex flex-wrap items-center gap-3">
-            <label for="student-search" class="sr-only">Buscar por nombre</label>
-            <input
-                id="student-search"
-                type="search"
-                placeholder="Buscar por nombre..."
-                value="{{ $search ?? '' }}"
-                class="w-full max-w-md py-2 px-3 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            />
-
-            <div class="flex items-center gap-2">
-                <button id="clear-search" type="button" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded text-sm text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600">
-                    Limpiar
-                </button>
+        <div class="mb-4 flex flex-wrap items-center gap-2">
+            <label for="student-search" class="sr-only">Buscar por nombre o DNI</label>
+            <div class="relative flex-1 min-w-[200px] max-w-md">
+                <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/></svg>
+                </span>
+                <input
+                    id="student-search"
+                    type="search"
+                    placeholder="Buscar por nombre o DNI..."
+                    value="{{ $search ?? '' }}"
+                    class="w-full py-2 pl-9 pr-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#29b1dc] text-sm"
+                />
             </div>
+            <button id="clear-search" type="button"
+                    class="px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                Limpiar
+            </button>
         </div>
 
         @if(session('success'))
@@ -65,48 +69,48 @@
     </div>
 @endif
 
-        <div id="students-table-wrapper" class="overflow-x-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
-                <thead class="bg-gray-50 dark:bg-gray-800">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-    <button class="sort-btn cursor-pointer focus:outline-none flex items-center gap-2" data-sort="id" type="button" aria-sort="none">
-        ID
-        <span class="sort-indicator text-gray-400 dark:text-gray-500 text-xs" data-field="id"></span>
-    </button>
-</th>
-<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-    <button class="sort-btn cursor-pointer focus:outline-none flex items-center gap-2" data-sort="dni" type="button" aria-sort="none">
-        DNI
-        <span class="sort-indicator text-gray-400 dark:text-gray-500 text-xs" data-field="dni"></span>
-    </button>
-</th>
-<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-    <button class="sort-btn cursor-pointer focus:outline-none flex items-center gap-2" data-sort="name" type="button" aria-sort="none">
-        Nombre
-        <span class="sort-indicator text-gray-400 dark:text-gray-500 text-xs" data-field="name"></span>
-    </button>
-</th>
-<th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-    <button class="sort-btn cursor-pointer focus:outline-none flex items-center gap-2" data-sort="email" type="button" aria-sort="none">
-        Mail
-        <span class="sort-indicator text-gray-400 dark:text-gray-500 text-xs" data-field="email"></span>
-    </button>
-</th>
+        {{-- Desktop: table | Mobile: cards --}}
+        <div id="students-table-wrapper" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
 
-                        <!-- Nueva columna Estado -->
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+            {{-- Desktop table (hidden on mobile) --}}
+            <div class="hidden sm:block overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <button class="sort-btn cursor-pointer focus:outline-none flex items-center gap-1" data-sort="dni" type="button" aria-sort="none">
+                                    DNI
+                                    <span class="sort-indicator text-gray-400 dark:text-gray-500 text-xs" data-field="dni"></span>
+                                </button>
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                <button class="sort-btn cursor-pointer focus:outline-none flex items-center gap-1" data-sort="name" type="button" aria-sort="none">
+                                    Nombre
+                                    <span class="sort-indicator text-gray-400 dark:text-gray-500 text-xs" data-field="name"></span>
+                                </button>
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden md:table-cell">
+                                <button class="sort-btn cursor-pointer focus:outline-none flex items-center gap-1" data-sort="email" type="button" aria-sort="none">
+                                    Mail
+                                    <span class="sort-indicator text-gray-400 dark:text-gray-500 text-xs" data-field="email"></span>
+                                </button>
+                            </th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="students-table-body" class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                        @include('students.partials.rows', ['students' => $students])
+                    </tbody>
+                </table>
+            </div>
 
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
+            {{-- Mobile cards (hidden on sm+) --}}
+            <div id="students-cards-body" class="sm:hidden divide-y divide-gray-200 dark:divide-gray-800">
+                @include('students.partials.cards', ['students' => $students])
+            </div>
 
-                <tbody id="students-table-body" class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-                    @include('students.partials.rows', ['students' => $students])
-                </tbody>
-            </table>
-
-            <div id="students-pagination" class="p-4">
+            <div id="students-pagination" class="px-4 py-3 border-t border-gray-200 dark:border-gray-800">
                 @include('students.partials.pagination', ['students' => $students])
             </div>
         </div>
@@ -118,13 +122,14 @@
         const searchInput = document.getElementById('student-search');
         const clearBtn = document.getElementById('clear-search');
         const tableBody = document.getElementById('students-table-body');
+        const cardsBody = document.getElementById('students-cards-body');
         const paginationDiv = document.getElementById('students-pagination');
         const sortButtons = document.querySelectorAll('.sort-btn');
 
         // Estado actual
         let state = {
             search: '{{ $search ?? "" }}',
-            sort: '{{ $sort ?? "id" }}',
+            sort: '{{ $sort ?? "name" }}',
             direction: '{{ $direction ?? "asc" }}',
             page: 1
         };
@@ -191,7 +196,8 @@
 
                 const data = await res.json();
                 // Reemplazamos contenido
-                if (data.rows !== undefined) tableBody.innerHTML = data.rows;
+                if (data.rows !== undefined && tableBody) tableBody.innerHTML = data.rows;
+                if (data.cards !== undefined && cardsBody) cardsBody.innerHTML = data.cards;
                 if (data.pagination !== undefined) paginationDiv.innerHTML = data.pagination;
 
                 // Re-attach handlers for new pagination links and delete buttons
@@ -253,7 +259,7 @@
         window.addEventListener('popstate', function () {
             const params = new URLSearchParams(window.location.search);
             state.search = params.get('search') || '';
-            state.sort = params.get('sort') || '{{ $sort ?? "id" }}';
+            state.sort = params.get('sort') || '{{ $sort ?? "name" }}';
             state.direction = params.get('direction') || '{{ $direction ?? "asc" }}';
             state.page = params.get('page') || 1;
             // update inputs

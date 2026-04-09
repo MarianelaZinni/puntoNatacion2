@@ -160,12 +160,78 @@
     @push('scripts')
     <script>
     (function () {
+        const SUBJECT_ID = '{{ $subject->id }}';
+        const DATE       = '{{ $date }}';
+        const SAVE_URL   = '{{ route('attendance.store-single') }}';
+        const CSRF       = '{{ csrf_token() }}';
+
+        // ── Toast notification ────────────────────────────────────────────────
+        let toastTimer;
+        function showToast(msg, type) {
+            let toast = document.getElementById('attendance-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'attendance-toast';
+                toast.style.cssText = 'position:fixed;bottom:1.25rem;right:1.25rem;z-index:9999;' +
+                    'padding:.5rem 1rem;border-radius:.5rem;font-size:.875rem;font-weight:500;' +
+                    'box-shadow:0 2px 8px rgba(0,0,0,.2);transition:opacity .3s;pointer-events:none;';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            toast.style.background = type === 'error' ? '#ef4444' : '#22c55e';
+            toast.style.color = '#fff';
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+        }
+
+        // ── Auto-save a single student record ─────────────────────────────────
+        function autoSave(studentId, present) {
+            const body = new URLSearchParams({
+                _token:     CSRF,
+                subject_id: SUBJECT_ID,
+                student_id: studentId,
+                date:       DATE,
+                present:    present ? '1' : '0',
+            });
+
+            fetch(SAVE_URL, {
+                method:    'POST',
+                headers:   {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept':           'application/json',
+                },
+                body,
+                keepalive: true,   // request survives page navigation
+            })
+            .then(function (r) {
+                if (!r.ok) {
+                    return r.text().then(function (text) {
+                        throw new Error('HTTP ' + r.status + ': ' + text.substring(0, 200));
+                    });
+                }
+                return r.json();
+            })
+            .then(function (data) {
+                if (data.ok) {
+                    showToast('Guardado ✓', 'success');
+                } else {
+                    console.error('Error al guardar asistencia:', data.message);
+                    showToast('Error al guardar', 'error');
+                }
+            })
+            .catch(function (err) {
+                console.error('Error en auto-guardado de asistencia:', err);
+                showToast('Error de conexión', 'error');
+            });
+        }
+
         /**
          * Mark a row as present (true) or absent (false).
-         * Updates the hidden checkbox, button highlight states, and the summary.
+         * Updates the hidden checkbox, button highlight states, and auto-saves.
          */
-        function setRow(li, present) {
-            const checkbox  = li.querySelector('.attendance-checkbox');
+        function setRow(li, present, save) {
+            const checkbox   = li.querySelector('.attendance-checkbox');
             const btnPresent = li.querySelector('.row-btn-present');
             const btnAbsent  = li.querySelector('.row-btn-absent');
 
@@ -177,6 +243,10 @@
             } else {
                 btnPresent.className = 'row-btn-present px-4 py-1.5 transition bg-white dark:bg-zinc-900 text-gray-500 dark:text-gray-400 hover:bg-green-50 dark:hover:bg-green-900/20';
                 btnAbsent.className  = 'row-btn-absent border-l border-gray-200 dark:border-zinc-700 px-4 py-1.5 transition bg-red-500 text-white';
+            }
+
+            if (save !== false) {
+                autoSave(checkbox.value, present);
             }
         }
 
@@ -200,7 +270,7 @@
             });
         });
 
-        // Bulk buttons
+        // Bulk buttons — save each row individually
         document.getElementById('mark-all-present')?.addEventListener('click', function () {
             document.querySelectorAll('.attendance-row').forEach(li => setRow(li, true));
             updateSummary();
@@ -210,7 +280,7 @@
             updateSummary();
         });
 
-        // Form spinner on save
+        // Form spinner on manual save
         const form    = document.getElementById('attendance-form');
         const saveBtn = document.getElementById('save-btn');
         const spinner = document.getElementById('save-spinner');
