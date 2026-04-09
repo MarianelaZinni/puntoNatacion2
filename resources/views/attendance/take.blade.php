@@ -196,19 +196,34 @@
             });
 
             fetch(SAVE_URL, {
-                method:  'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                method:    'POST',
+                headers:   {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept':           'application/json',
+                },
                 body,
+                keepalive: true,   // request survives page navigation
             })
-            .then(r => r.json())
-            .then(data => {
+            .then(function (r) {
+                if (!r.ok) {
+                    return r.text().then(function (text) {
+                        throw new Error('HTTP ' + r.status + ': ' + text.substring(0, 200));
+                    });
+                }
+                return r.json();
+            })
+            .then(function (data) {
                 if (data.ok) {
                     showToast('Guardado ✓', 'success');
                 } else {
+                    console.error('Error al guardar asistencia:', data.message);
                     showToast('Error al guardar', 'error');
                 }
             })
-            .catch(() => showToast('Error de conexión', 'error'));
+            .catch(function (err) {
+                console.error('Error en auto-guardado de asistencia:', err);
+                showToast('Error de conexión', 'error');
+            });
         }
 
         /**
