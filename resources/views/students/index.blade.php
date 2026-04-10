@@ -128,8 +128,8 @@
 
         // Estado actual
         let state = {
-            search: '{{ $search ?? "" }}',
-            sort: '{{ $sort ?? "name" }}',
+            search: {!! json_encode($search ?? '') !!},
+            sort: '{{ $sort ?? "id" }}',
             direction: '{{ $direction ?? "asc" }}',
             page: 1
         };
@@ -259,7 +259,7 @@
         window.addEventListener('popstate', function () {
             const params = new URLSearchParams(window.location.search);
             state.search = params.get('search') || '';
-            state.sort = params.get('sort') || '{{ $sort ?? "name" }}';
+            state.sort = params.get('sort') || '{{ $sort ?? "id" }}';
             state.direction = params.get('direction') || '{{ $direction ?? "asc" }}';
             state.page = params.get('page') || 1;
             // update inputs

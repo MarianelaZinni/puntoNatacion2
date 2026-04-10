@@ -20,7 +20,7 @@ class StudentController extends Controller
        $allowedSorts = ['id', 'dni', 'name', 'email'];
        $sort = in_array($request->query('sort'), $allowedSorts) ? $request->query('sort') : 'id';
        $direction = $request->query('direction') === 'desc' ? 'desc' : 'asc';
-       $perPage = (int) $request->query('per_page', 10);
+       $perPage = max(1, (int) $request->query('per_page', 10));
 
        $query = Student::query();
 
