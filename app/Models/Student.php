@@ -366,12 +366,23 @@ protected function calculateEffectiveDebtStartDate(Carbon $creationDate, ?Carbon
 
     /**
      * Returns true if the student is currently on pause.
+     * Uses the already-loaded `pauses` relation when available to avoid extra DB queries.
      */
     public function isCurrentlyPaused(): bool
     {
+        $today = Carbon::today();
+
+        if ($this->relationLoaded('pauses')) {
+            return $this->pauses->contains(function ($pause) use ($today) {
+                return $pause->start_date && $pause->end_date
+                    && $pause->start_date->lte($today)
+                    && $pause->end_date->gte($today);
+            });
+        }
+
         return $this->pauses()
-            ->where('start_date', '<=', Carbon::today())
-            ->where('end_date', '>=', Carbon::today())
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
             ->exists();
     }
 }

@@ -46,6 +46,9 @@ class StudentPause extends Model
      */
     public function overlapsMonth(Carbon $monthStart): bool
     {
+        if (! $this->start_date || ! $this->end_date) {
+            return false;
+        }
         $monthEnd = $monthStart->copy()->endOfMonth();
         return $this->start_date->lte($monthEnd) && $this->end_date->gte($monthStart);
     }
