@@ -27,7 +27,7 @@ class AttendanceController extends Controller
             ->limit(30)
             ->get();
 
-        return view('attendance.index', compact('subjects', 'recent'));
+       return view('attendance.index', compact('subjects', 'recent') + ['today' => now()->toDateString()]);
     }
 
     /**

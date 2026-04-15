@@ -11,6 +11,10 @@
                     {{ substr($subject->start_time, 0, 5) }}–{{ substr($subject->end_time, 0, 5) }}
                     &mdash; <span class="font-medium">{{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</span>
                 </p>
+                
+<script>
+    console.log('subject:', @json($subject));
+</script>
             </div>
             <div class="flex items-center gap-2">
                 <a href="{{ route('dashboard') }}"
