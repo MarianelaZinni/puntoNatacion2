@@ -193,7 +193,8 @@
         const formatter     = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const hadOldAmount  = {!! json_encode(old('amount') ? true : false) !!};
         const hadOldPeriod  = {!! json_encode(old('payment_period') ? true : false) !!};
-        const todayYm       = new Date().toISOString().slice(0,7); // YYYY-MM
+        const _td           = new Date();
+        const todayYm       = _td.getFullYear() + '-' + String(_td.getMonth()+1).padStart(2,'0'); // YYYY-MM
         const surchargeRate = {!! json_encode((float) config('business.surcharge_rate', 0.10)) !!};
 
         /**
