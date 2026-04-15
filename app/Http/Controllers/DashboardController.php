@@ -98,6 +98,7 @@ class DashboardController extends Controller
             'subjectsForJs' => $subjectsForJs,
             'subjectColors' => $subjectColors,
             'subjectPricesForJs' => $subjectPricesForJs,
+            'todayDate' => now()->toDateString(),
         ]);
     }
 }

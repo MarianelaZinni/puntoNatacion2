@@ -44,8 +44,8 @@
                         name="date"
                         id="date"
                         required
-                        value="{{ date('Y-m-d') }}"
-                        max="{{ date('Y-m-d') }}"
+                        value="{{ $today }}"
+                        max="{{ $today }}"
                         class="block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-[#29b1dc] text-sm"
                     >
                 </div>

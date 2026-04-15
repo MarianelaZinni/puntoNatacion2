@@ -178,12 +178,13 @@
             container.innerHTML = html;
 
             // attach click handlers — navigate to attendance/take for today
+            // Date is provided by the server (app timezone = America/Argentina/Buenos_Aires)
+            // to avoid depending on the client browser's timezone.
+            const TODAY_DATE = '{{ $todayDate }}';
             container.querySelectorAll('[data-subject-id]').forEach(btn => {
                 btn.addEventListener('click', function () {
                     const subjId = btn.getAttribute('data-subject-id');
-                    const _d     = new Date();
-                    const today  = _d.getFullYear() + '-' + String(_d.getMonth()+1).padStart(2,'0') + '-' + String(_d.getDate()).padStart(2,'0');
-                    window.location.href = `/attendance/take?subject_id=${encodeURIComponent(subjId)}&date=${encodeURIComponent(today)}`;
+                    window.location.href = `/attendance/take?subject_id=${encodeURIComponent(subjId)}&date=${encodeURIComponent(TODAY_DATE)}`;
                 });
             });
         }
