@@ -44,8 +44,7 @@ class Announcement extends Model
     public function readers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'announcement_reads')
-                    ->withPivot('read_at')
-                    ->withTimestamps();
+                    ->withPivot('read_at');
     }
 
     /**
