@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Announcement extends Model
 {
@@ -35,5 +36,23 @@ class Announcement extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Relationship: users who have marked this announcement as read.
+     */
+    public function readers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'announcement_reads')
+                    ->withPivot('read_at')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Check whether the given user has already read this announcement.
+     */
+    public function isReadBy(User $user): bool
+    {
+        return $this->readers()->where('users.id', $user->id)->exists();
     }
 }

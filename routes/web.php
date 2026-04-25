@@ -40,6 +40,8 @@ Route::middleware(['auth'])->group(function () {
     // ── Portal Alumno ─────────────────────────────────────────────────────────
     Route::middleware('role:alumno,admin')->group(function () {
         Route::get('/portal/student', [StudentPortalController::class, 'index'])->name('portal.student');
+        Route::post('/portal/announcements/{announcement}/read', [StudentPortalController::class, 'markRead'])->name('portal.announcements.read');
+        Route::get('/portal/announcements', [StudentPortalController::class, 'announcements'])->name('portal.announcements');
     });
 
     // ── Portal Profesor + Asistencia ──────────────────────────────────────────

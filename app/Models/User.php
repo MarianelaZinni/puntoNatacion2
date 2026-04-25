@@ -127,4 +127,13 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Teacher::class, 'teacher_id');
     }
+
+    /**
+     * Announcements this user has marked as read.
+     */
+    public function readAnnouncements()
+    {
+        return $this->belongsToMany(Announcement::class, 'announcement_reads')
+                    ->withPivot('read_at');
+    }
 }

@@ -37,6 +37,9 @@
                         <flux:navlist.item icon="user-circle" :href="route('portal.student')" :current="request()->routeIs('portal.student')" wire:navigate>
                             {{ __('Mi Portal') }}
                         </flux:navlist.item>
+                        <flux:navlist.item icon="megaphone" :href="route('portal.announcements')" :current="request()->routeIs('portal.announcements')" wire:navigate>
+                            {{ __('Comunicados') }}
+                        </flux:navlist.item>
                     </flux:navlist.group>
                 </div>
                 @endif
