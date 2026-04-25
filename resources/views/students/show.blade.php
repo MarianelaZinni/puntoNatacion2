@@ -108,6 +108,7 @@
             </dl>
 
             {{-- COSTO ESTIMADO --}}
+            @if($userRole !== 'enfermeria')
             <div class="mt-6">
                 <div class="bg-gray-50 dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded p-4 inline-block">
                     <div class="text-lg font-bold text-gray-700 dark:text-gray-200">Cuota mensual</div>
@@ -127,8 +128,10 @@
                     @endif
                 </div>
             </div>
+            @endif
 
             {{-- Clases inscritas --}}
+            @if($userRole !== 'enfermeria')
             <div class="mt-8">
                 <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Clases inscritas</h2>
 
@@ -171,11 +174,13 @@
                     </div>
                 @endif
             </div>
+            @endif
 
              {{-- ASISTENCIA RECIENTE --}}
             @include('students.partials.recent_attendance')
             
             {{-- HISTORIAL DE PAGOS --}}
+            @if($userRole !== 'enfermeria')
             <div class="mt-8">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Historial de pagos</h2>
@@ -365,6 +370,7 @@
                     @endif
                 </div>
             </div>
+            @endif
 
             {{-- Actions --}}
             <div class="mt-6 pt-3 flex flex-wrap items-center justify-end gap-3">

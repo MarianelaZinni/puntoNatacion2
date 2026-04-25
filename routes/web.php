@@ -25,70 +25,66 @@ Route::get('/', function () {
 })->name('home');
 
 // ─── ALL authenticated routes ────────────────────────────────────────────────
-// NOTA: Los middlewares de rol están comentados temporalmente para que todos
-// los usuarios autenticados puedan acceder a todas las funciones.
-// TODO: Re-habilitar los grupos con ->middleware('role:xxx') cuando se
-//       configure correctamente el sistema de roles.
 Route::middleware(['auth'])->group(function () {
 
-    // Dashboard
+    // Dashboard – the controller handles role-specific redirects internally
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Settings
+    // Settings – available to all authenticated users
     Route::redirect('settings', 'settings/profile');
     Volt::route('settings/profile', 'settings.profile')->name('profile.edit');
     Volt::route('settings/password', 'settings.password')->name('password.edit');
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');
 
-    // ── Portals ──────────────────────────────────────────────────────────────
-    // Route::middleware('role:alumno')->group(function () {   // TODO: re-habilitar roles
+    // ── Portal Alumno ─────────────────────────────────────────────────────────
+    Route::middleware('role:alumno,admin')->group(function () {
         Route::get('/portal/student', [StudentPortalController::class, 'index'])->name('portal.student');
-    // });
+    });
 
-    // Route::middleware('role:admin,profesor')->group(function () {   // TODO: re-habilitar roles
+    // ── Portal Profesor + Asistencia ──────────────────────────────────────────
+    Route::middleware('role:admin,profesor')->group(function () {
         Route::get('/portal/teacher', [TeacherPortalController::class, 'index'])->name('portal.teacher');
         Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
         Route::get('/attendance/take', [AttendanceController::class, 'take'])->name('attendance.take');
         Route::post('/attendance/store', [AttendanceController::class, 'store'])->name('attendance.store');
         Route::post('/attendance/store-single', [AttendanceController::class, 'storeSingle'])->name('attendance.store-single');
-    // });
+    });
 
-    // ── Students ─────────────────────────────────────────────────────────────
-    // Route::middleware('role:admin,enfermeria')->group(function () {   // TODO: re-habilitar roles
+    // ── Students list ─────────────────────────────────────────────────────────
+    Route::middleware('role:admin,enfermeria')->group(function () {
         Route::get('/students', [StudentController::class, 'index'])->name('students.index');
-    // });
+    });
 
-    // Static student routes MUST come before the {student} wildcard
-    // Route::middleware('role:admin')->group(function () {   // TODO: re-habilitar roles
+    // ── Students create/store – admin only (MUST be before the {student} wildcard) ──
+    Route::middleware('role:admin')->group(function () {
         Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
         Route::post('/students', [StudentController::class, 'store'])->name('students.store');
-    // });
+    });
 
-    // Route::middleware('role:admin,enfermeria,profesor')->group(function () {   // TODO: re-habilitar roles
+    // ── Students show – admin, enfermeria, profesor ───────────────────────────
+    Route::middleware('role:admin,enfermeria,profesor')->group(function () {
         Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
-    // });
+    });
 
-    // ── Medical checkups ─────────────────────────────────────────────────────
-    // Route::middleware('role:admin,enfermeria')->group(function () {   // TODO: re-habilitar roles
+    // ── Medical checkups – admin + enfermeria ─────────────────────────────────
+    Route::middleware('role:admin,enfermeria')->group(function () {
         Route::get('/medical-checkups', [MedicalCheckupController::class, 'index'])->name('medical_checkups.index');
         Route::get('/medical-checkups/create', [MedicalCheckupController::class, 'create'])->name('medical_checkups.create');
         Route::post('/medical-checkups', [MedicalCheckupController::class, 'store'])->name('medical_checkups.store');
         Route::get('/medical-checkups/report', [MedicalCheckupController::class, 'report'])->name('medical_checkups.report');
         Route::get('/medical-checkups/report/pdf', [MedicalCheckupController::class, 'reportPdf'])->name('medical_checkups.report_pdf');
-    // });
+    });
 
-    // ── Previously admin-only routes (now open to all authenticated users) ───
-    // Route::middleware('role:admin')->group(function () {   // TODO: re-habilitar roles
+    // ── Admin-only routes ─────────────────────────────────────────────────────
+    Route::middleware('role:admin')->group(function () {
 
-        // ── Gestión de usuarios 
-        
+        // Gestión de usuarios
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-    
 
         // Teachers
         Route::get('/teachers', [TeacherController::class, 'index'])->name('teachers.index');
@@ -170,7 +166,7 @@ Route::middleware(['auth'])->group(function () {
         // Backup
         Route::get('/backup/download', [BackupController::class, 'download'])->name('backup.download');
 
-    // }); // end role:admin group
+    }); // end role:admin group
 
 }); // end auth middleware
 
