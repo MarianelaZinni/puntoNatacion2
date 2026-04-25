@@ -21,18 +21,18 @@ class DashboardController extends Controller
         if ($user) {
             $isAlumno = method_exists($user, 'isAlumno')
                 ? $user->isAlumno()
-                : (($user->role ?? $user->tipo ?? null) === 'alumno');
+                : (($user->role ?? null) === 'alumno');
 
-            $isProfesor = method_exists($user, 'isProfesor')
-                ? $user->isProfesor()
-                : (($user->role ?? $user->tipo ?? null) === 'profesor');
+            $isEnfermeria = method_exists($user, 'isEnfermeria')
+                ? $user->isEnfermeria()
+                : (($user->role ?? null) === 'enfermeria');
 
             if ($isAlumno) {
                 return redirect()->route('portal.student');
             }
 
-            if ($isProfesor) {
-                return redirect()->route('portal.teacher');
+            if ($isEnfermeria) {
+                return redirect()->route('students.index');
             }
         }
 

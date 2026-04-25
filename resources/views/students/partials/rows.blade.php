@@ -53,6 +53,15 @@
                 <span class="sr-only">Ver</span>
             </a>
 
+            @if(auth()->user()->role === 'enfermeria')
+            {{-- Revisión médica (acceso directo para enfermería) --}}
+            <a href="{{ route('medical_checkups.index', ['student_id' => $student->id]) }}"
+               title="Revisión médica"
+               class="inline-flex items-center justify-center h-8 w-8 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-lime-50 dark:hover:bg-lime-900/30 hover:text-lime-600 dark:hover:text-lime-400 transition">
+                <flux:icon name="heart" class="h-4 w-4" />
+                <span class="sr-only">Revisión médica</span>
+            </a>
+            @else
             {{-- Editar --}}
             <a href="{{ route('students.edit', $student) }}"
                title="Editar alumno"
@@ -137,6 +146,7 @@
                     </form>
                 </div>
             </div>
+            @endif
         </div>
     </td>
 </tr>
