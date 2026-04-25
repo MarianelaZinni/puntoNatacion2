@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Announcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -34,6 +35,11 @@ class StudentPortalController extends Controller
             return $student;
         });
 
-        return view('portal.student', compact('students'));
+        // Active announcements visible to students (most recent first)
+        $announcements = Announcement::active()
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('portal.student', compact('students', 'announcements'));
     }
 }

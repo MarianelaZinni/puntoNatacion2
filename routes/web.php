@@ -17,6 +17,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\MedicalCheckupController;
 use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\AnnouncementController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -165,6 +166,9 @@ Route::middleware(['auth'])->group(function () {
 
         // Backup
         Route::get('/backup/download', [BackupController::class, 'download'])->name('backup.download');
+
+        // Announcements (Comunicados)
+        Route::resource('announcements', AnnouncementController::class)->except(['show']);
 
     }); // end role:admin group
 
