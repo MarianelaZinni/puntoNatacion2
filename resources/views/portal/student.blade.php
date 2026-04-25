@@ -2,6 +2,36 @@
     <div class="max-w-4xl mx-auto py-8 px-4">
         <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Mi Portal</h1>
 
+        {{-- Comunicados --}}
+        @if($announcements->isNotEmpty())
+        <div class="mb-8 space-y-4">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                <flux:icon name="megaphone" class="h-5 w-5 text-[#29b1dc]" />
+                Comunicados
+            </h2>
+            @foreach($announcements as $announcement)
+            <div class="bg-[#eaf7fc] dark:bg-[#29b1dc]/10 border border-[#29b1dc]/30 dark:border-[#29b1dc]/40 rounded-lg p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">{{ $announcement->title }}</h3>
+                        <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">{{ $announcement->body }}</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">{{ $announcement->created_at->diffForHumans() }}</p>
+                    </div>
+                    <form action="{{ route('portal.announcements.read', $announcement) }}" method="POST" class="flex-shrink-0 mt-1">
+                        @csrf
+                        <button type="submit"
+                                title="Marcar como leído"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white dark:bg-zinc-800 border border-[#29b1dc]/50 text-[#29b1dc] hover:bg-[#29b1dc] hover:text-white dark:hover:bg-[#29b1dc] dark:hover:text-white transition">
+                            <flux:icon name="check" class="h-3.5 w-3.5" />
+                            Leído
+                        </button>
+                    </form>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+
         @if($students->isEmpty())
             <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-6 text-center text-amber-800 dark:text-amber-300">
                 <p class="font-medium">No tienes alumnos vinculados a tu cuenta.</p>

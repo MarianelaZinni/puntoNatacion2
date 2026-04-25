@@ -37,6 +37,9 @@
                         <flux:navlist.item icon="user-circle" :href="route('portal.student')" :current="request()->routeIs('portal.student')" wire:navigate>
                             {{ __('Mi Portal') }}
                         </flux:navlist.item>
+                        <flux:navlist.item icon="megaphone" :href="route('portal.announcements')" :current="request()->routeIs('portal.announcements')" wire:navigate>
+                            {{ __('Comunicados') }}
+                        </flux:navlist.item>
                     </flux:navlist.group>
                 </div>
                 @endif
@@ -147,6 +150,9 @@
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Sistema</div>
                     <flux:navlist.group>
+                        <flux:navlist.item icon="megaphone" :href="route('announcements.index')" :current="request()->routeIs('announcements.*')" wire:navigate>
+                            {{ __('Comunicados') }}
+                        </flux:navlist.item>
                         <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
                             {{ __('Usuarios y Roles') }}
                         </flux:navlist.item>

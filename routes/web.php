@@ -17,6 +17,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\MedicalCheckupController;
 use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\AnnouncementController;
 
 Route::get('/', function () {
     return Auth::check()
@@ -39,6 +40,8 @@ Route::middleware(['auth'])->group(function () {
     // ── Portal Alumno ─────────────────────────────────────────────────────────
     Route::middleware('role:alumno,admin')->group(function () {
         Route::get('/portal/student', [StudentPortalController::class, 'index'])->name('portal.student');
+        Route::post('/portal/announcements/{announcement}/read', [StudentPortalController::class, 'markRead'])->name('portal.announcements.read');
+        Route::get('/portal/announcements', [StudentPortalController::class, 'announcements'])->name('portal.announcements');
     });
 
     // ── Portal Profesor + Asistencia ──────────────────────────────────────────
@@ -166,6 +169,8 @@ Route::middleware(['auth'])->group(function () {
         // Backup
         Route::get('/backup/download', [BackupController::class, 'download'])->name('backup.download');
 
+         // Announcements (Comunicados)
+        Route::resource('announcements', AnnouncementController::class)->except(['show']);
     }); // end role:admin group
 
 }); // end auth middleware
