@@ -5,7 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\StudentPortalController;
 use App\Http\Controllers\TeacherPortalController;
-// use App\Http\Controllers\UserController;  // TODO: re-habilitar con el sistema de roles
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Volt\Volt;
@@ -80,16 +80,15 @@ Route::middleware(['auth'])->group(function () {
     // ── Previously admin-only routes (now open to all authenticated users) ───
     // Route::middleware('role:admin')->group(function () {   // TODO: re-habilitar roles
 
-        // ── Gestión de usuarios - COMENTADO TEMPORALMENTE ─────────────────
-        // TODO: Re-habilitar cuando se configure correctamente el sistema de roles
-        /*
+        // ── Gestión de usuarios 
+        
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-        */
+    
 
         // Teachers
         Route::get('/teachers', [TeacherController::class, 'index'])->name('teachers.index');

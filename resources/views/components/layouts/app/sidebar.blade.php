@@ -126,15 +126,14 @@
                 {{-- @endif --}}
 
                 {{-- ── SISTEMA (usuarios y roles) - COMENTADO TEMPORALMENTE ───────── --}}
-                {{-- TODO: Re-habilitar cuando se configure correctamente el sistema de roles --}}
                 {{--
                 @if($role === 'admin')--}}
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Sistema</div>
                     <flux:navlist.group>
-                       {{-- <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
+                        <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
                             {{ __('Usuarios y Roles') }}
-                        </flux:navlist.item>--}}
+                        </flux:navlist.item>
                         <flux:navlist.item icon="arrow-down-tray" href="{{ route('backup.download') }}">
                             {{ __('Backup de Base de Datos') }}
                         </flux:navlist.item>
