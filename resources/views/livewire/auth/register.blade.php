@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
@@ -25,7 +26,15 @@ new #[Layout('components.layouts.auth')] class extends Component {
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
         ]);
 
+        $validated['role'] = User::ROLE_ALUMNO;
+
         event(new Registered(($user = User::create($validated))));
+
+        // Link any existing students that share the same email address.
+        $studentIds = Student::where('email', $user->email)->pluck('id');
+        if ($studentIds->isNotEmpty()) {
+            $user->students()->attach($studentIds);
+        }
 
         Auth::login($user);
 
