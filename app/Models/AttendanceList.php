@@ -5,21 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Attendance extends Model
+class AttendanceList extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'subject_id',
-        'student_id',
         'date',
-        'present',
-        'observations',
     ];
 
     protected $casts = [
-        'date'    => 'date',
-        'present' => 'boolean',
+        'date' => 'date',
     ];
 
     public function subject()
@@ -27,8 +23,8 @@ class Attendance extends Model
         return $this->belongsTo(Subject::class);
     }
 
-    public function student()
+    public function records()
     {
-        return $this->belongsTo(Student::class);
+        return $this->hasMany(AttendanceRecord::class);
     }
 }

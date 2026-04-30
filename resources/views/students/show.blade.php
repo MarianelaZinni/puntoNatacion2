@@ -108,7 +108,7 @@
             </dl>
 
             {{-- COSTO ESTIMADO --}}
-            @if($userRole !== 'enfermeria')
+            {{-- @if($userRole !== 'enfermeria') --}}
             <div class="mt-6">
                 <div class="bg-gray-50 dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded p-4 inline-block">
                     <div class="text-lg font-bold text-gray-700 dark:text-gray-200">Cuota mensual</div>
@@ -128,10 +128,10 @@
                     @endif
                 </div>
             </div>
-            @endif
+            {{-- @endif --}}
 
             {{-- Clases inscritas --}}
-            @if($userRole !== 'enfermeria')
+            {{-- @if($userRole !== 'enfermeria') --}}
             <div class="mt-8">
                 <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Clases inscritas</h2>
 
@@ -174,13 +174,13 @@
                     </div>
                 @endif
             </div>
-            @endif
+            {{-- @endif --}}
 
              {{-- ASISTENCIA RECIENTE --}}
             @include('students.partials.recent_attendance')
             
             {{-- HISTORIAL DE PAGOS --}}
-            @if($userRole !== 'enfermeria')
+            {{-- @if($userRole !== 'enfermeria') --}}
             <div class="mt-8">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Historial de pagos</h2>
@@ -211,8 +211,8 @@
                             $canRegisterPayment = ($debtAmount > 0) || (!empty($selectable) && count($selectable) > 0);
                         @endphp
 
-                        {{-- Botón para registrar pago preseleccionando el alumno (solo admin) --}}
-                        @if($userRole === 'admin')
+                        {{-- Botón para registrar pago preseleccionando el alumno --}}
+                        {{-- @if($userRole === 'admin') --}}
                         <a href="{{ route('payments.index', ['student_id' => $student->id]) }}"
                            class="inline-flex items-center gap-2 px-4 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none"
                            @unless($canRegisterPayment) aria-disabled="true" onclick="event.preventDefault();" style="opacity:0.6;pointer-events:none;" @endunless>
@@ -223,7 +223,7 @@
                         <a href="{{ route('payments.history', ['search' => $student->name]) }}" class="text-sm text-gray-600 dark:text-gray-300 underline">
                             Ver historial completo
                         </a>
-                        @endif
+                        {{-- @endif --}}
                     </div>
                 </div>
 
@@ -295,9 +295,9 @@
                                         <th class="px-3 py-2 text-left">Método</th>
                                         <th class="px-3 py-2 text-right">Monto (AR$)</th>
                                         <th class="px-3 py-2 text-left">Notas</th>
-                                        @if($userRole === 'admin')
+                                        {{-- @if($userRole === 'admin') --}}
                                         <th class="px-3 py-2 text-center">Acciones</th>
-                                        @endif
+                                        {{-- @endif --}}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -331,8 +331,8 @@
                                                 {{ $payment->notes ?? '-' }}
                                             </td>
                                             
-                                            {{-- Columna: Acciones (solo admin) --}}
-                                            @if($userRole === 'admin')
+                                            {{-- Columna: Acciones --}}
+                                            {{-- @if($userRole === 'admin') --}}
                                             <td class="px-3 py-3 text-center">
                                                 <div class="flex items-center justify-center gap-1.5">
                                                     {{-- Botón Editar --}}
@@ -361,7 +361,7 @@
                                                     </form>
                                                 </div>
                                             </td>
-                                            @endif
+                                            {{-- @endif --}}
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -370,21 +370,19 @@
                     @endif
                 </div>
             </div>
-            @endif
+            {{-- @endif --}}
 
             {{-- Actions --}}
             <div class="mt-6 pt-3 flex flex-wrap items-center justify-end gap-3">
-                @if(in_array($userRole, ['admin', 'enfermeria']))
+                {{-- @if(in_array($userRole, ['admin', 'enfermeria'])) --}}
                 <a href="{{ route('students.index') }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition text-base">
                     Volver
                 </a>
-                @else
-                <a href="{{ route('attendance.index') }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition text-base">
-                    Volver
-                </a>
-                @endif
+                {{-- @else --}}
+                {{-- <a href="{{ route('attendance.index') }}" ...>Volver</a> --}}
+                {{-- @endif --}}
 
-                @if($userRole === 'admin')
+                {{-- @if($userRole === 'admin') --}}
                 <a href="{{ route('students.edit', $student) }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition text-base">
                     Editar
                 </a>
@@ -400,7 +398,7 @@
                         Eliminar
                     </button>
                 </form>
-                @endif
+                {{-- @endif --}}
             </div>
         </div>
     </div>

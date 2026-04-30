@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Subject;
 use App\Models\SubjectType;
 use App\Models\Teacher;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class SubjectController extends Controller
@@ -214,8 +215,19 @@ class SubjectController extends Controller
      */
     public function destroy(Subject $subject)
     {
-        $subject->delete();
-
-        return response()->json(['success' => true]);
+        try {
+            $subject->delete();
+            return response()->json(['success' => true]);
+        } catch (QueryException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede eliminar la clase porque tiene registros de asistencia asociados. Eliminá primero las asistencias o contactá al administrador.',
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error al intentar eliminar la clase.',
+            ], 500);
+        }
     }
 }

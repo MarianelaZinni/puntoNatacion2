@@ -10,11 +10,11 @@
                     &mdash; {{ $subject->day }}
                     {{ substr($subject->start_time, 0, 5) }}–{{ substr($subject->end_time, 0, 5) }}
                     &mdash; <span class="font-medium">{{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</span>
+                    @if($list)
+                        &mdash; <span class="font-mono text-xs text-gray-400 dark:text-gray-500">#{{ $list->id }}</span>
+                    @endif
                 </p>
                 
-<script>
-    console.log('subject:', @json($subject));
-</script>
             </div>
             <div class="flex items-center gap-2">
                 <a href="{{ route('dashboard') }}"
@@ -190,7 +190,7 @@
         }
 
         // ── Auto-save a single student record ─────────────────────────────────
-        function autoSave(studentId, present) {
+        function autoSave(studentId, present, onError) {
             const body = new URLSearchParams({
                 _token:     CSRF,
                 subject_id: SUBJECT_ID,
@@ -221,23 +221,29 @@
                     showToast('Guardado ✓', 'success');
                 } else {
                     console.error('Error al guardar asistencia:', data.message);
-                    showToast('Error al guardar', 'error');
+                    showToast('Error al guardar — cambio revertido', 'error');
+                    if (typeof onError === 'function') onError();
                 }
             })
             .catch(function (err) {
                 console.error('Error en auto-guardado de asistencia:', err);
-                showToast('Error de conexión', 'error');
+                showToast('Error de conexión — cambio revertido', 'error');
+                if (typeof onError === 'function') onError();
             });
         }
 
         /**
          * Mark a row as present (true) or absent (false).
          * Updates the hidden checkbox, button highlight states, and auto-saves.
+         * If the save fails, the UI is reverted to the previous state.
          */
         function setRow(li, present, save) {
             const checkbox   = li.querySelector('.attendance-checkbox');
             const btnPresent = li.querySelector('.row-btn-present');
             const btnAbsent  = li.querySelector('.row-btn-absent');
+
+            // Remember previous state so we can revert on error
+            const prevChecked = checkbox.checked;
 
             checkbox.checked = present;
 
@@ -250,7 +256,12 @@
             }
 
             if (save !== false) {
-                autoSave(checkbox.value, present);
+                autoSave(checkbox.value, present, function onError() {
+                    // Revert the UI to the previous state so the teacher
+                    // sees that the save failed and the change was NOT persisted.
+                    setRow(li, prevChecked, false);
+                    updateSummary();
+                });
             }
         }
 
@@ -280,6 +291,15 @@
             updateSummary();
         });
         document.getElementById('mark-all-absent')?.addEventListener('click', function () {
+            const totalRows = document.querySelectorAll('.attendance-row').length;
+            const presentCount = document.querySelectorAll('.attendance-checkbox:checked').length;
+            // Only ask for confirmation when there is at least one student currently marked as present,
+            // to prevent accidentally wiping a completed attendance list.
+            if (presentCount > 0) {
+                if (!confirm('¿Confirmar que todos los alumnos estuvieron AUSENTES? Esto sobreescribirá ' + presentCount + ' alumno(s) marcado(s) como presente.')) {
+                    return;
+                }
+            }
             document.querySelectorAll('.attendance-row').forEach(li => setRow(li, false));
             updateSummary();
         });

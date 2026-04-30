@@ -51,6 +51,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/attendance/take', [AttendanceController::class, 'take'])->name('attendance.take');
         Route::post('/attendance/store', [AttendanceController::class, 'store'])->name('attendance.store');
         Route::post('/attendance/store-single', [AttendanceController::class, 'storeSingle'])->name('attendance.store-single');
+        Route::delete('/attendance/{attendanceList}', [AttendanceController::class, 'destroy'])->name('attendance.destroy');
     });
 
     // ── Students list ─────────────────────────────────────────────────────────
