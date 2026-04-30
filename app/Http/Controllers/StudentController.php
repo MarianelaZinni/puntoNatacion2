@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\SubjectPrice;
-use App\Models\Attendance;
+use App\Models\AttendanceRecord;
 use App\Services\PriceCalculator;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -218,10 +218,12 @@ class StudentController extends Controller
         }
 
         // Load last 10 attendance records for this student across all their subjects
-        $recentAttendance = Attendance::where('student_id', $student->id)
-            ->with(['subject.subjectType'])
-            ->orderByDesc('date')
-            ->orderByDesc('id')
+        $recentAttendance = AttendanceRecord::where('student_id', $student->id)
+            ->with(['attendanceList.subject.subjectType'])
+            ->join('attendance_lists', 'attendance_records.attendance_list_id', '=', 'attendance_lists.id')
+            ->orderByDesc('attendance_lists.date')
+            ->orderByDesc('attendance_records.id')
+            ->select('attendance_records.*')
             ->limit(10)
             ->get();
 
@@ -259,10 +261,12 @@ class StudentController extends Controller
         }
 
         // Load last 10 attendance records for this student across all their subjects
-        $recentAttendance = Attendance::where('student_id', $student->id)
-            ->with(['subject.subjectType'])
-            ->orderByDesc('date')
-            ->orderByDesc('id')
+        $recentAttendance = AttendanceRecord::where('student_id', $student->id)
+            ->with(['attendanceList.subject.subjectType'])
+            ->join('attendance_lists', 'attendance_records.attendance_list_id', '=', 'attendance_lists.id')
+            ->orderByDesc('attendance_lists.date')
+            ->orderByDesc('attendance_records.id')
+            ->select('attendance_records.*')
             ->limit(10)
             ->get();
 

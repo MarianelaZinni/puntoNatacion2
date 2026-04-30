@@ -10,6 +10,9 @@
                     &mdash; {{ $subject->day }}
                     {{ substr($subject->start_time, 0, 5) }}–{{ substr($subject->end_time, 0, 5) }}
                     &mdash; <span class="font-medium">{{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</span>
+                    @if($list)
+                        &mdash; <span class="font-mono text-xs text-gray-400 dark:text-gray-500">#{{ $list->id }}</span>
+                    @endif
                 </p>
                 
             </div>

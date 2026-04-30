@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Attendance;
+use App\Models\AttendanceList;
+use App\Models\AttendanceRecord;
 use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,16 +19,20 @@ class AttendanceController extends Controller
     {
         $subjects = Subject::with(['subjectType'])->orderBy('day')->orderBy('start_time')->get();
 
-        // Recent attendance sessions (distinct subject + date combinations, last 30)
-        $recent = Attendance::selectRaw('subject_id, date, COUNT(*) as total, SUM(present) as present_count')
-            ->groupBy('subject_id', 'date')
+        // Recent attendance lists with present/total counts, last 30
+        $recent = AttendanceList::withCount([
+                'records as total',
+                'records as present_count' => function ($q) {
+                    $q->where('present', true);
+                },
+            ])
+            ->with('subject.subjectType')
             ->orderByDesc('date')
             ->orderBy('subject_id')
-            ->with('subject.subjectType')
             ->limit(30)
             ->get();
 
-       return view('attendance.index', compact('subjects', 'recent') + ['today' => now()->toDateString()]);
+        return view('attendance.index', compact('subjects', 'recent') + ['today' => now()->toDateString()]);
     }
 
     /**
@@ -47,17 +52,19 @@ class AttendanceController extends Controller
 
         $date = $request->date;
 
-        // Load existing attendance records for this class + date
-        $existing = Attendance::where('subject_id', $subject->id)
+        // Load existing attendance list (if any) for this class + date
+        $list = AttendanceList::where('subject_id', $subject->id)
             ->whereDate('date', $date)
-            ->pluck('present', 'student_id')  // keyed by student_id
-            ->toArray();
+            ->first();
 
-        $alreadySaved = Attendance::where('subject_id', $subject->id)
-            ->whereDate('date', $date)
-            ->exists();
+        // Build present/absent map keyed by student_id
+        $existing = $list
+            ? $list->records()->pluck('present', 'student_id')->toArray()
+            : [];
 
-        return view('attendance.take', compact('subject', 'date', 'existing', 'alreadySaved'));
+        $alreadySaved = $list !== null;
+
+        return view('attendance.take', compact('subject', 'date', 'existing', 'alreadySaved', 'list'));
     }
 
     /**
@@ -74,18 +81,22 @@ class AttendanceController extends Controller
         ]);
 
         try {
-            Attendance::updateOrCreate(
+            $list = AttendanceList::firstOrCreate([
+                'subject_id' => (int) $request->subject_id,
+                'date'       => $request->date,
+            ]);
+
+            AttendanceRecord::updateOrCreate(
                 [
-                    'subject_id' => (int) $request->subject_id,
-                    'student_id' => (int) $request->student_id,
-                    'date'       => $request->date,
+                    'attendance_list_id' => $list->id,
+                    'student_id'         => (int) $request->student_id,
                 ],
                 [
                     'present' => (bool) $request->present,
                 ]
             );
 
-            return response()->json(['ok' => true]);
+            return response()->json(['ok' => true, 'list_id' => $list->id]);
         } catch (\Throwable $e) {
             Log::error('Error guardando asistencia individual: ' . $e->getMessage(), [
                 'subject_id' => $request->subject_id,
@@ -134,12 +145,16 @@ class AttendanceController extends Controller
 
         try {
             DB::transaction(function () use ($enrolledStudentIds, $subjectId, $date, $presentIds) {
+                $list = AttendanceList::firstOrCreate([
+                    'subject_id' => $subjectId,
+                    'date'       => $date,
+                ]);
+
                 foreach ($enrolledStudentIds as $studentId) {
-                    Attendance::updateOrCreate(
+                    AttendanceRecord::updateOrCreate(
                         [
-                            'subject_id' => $subjectId,
-                            'student_id' => $studentId,
-                            'date'       => $date,
+                            'attendance_list_id' => $list->id,
+                            'student_id'         => $studentId,
                         ],
                         [
                             'present' => in_array($studentId, $presentIds),
@@ -161,6 +176,29 @@ class AttendanceController extends Controller
             return redirect()
                 ->route('attendance.take', ['subject_id' => $subjectId, 'date' => $date])
                 ->with('error', 'Ocurrió un error al guardar la asistencia: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete an attendance list and all its records.
+     * DELETE /attendance/{attendanceList}
+     */
+    public function destroy(AttendanceList $attendanceList)
+    {
+        try {
+            $attendanceList->delete();
+
+            return redirect()
+                ->route('attendance.index')
+                ->with('success', 'Lista de asistencia eliminada correctamente.');
+        } catch (\Throwable $e) {
+            Log::error('Error eliminando lista de asistencia: ' . $e->getMessage(), [
+                'attendance_list_id' => $attendanceList->id,
+                'exception'          => $e,
+            ]);
+            return redirect()
+                ->route('attendance.index')
+                ->with('error', 'No se pudo eliminar la lista: ' . $e->getMessage());
         }
     }
 }
