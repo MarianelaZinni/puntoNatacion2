@@ -57,15 +57,15 @@
             </form>
         </div>
 
-        {{-- Recent sessions --}}
-        @if($recent->isNotEmpty())
+        {{-- All sessions --}}
+        @if($recent->count())
         @php
             $toggleDir = fn($col) => ($sortBy === $col && $direction === 'desc') ? 'asc' : 'desc';
             $arrow     = fn($col) => $sortBy === $col ? ($direction === 'asc' ? ' ↑' : ' ↓') : '';
             $sortUrl   = fn($col) => route('attendance.index', ['sort' => $col, 'direction' => $toggleDir($col)]);
         @endphp
         <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
-            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Últimas listas tomadas</h2>
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Listas de asistencia</h2>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                     <thead class="bg-gray-50 dark:bg-gray-800">
@@ -125,6 +125,11 @@
                     </tbody>
                 </table>
             </div>
+            @if($recent->hasPages())
+            <div class="mt-4">
+                {{ $recent->links() }}
+            </div>
+            @endif
         </div>
         @endif
     </div>
