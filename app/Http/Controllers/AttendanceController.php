@@ -19,7 +19,9 @@ class AttendanceController extends Controller
     {
         $subjects = Subject::with(['subjectType'])->orderBy('day')->orderBy('start_time')->get();
 
-        // Recent attendance lists with present/total counts, last 30
+        $sortBy    = in_array($request->query('sort'), ['id', 'date']) ? $request->query('sort') : 'date';
+        $direction = $request->query('direction') === 'asc' ? 'asc' : 'desc';
+
         $recent = AttendanceList::withCount([
                 'records as total',
                 'records as present_count' => function ($q) {
@@ -27,12 +29,15 @@ class AttendanceController extends Controller
                 },
             ])
             ->with('subject.subjectType')
-            ->orderByDesc('date')
-            ->orderBy('subject_id')
-            ->limit(30)
-            ->get();
+            ->orderBy($sortBy, $direction)
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('attendance.index', compact('subjects', 'recent') + ['today' => now()->toDateString()]);
+        return view('attendance.index', compact('subjects', 'recent') + [
+            'today'     => now()->toDateString(),
+            'sortBy'    => $sortBy,
+            'direction' => $direction,
+        ]);
     }
 
     /**
