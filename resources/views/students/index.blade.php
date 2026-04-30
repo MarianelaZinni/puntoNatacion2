@@ -3,14 +3,14 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">ALUMNOS</h1>
 
-            @if(auth()->user()->role === 'admin')
+            {{-- @if(auth()->user()->role === 'admin') --}}
             <a href="{{ route('students.create') }}"
                class="inline-flex items-center gap-2 px-4 py-2 bg-[#29b1dc] hover:bg-[#24a8cf] text-white rounded shadow transition focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc]">
                  <flux:icon name="user-plus" class="h-5 w-5" />
                 <span class="hidden sm:inline">Nuevo Alumno</span>
                 <span class="sm:hidden">Nuevo</span>
             </a>
-            @endif
+            {{-- @endif --}}
         </div>
 
         <div class="mb-4 flex flex-wrap items-center gap-2">
