@@ -22,7 +22,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('subject_id')
                   ->constrained()
-                  ->onDelete('restrict');
+                  ->onDelete('cascade');
             $table->date('date');
             $table->timestamps();
 
@@ -37,7 +37,7 @@ return new class extends Migration
                   ->onDelete('cascade');
             $table->foreignId('student_id')
                   ->constrained()
-                  ->onDelete('restrict');
+                  ->onDelete('cascade');
             $table->boolean('present')->default(true);
             $table->string('observations', 500)->nullable();
             $table->timestamps();
