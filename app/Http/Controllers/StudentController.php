@@ -152,10 +152,15 @@ class StudentController extends Controller
         'phone' => 'nullable',
         'observations' => 'nullable|string|max:1000',
         'birth_date' => 'nullable|date|before:today',
+        'active_from' => 'required|date_format:Y-m',
     ]);
 
+    // Normalise active_from (YYYY-MM) to first day of month for DB storage
+    $data = $request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date');
+    $data['active_from'] = $request->input('active_from') . '-01';
+
     // Crear el estudiante
-    $student = Student::create($request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date'));
+    $student = Student::create($data);
 
     // Redireccionar a la página de inscripción de clases
     return redirect()->route('students.enrollClassForm', ['student' => $student->id])
@@ -284,8 +289,11 @@ class StudentController extends Controller
             'phone' => 'nullable',
             'observations' => 'nullable|string|max:1000',
              'birth_date' => 'nullable|date|before:today',
+            'active_from' => 'required|date_format:Y-m',
         ]);
-        $student->update($request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date'));
+        $data = $request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date');
+        $data['active_from'] = $request->input('active_from') . '-01';
+        $student->update($data);
         return redirect()->route('students.index')->with('success', 'Alumno actualizado correctamente.');
     }
 
