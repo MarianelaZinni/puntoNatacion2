@@ -155,7 +155,7 @@ class StudentController extends Controller
         'active_from' => 'required|date_format:Y-m',
     ]);
 
-    // Normalise active_from (YYYY-MM) to first day of month for DB storage
+    // Normalize active_from (YYYY-MM) to first day of month for DB storage
     $data = $request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date');
     $data['active_from'] = $request->input('active_from') . '-01';
 
