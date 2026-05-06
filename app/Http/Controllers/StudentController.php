@@ -281,6 +281,8 @@ class StudentController extends Controller
 
     public function update(Request $request, Student $student)
     {
+        $studentHasClasses = $student->subjects()->exists();
+
         $request->validate([
             'dni' => 'required|unique:students,dni,' . $student->id,
             'name' => 'required',
@@ -292,7 +294,12 @@ class StudentController extends Controller
             'active_from' => 'required|date_format:Y-m',
         ]);
         $data = $request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date');
-        $data['active_from'] = $request->input('active_from') . '-01';
+        if ($studentHasClasses) {
+            $data['active_from'] = $student->active_from ? $student->active_from->format('Y-m-d') : null;
+        } else {
+            $data['active_from'] = $request->input('active_from') . '-01';
+        }
+
         $student->update($data);
         return redirect()->route('students.index')->with('success', 'Alumno actualizado correctamente.');
     }
