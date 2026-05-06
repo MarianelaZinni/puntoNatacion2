@@ -89,9 +89,9 @@
                 </div>
 
                 <div>
-                    <dt class="text-base font-medium text-gray-700 dark:text-gray-300">Periodo de inicio</dt>
+                    <dt class="text-base font-medium text-gray-700 dark:text-gray-300">Fecha de activación</dt>
                     <dd class="mt-3 text-gray-900 dark:text-gray-100 font-medium leading-relaxed">
-                        {{ $student->active_from ? $student->active_from->format('m/Y') : '-' }}
+                        {{ $student->active_from ? $student->active_from->format('d/m/Y') : '-' }}
                     </dd>
                 </div>
 
