@@ -327,7 +327,7 @@ protected function calculateEffectiveDebtStartDate(Carbon $creationDate, ?Carbon
     /**
      * Normaliza distintos formatos de periodo a Carbon startOfMonth.
      */
-    protected function normalizePeriodToCarbon($period): Carbon
+    protected function normalizePeriodToCarbon(mixed $period): Carbon
     {
         if ($period instanceof Carbon) {
             return $period->copy()->startOfMonth();
