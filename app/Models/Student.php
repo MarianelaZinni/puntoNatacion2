@@ -19,7 +19,8 @@ class Student extends Authenticatable
         'address',
         'phone',
         'observations',
-        'birth_date'
+        'birth_date',
+        'active_from',
     ];
 
     protected $dates = [
@@ -28,8 +29,9 @@ class Student extends Authenticatable
     ];
 
     protected $casts = [
-    'birth_date' => 'date'
-];
+        'birth_date'  => 'date',
+        'active_from' => 'date',
+    ];
 
     /**************
      * Relaciones *
@@ -157,8 +159,10 @@ public function calculateDebtFromCreationUsingCurrentMonthly(): array
         ];
     }
 
-    // Fecha de creación del alumno
-    $creationDate = $this->created_at ? Carbon::parse($this->created_at)->startOfMonth() : Carbon::now()->startOfMonth();
+    // Fecha de inicio de deuda del alumno: active_from tiene prioridad sobre created_at
+    $creationDate = $this->active_from
+        ? Carbon::parse($this->active_from)->startOfMonth()
+        : ($this->created_at ? Carbon::parse($this->created_at)->startOfMonth() : Carbon::now()->startOfMonth());
 
     // Fecha absoluta de inicio de deuda del sistema (configurada en .env)
     $systemDebtStartDate = $this->getSystemDebtStartDate();
@@ -323,7 +327,7 @@ protected function calculateEffectiveDebtStartDate(Carbon $creationDate, ?Carbon
     /**
      * Normaliza distintos formatos de periodo a Carbon startOfMonth.
      */
-    protected function normalizePeriodToCarbon($period): Carbon
+    protected function normalizePeriodToCarbon(mixed  $period): Carbon
     {
         if ($period instanceof Carbon) {
             return $period->copy()->startOfMonth();

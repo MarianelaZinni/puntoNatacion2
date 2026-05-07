@@ -1,4 +1,7 @@
 <x-layouts.app title="Editar alumno">
+    @php
+        $isEnrolledInAnyClass = $student->subjects->isNotEmpty();
+    @endphp
     <div class="max-w-3xl mx-auto py-8 px-4">
       <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Editar Alumno</h1>
@@ -159,6 +162,46 @@
                 >
                 @error('address')
                     <p id="address-error" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- Periodo de inicio (active_from) --}}
+            <div>
+                <label for="active_from" class="block text-base font-medium text-gray-700 dark:text-gray-300">Periodo de inicio <span class="text-red-500">*</span></label>
+                @if($isEnrolledInAnyClass)
+                    <input
+                        id="active_from"
+                        type="month"
+                        required
+                        value="{{ old('active_from', $student->active_from ? $student->active_from->format('Y-m') : '') }}"
+                        class="mt-2 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-[#29b1dc] focus:border-[#29b1dc] text-base leading-relaxed @error('active_from') ring-2 ring-red-400 @enderror"
+                        aria-invalid="{{ $errors->has('active_from') ? 'true' : 'false' }}"
+                        aria-describedby="{{ $errors->has('active_from') ? 'active_from-error' : '' }}"
+                        disabled
+                    >
+                    <input
+                        type="hidden"
+                        name="active_from"
+                        value="{{ $student->active_from ? $student->active_from->format('Y-m') : '' }}"
+                    >
+                @else
+                    <input
+                        id="active_from"
+                        name="active_from"
+                        type="month"
+                        required
+                        value="{{ old('active_from', $student->active_from ? $student->active_from->format('Y-m') : '') }}"
+                        class="mt-2 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-[#29b1dc] focus:border-[#29b1dc] text-base leading-relaxed @error('active_from') ring-2 ring-red-400 @enderror"
+                        aria-invalid="{{ $errors->has('active_from') ? 'true' : 'false' }}"
+                        aria-describedby="{{ $errors->has('active_from') ? 'active_from-error' : '' }}"
+                    >
+                @endif
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Mes y año a partir del cual el alumno está activo y genera deuda.</p>
+                @if($isEnrolledInAnyClass)
+                    <p class="mt-1 text-xs text-amber-700 dark:text-amber-300">Este valor no se puede editar porque el alumno ya está inscripto en al menos una clase.</p>
+                @endif
+                @error('active_from')
+                    <p id="active_from-error" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                 @enderror
             </div>
 
