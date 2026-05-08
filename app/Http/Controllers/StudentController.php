@@ -295,6 +295,9 @@ class StudentController extends Controller
             'active_from' => 'required|date_format:Y-m',
         ]);
         $data = $request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date');
+        // Once a student is enrolled in classes, changing active_from would retroactively alter
+        // the debt start date and invalidate existing financial records. To preserve data integrity
+        // the field is locked to its current value when the student has active class enrolments.
         if ($studentHasClasses) {
             $data['active_from'] = $student->active_from ? $student->active_from->format('Y-m-d') : null;
         } else {
