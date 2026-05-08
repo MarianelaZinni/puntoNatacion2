@@ -42,6 +42,27 @@
             </div>
         @endif
 
+        {{-- Banner de alumno en pausa --}}
+        @if($student->isCurrentlyPaused())
+            @php
+                $activePause = $student->pauses->first(fn($p) => $p->isActive());
+            @endphp
+            <div class="mb-4 p-3 rounded border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 text-amber-800 dark:text-amber-200 flex items-start gap-3">
+                <flux:icon name="pause-circle" class="h-5 w-5 shrink-0 mt-0.5" />
+                <div class="flex-1 text-sm">
+                    <strong>Este alumno está en pausa</strong>
+                    @if($activePause)
+                        — {{ $activePause->start_date->format('m/Y') }} al {{ $activePause->end_date->format('m/Y') }}
+                        @if($activePause->reason)
+                            <span class="text-amber-600 dark:text-amber-300">({{ $activePause->reason }})</span>
+                        @endif
+                    @endif
+                    <br>
+                    <span class="text-xs text-amber-600 dark:text-amber-300">Los meses pausados no se contabilizan en la deuda.</span>
+                </div>
+            </div>
+        @endif
+
         {{-- Detalles --}}
         <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-6 shadow-sm">
             <dl class="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-6 text-base">
@@ -392,6 +413,12 @@
                 {{-- @if($userRole === 'admin') --}}
                 <a href="{{ route('students.edit', $student) }}" class="inline-flex items-center px-5 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc] transition text-base">
                     Editar
+                </a>
+
+                <a href="{{ route('students.pauses.index', $student) }}"
+                   class="inline-flex items-center gap-2 px-5 py-2 rounded text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-amber-500 transition text-base">
+                    <flux:icon name="pause-circle" class="h-4 w-4" />
+                    Pausas
                 </a>
 
                 <form action="{{ route('students.destroy', $student) }}" method="POST" class="inline">

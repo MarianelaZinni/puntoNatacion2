@@ -23,17 +23,19 @@ class StudentPauseController extends Controller
      */
     public function store(Request $request, Student $student)
     {
-        $data = $request->validate([
-            'start_date' => 'required|date_format:Y-m-d',
-            'end_date'   => 'required|date_format:Y-m-d',
+        $request->validate([
+            'start_date' => 'required|date_format:Y-m',
             'reason'     => 'nullable|string|max:255',
         ]);
 
-        if ($data['end_date'] < $data['start_date']) {
-            return back()->withErrors(['end_date' => 'La fecha fin debe ser posterior o igual a la fecha inicio.'])->withInput();
-        }
+        $start = Carbon::createFromFormat('Y-m', $request->input('start_date'))->startOfMonth();
+        $end   = $start->copy()->endOfMonth();
 
-        $student->pauses()->create($data);
+        $student->pauses()->create([
+            'start_date' => $start->toDateString(),
+            'end_date'   => $end->toDateString(),
+            'reason'     => $request->input('reason'),
+        ]);
 
         return redirect()->route('students.pauses.index', $student)
             ->with('success', 'Período de pausa creado correctamente.');
@@ -58,17 +60,19 @@ class StudentPauseController extends Controller
         abort_if($pause->student_id !== $student->id, 404);
         abort_unless($pause->isEditable(), 403, 'Este período de pausa ya finalizó y no puede modificarse.');
 
-        $data = $request->validate([
-            'start_date' => 'required|date_format:Y-m-d',
-            'end_date'   => 'required|date_format:Y-m-d',
+        $request->validate([
+            'start_date' => 'required|date_format:Y-m',
             'reason'     => 'nullable|string|max:255',
         ]);
 
-        if ($data['end_date'] < $data['start_date']) {
-            return back()->withErrors(['end_date' => 'La fecha fin debe ser posterior o igual a la fecha inicio.'])->withInput();
-        }
+        $start = Carbon::createFromFormat('Y-m', $request->input('start_date'))->startOfMonth();
+        $end   = $start->copy()->endOfMonth();
 
-        $pause->update($data);
+        $pause->update([
+            'start_date' => $start->toDateString(),
+            'end_date'   => $end->toDateString(),
+            'reason'     => $request->input('reason'),
+        ]);
 
         return redirect()->route('students.pauses.index', $student)
             ->with('success', 'Período de pausa actualizado correctamente.');
