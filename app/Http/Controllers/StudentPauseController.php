@@ -25,16 +25,11 @@ class StudentPauseController extends Controller
     {
         $request->validate([
             'start_date' => 'required|date_format:Y-m',
-            'end_date'   => 'required|date_format:Y-m',
             'reason'     => 'nullable|string|max:255',
         ]);
 
         $start = Carbon::createFromFormat('Y-m', $request->input('start_date'))->startOfMonth();
-        $end   = Carbon::createFromFormat('Y-m', $request->input('end_date'))->endOfMonth();
-
-        if ($end->lt($start)) {
-            return back()->withErrors(['end_date' => 'El mes fin debe ser posterior o igual al mes inicio.'])->withInput();
-        }
+        $end   = $start->copy()->endOfMonth();
 
         $student->pauses()->create([
             'start_date' => $start->toDateString(),
@@ -67,16 +62,11 @@ class StudentPauseController extends Controller
 
         $request->validate([
             'start_date' => 'required|date_format:Y-m',
-            'end_date'   => 'required|date_format:Y-m',
             'reason'     => 'nullable|string|max:255',
         ]);
 
         $start = Carbon::createFromFormat('Y-m', $request->input('start_date'))->startOfMonth();
-        $end   = Carbon::createFromFormat('Y-m', $request->input('end_date'))->endOfMonth();
-
-        if ($end->lt($start)) {
-            return back()->withErrors(['end_date' => 'El mes fin debe ser posterior o igual al mes inicio.'])->withInput();
-        }
+        $end   = $start->copy()->endOfMonth();
 
         $pause->update([
             'start_date' => $start->toDateString(),

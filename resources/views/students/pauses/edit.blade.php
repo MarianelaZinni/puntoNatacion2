@@ -20,10 +20,10 @@
                 @csrf
                 @method('PUT')
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-4">
                     <div>
                         <label for="start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Mes inicio <span class="text-red-500">*</span>
+                            Mes de pausa <span class="text-red-500">*</span>
                         </label>
                         <input type="month" name="start_date" id="start_date"
                                value="{{ old('start_date', $pause->start_date->format('Y-m')) }}"
@@ -35,19 +35,6 @@
                     </div>
 
                     <div>
-                        <label for="end_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Mes fin <span class="text-red-500">*</span>
-                        </label>
-                        <input type="month" name="end_date" id="end_date"
-                               value="{{ old('end_date', $pause->end_date->format('Y-m')) }}"
-                               class="w-full px-3 py-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#29b1dc]"
-                               required>
-                        @error('end_date')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="sm:col-span-2">
                         <label for="reason" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Motivo (opcional)
                         </label>
