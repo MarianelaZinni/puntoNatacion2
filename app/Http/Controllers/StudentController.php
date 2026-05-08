@@ -182,7 +182,8 @@ class StudentController extends Controller
             // Cargamos payments con paymentMethod ordenados por fecha descendente
             'payments' => function ($q) {
                 $q->with('paymentMethod')->orderByDesc('payment_date');
-            }
+            },
+            'pauses',
         ]);
 
         // Calculamos el resumen de precios usando el servicio PriceCalculator
