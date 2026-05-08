@@ -52,7 +52,7 @@
                 <div class="flex-1 text-sm">
                     <strong>Este alumno está en pausa</strong>
                     @if($activePause)
-                        — {{ $activePause->start_date->format('m/Y') }} al {{ $activePause->end_date->format('m/Y') }}
+                        — {{ $activePause->start_date->format('m/Y') }}
                         @if($activePause->reason)
                             <span class="text-amber-600 dark:text-amber-300">({{ $activePause->reason }})</span>
                         @endif
