@@ -20,10 +20,9 @@ class CheckRole
             return redirect()->route('login');
         }
 
-        // Role checking temporarily disabled – all authenticated users can access everything.
-        // if (! in_array(auth()->guard()->user()->role, $roles)) {
-        //     abort(403, 'No tienes permiso para acceder a esta sección.');
-        // }
+        if (! in_array(auth()->guard()->user()->role, $roles, true)) {
+            abort(403, 'No tienes permiso para acceder a esta sección.');
+        }
 
         return $next($request);
     }
