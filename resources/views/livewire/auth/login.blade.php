@@ -10,17 +10,27 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Features;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 
 new #[Layout('components.layouts.auth')] class extends Component {
-    #[Validate('required|string|email')]
-    public string $email = '';
+    public string $loginWith = 'email';
 
-    #[Validate('required|string')]
+    public string $identifier = '';
+
     public string $password = '';
 
     public bool $remember = false;
+
+    protected function rules(): array
+    {
+        return [
+            'loginWith' => 'required|in:email,dni',
+            'identifier' => $this->loginWith === 'email'
+                ? 'required|string|email'
+                : 'required|string',
+            'password' => 'required|string',
+        ];
+    }
 
     /**
      * Handle an incoming authentication request.
@@ -57,13 +67,28 @@ new #[Layout('components.layouts.auth')] class extends Component {
      */
     protected function validateCredentials(): User
     {
-        $user = Auth::getProvider()->retrieveByCredentials(['email' => $this->email, 'password' => $this->password]);
+        if ($this->loginWith === 'email') {
+            $user = Auth::getProvider()->retrieveByCredentials([
+                'email' => $this->identifier,
+                'password' => $this->password,
+            ]);
+
+            if (! $user) {
+                $user = User::query()
+                    ->whereHas('students', fn ($query) => $query->where('email', $this->identifier))
+                    ->first();
+            }
+        } else {
+            $user = User::query()
+                ->whereHas('students', fn ($query) => $query->where('dni', $this->identifier))
+                ->first();
+        }
 
         if (! $user || ! Auth::getProvider()->validateCredentials($user, ['password' => $this->password])) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
+                'identifier' => __('auth.failed'),
             ]);
         }
 
@@ -84,7 +109,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => __('auth.throttle', [
+            'identifier' => __('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -96,26 +121,31 @@ new #[Layout('components.layouts.auth')] class extends Component {
      */
     protected function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->email).'|'.request()->ip());
+        return Str::transliterate(Str::lower($this->loginWith.'|'.$this->identifier).'|'.request()->ip());
     }
 }; ?>
 
 <div class="flex flex-col gap-6">
-    <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
+    <x-auth-header :title="__('Log in to your account')" :description="__('Choose email or DNI and enter your password to log in')" />
 
     <!-- Session Status -->
     <x-auth-session-status class="text-center" :status="session('status')" />
 
     <form method="POST" wire:submit="login" class="flex flex-col gap-6">
-        <!-- Email Address -->
+        <flux:select wire:model.live="loginWith" :label="__('Ingresar con')" required>
+            <option value="email">{{ __('Mail') }}</option>
+            <option value="dni">{{ __('DNI') }}</option>
+        </flux:select>
+
+        <!-- Identifier -->
         <flux:input
-            wire:model="email"
-            :label="__('Email address')"
-            type="email"
+            wire:model="identifier"
+            :label="$loginWith === 'email' ? __('Email address') : __('DNI')"
+            :type="$loginWith === 'email' ? 'email' : 'text'"
             required
             autofocus
-            autocomplete="email"
-            placeholder="email@example.com"
+            :autocomplete="$loginWith === 'email' ? 'email' : 'off'"
+            :placeholder="$loginWith === 'email' ? 'email@example.com' : __('Ingrese su DNI')"
         />
 
         <!-- Password -->
