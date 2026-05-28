@@ -80,7 +80,8 @@ new #[Layout('components.layouts.auth')] class extends Component {
             }
         } else {
             $user = User::query()
-                ->whereHas('students', fn ($query) => $query->where('dni', $this->identifier))
+                ->where('dni', $this->identifier)
+                ->orWhereHas('students', fn ($query) => $query->where('dni', $this->identifier))
                 ->first();
         }
 

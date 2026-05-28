@@ -80,6 +80,27 @@ class AuthenticationTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_alumno_can_authenticate_using_own_dni_and_password(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create([
+            'role' => User::ROLE_ALUMNO,
+            'email' => null,
+            'dni' => '32111222',
+        ]);
+
+        $response = LivewireVolt::test('auth.login')
+            ->set('loginWith', 'dni')
+            ->set('identifier', $user->dni)
+            ->set('password', 'password')
+            ->call('login');
+
+        $response
+            ->assertHasNoErrors()
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
     public function test_alumno_can_authenticate_using_email_and_password(): void
     {
         $user = User::factory()->withoutTwoFactor()->create([
