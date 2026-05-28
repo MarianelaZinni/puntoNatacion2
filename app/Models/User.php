@@ -27,8 +27,9 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'dni',
         'password',
-         'role',
+        'role',
         'teacher_id'
     ];
 
@@ -106,6 +107,19 @@ class User extends Authenticatable
             self::ROLE_ALUMNO     => 'Alumno',
             self::ROLE_PROFESOR   => 'Profesor',
         ];
+    }
+
+    public function loginIdentifier(): string
+    {
+        if ($this->email) {
+            return $this->email;
+        }
+
+        if ($this->dni) {
+            return 'DNI '.$this->dni;
+        }
+
+        return '—';
     }
 
     /***********************

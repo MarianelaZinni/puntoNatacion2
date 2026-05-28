@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Fortify\Features;
@@ -24,7 +25,8 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->withoutTwoFactor()->create();
 
         $response = LivewireVolt::test('auth.login')
-            ->set('email', $user->email)
+            ->set('loginWith', 'email')
+            ->set('identifier', $user->email)
             ->set('password', 'password')
             ->call('login');
 
@@ -40,19 +42,96 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
 
         $response = LivewireVolt::test('auth.login')
-            ->set('email', $user->email)
+            ->set('loginWith', 'email')
+            ->set('identifier', $user->email)
             ->set('password', 'wrong-password')
             ->call('login');
 
-        $response->assertHasErrors('email');
+        $response->assertHasErrors('identifier');
 
         $this->assertGuest();
+    }
+
+    public function test_alumno_can_authenticate_using_dni_and_password(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create([
+            'role' => User::ROLE_ALUMNO,
+            'email' => 'cuenta.usuario@example.com',
+        ]);
+
+        $student = Student::create([
+            'dni' => '30123456',
+            'name' => 'Alumno DNI',
+            'email' => 'alumno.dni@example.com',
+        ]);
+
+        $user->students()->attach($student->id);
+
+        $response = LivewireVolt::test('auth.login')
+            ->set('loginWith', 'dni')
+            ->set('identifier', $student->dni)
+            ->set('password', 'password')
+            ->call('login');
+
+        $response
+            ->assertHasNoErrors()
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_alumno_can_authenticate_using_own_dni_and_password(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create([
+            'role' => User::ROLE_ALUMNO,
+            'email' => null,
+            'dni' => '32111222',
+        ]);
+
+        $response = LivewireVolt::test('auth.login')
+            ->set('loginWith', 'dni')
+            ->set('identifier', $user->dni)
+            ->set('password', 'password')
+            ->call('login');
+
+        $response
+            ->assertHasNoErrors()
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_alumno_can_authenticate_using_email_and_password(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create([
+            'role' => User::ROLE_ALUMNO,
+        ]);
+
+        $student = Student::create([
+            'dni' => '30999888',
+            'name' => 'Alumno Mail',
+            'email' => 'alumno.mail@example.com',
+        ]);
+
+        $user->students()->attach($student->id);
+
+        $response = LivewireVolt::test('auth.login')
+            ->set('loginWith', 'email')
+            ->set('identifier', $student->email)
+            ->set('password', 'password')
+            ->call('login');
+
+        $response
+            ->assertHasNoErrors()
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge(): void
     {
         if (! Features::canManageTwoFactorAuthentication()) {
-            $this->markTestSkipped('Two-factor authentication is not enabled.');
+//$this->markTestSkipped('Two-factor authentication is not enabled.');
         }
 
         Features::twoFactorAuthentication([
@@ -69,7 +148,8 @@ class AuthenticationTest extends TestCase
         ])->save();
 
         $response = LivewireVolt::test('auth.login')
-            ->set('email', $user->email)
+            ->set('loginWith', 'email')
+            ->set('identifier', $user->email)
             ->set('password', 'password')
             ->call('login');
 

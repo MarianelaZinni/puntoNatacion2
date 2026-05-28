@@ -4,11 +4,13 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Volt\Component;
 
 new class extends Component {
     public string $name = '';
     public string $email = '';
+    public string $dni = '';
 
     /**
      * Mount the component.
@@ -21,7 +23,8 @@ new class extends Component {
             return;
         }
         $this->name = Auth::user()->name;
-        $this->email = Auth::user()->email;
+        $this->email = Auth::user()->email ?? '';
+        $this->dni = Auth::user()->dni ?? '';
     }
 
     /**
@@ -31,18 +34,47 @@ new class extends Component {
     {
         $user = Auth::user();
 
-        $validated = $this->validate([
+        $validator = Validator::make([
+            'name' => $this->name,
+            'email' => $this->email,
+            'dni' => $this->dni,
+        ], [
             'name' => ['required', 'string', 'max:255'],
-
             'email' => [
-                'required',
+                'nullable',
                 'string',
                 'lowercase',
                 'email',
                 'max:255',
                 Rule::unique(User::class)->ignore($user->id)
             ],
+            'dni' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique(User::class, 'dni')->ignore($user->id),
+            ],
         ]);
+
+        $validator->after(function ($validator) use ($user) {
+            if ($user->role === User::ROLE_ALUMNO) {
+                if (blank($this->email) && blank($this->dni)) {
+                    $message = 'Completá al menos email o DNI.';
+                    $validator->errors()->add('email', $message);
+                    $validator->errors()->add('dni', $message);
+                }
+
+                return;
+            }
+
+            if (blank($this->email)) {
+                $validator->errors()->add('email', 'El campo email es obligatorio.');
+            }
+        });
+
+        $validated = $validator->validate();
+        $validated['email'] = filled($validated['email'] ?? null) ? $validated['email'] : null;
+        $validated['dni'] = filled($validated['dni'] ?? null) ? $validated['dni'] : null;
 
         $user->fill($validated);
 
@@ -77,12 +109,22 @@ new class extends Component {
 <section class="w-full">
     @include('partials.settings-heading')
 
-    <x-settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
+    <x-settings.layout :heading="__('Profile')" :subheading="__('Update your name and access data')">
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
             <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
 
             <div>
-                <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
+                <flux:input wire:model="email" :label="__('Email')" type="email" :required="auth()->user()->role !== \App\Models\User::ROLE_ALUMNO" autocomplete="email" />
+            </div>
+
+            <div>
+                <flux:input wire:model="dni" :label="__('DNI')" type="text" autocomplete="off" />
+
+                @if (auth()->user()->role === \App\Models\User::ROLE_ALUMNO)
+                    <flux:text class="mt-2">
+                        {{ __('For student users, complete at least email or DNI.') }}
+                    </flux:text>
+                @endif
 
                 @if (auth()->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail &&! auth()->user()->hasVerifiedEmail())
                     <div>

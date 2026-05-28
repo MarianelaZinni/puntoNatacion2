@@ -17,24 +17,23 @@ class DashboardController extends Controller
      /** @var \App\Models\User|null $user */
         $user = Auth::user();
         
-        // Role-based redirects temporarily disabled – all users land on the main dashboard.
-        // if ($user) {
-        //     $isAlumno = method_exists($user, 'isAlumno')
-        //         ? $user->isAlumno()
-        //         : (($user->role ?? null) === 'alumno');
-        //
-        //     $isEnfermeria = method_exists($user, 'isEnfermeria')
-        //         ? $user->isEnfermeria()
-        //         : (($user->role ?? null) === 'enfermeria');
-        //
-        //     if ($isAlumno) {
-        //         return redirect()->route('portal.student');
-        //     }
-        //
-        //     if ($isEnfermeria) {
-        //         return redirect()->route('students.index');
-        //     }
-        // }
+        if ($user) {
+            $isAlumno = method_exists($user, 'isAlumno')
+                ? $user->isAlumno()
+                : (($user->role ?? null) === 'alumno');
+
+            $isEnfermeria = method_exists($user, 'isEnfermeria')
+                ? $user->isEnfermeria()
+                : (($user->role ?? null) === 'enfermeria');
+
+            if ($isAlumno) {
+                return redirect()->route('portal.student');
+            }
+
+            if ($isEnfermeria) {
+                return redirect()->route('students.index');
+            }
+        }
 
         // Eager load para evitar N+1 (subjectType y students)
         $subjects = Subject::with(['subjectType', 'students'])->get();

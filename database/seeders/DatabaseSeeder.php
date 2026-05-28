@@ -13,18 +13,18 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            SubjectTypeSeeder::class,
-            SubjectSeeder::class,
-            StudentSeeder::class,
-            PaymentMethodSeeder::class,
-            SubjectPriceSeeder::class,
-            MarkPiletaLibreHasTeacherSeeder::class
-        ]);
+        //$this->call([
+        //    SubjectTypeSeeder::class,
+        //    SubjectSeeder::class,
+        //    StudentSeeder::class,
+        //    PaymentMethodSeeder::class,
+        //    SubjectPriceSeeder::class,
+        //    MarkPiletaLibreHasTeacherSeeder::class
+        //]);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+ //       User::factory()->create([
+ //           'name' => 'Test User',
+ //           'email' => 'test@example.com',
+       // ]);
     }
 }
