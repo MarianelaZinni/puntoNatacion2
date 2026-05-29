@@ -6,10 +6,14 @@ use App\Models\Student;
 use App\Models\Subject;
 use App\Models\SubjectPrice;
 use App\Models\AttendanceRecord;
+use App\Models\User;
 use App\Services\PriceCalculator;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class StudentController extends Controller
@@ -145,7 +149,7 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-        'dni' => 'required|unique:students,dni',
+        'dni' => ['required', 'unique:students,dni', Rule::unique('users', 'dni')],
         'name' => 'required',
         'email' => 'nullable|email',
         'address' => 'nullable',
@@ -155,12 +159,26 @@ class StudentController extends Controller
         'active_from' => 'required|date_format:Y-m',
     ]);
 
-    // Normalise active_from (YYYY-MM) to first day of month for DB storage
+    // Normalize active_from (YYYY-MM) to first day of month for DB storage
     $data = $request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date');
     $data['active_from'] = $request->input('active_from') . '-01';
 
-    // Crear el estudiante
-    $student = Student::create($data);
+    $student = DB::transaction(function () use ($data) {
+       $student = Student::create($data);
+
+       $user = User::create([
+           'name' => $student->name,
+           'email' => null,
+           'dni' => $student->dni,
+           'password' => Hash::make($student->dni),
+           'role' => User::ROLE_ALUMNO,
+           'teacher_id' => null,
+       ]);
+
+       $user->students()->sync([$student->id]);
+
+       return $student;
+    });
 
     // Redireccionar a la página de inscripción de clases
     return redirect()->route('students.enrollClassForm', ['student' => $student->id])
@@ -183,9 +201,8 @@ class StudentController extends Controller
             'payments' => function ($q) {
                 $q->with('paymentMethod')->orderByDesc('payment_date');
             },
-            'pauses'
+            'pauses',
         ]);
-
 
         // Calculamos el resumen de precios usando el servicio PriceCalculator
         $priceSummary = (new PriceCalculator())->calculate($student->subjects);
@@ -283,6 +300,8 @@ class StudentController extends Controller
 
     public function update(Request $request, Student $student)
     {
+        $studentHasClasses = $student->subjects()->exists();
+
         $request->validate([
             'dni' => 'required|unique:students,dni,' . $student->id,
             'name' => 'required',
@@ -294,7 +313,15 @@ class StudentController extends Controller
             'active_from' => 'required|date_format:Y-m',
         ]);
         $data = $request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date');
-        $data['active_from'] = $request->input('active_from') . '-01';
+        // Once a student is enrolled in classes, changing active_from would retroactively alter
+        // the debt start date and invalidate existing financial records. To preserve data integrity
+        // the field is locked to its current value when the student has active class enrolments.
+        if ($studentHasClasses) {
+            $data['active_from'] = $student->active_from ? $student->active_from->format('Y-m-d') : null;
+        } else {
+            $data['active_from'] = $request->input('active_from') . '-01';
+        }
+
         $student->update($data);
         return redirect()->route('students.index')->with('success', 'Alumno actualizado correctamente.');
     }

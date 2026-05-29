@@ -21,12 +21,15 @@ class DashboardController extends Controller
             $isAlumno = method_exists($user, 'isAlumno')
                 ? $user->isAlumno()
                 : (($user->role ?? null) === 'alumno');
+            $isSuperAlumno = method_exists($user, 'isSuperAlumno')
+                ? $user->isSuperAlumno()
+                : (($user->role ?? null) === 'super_alumno');
 
             $isEnfermeria = method_exists($user, 'isEnfermeria')
                 ? $user->isEnfermeria()
                 : (($user->role ?? null) === 'enfermeria');
 
-            if ($isAlumno) {
+            if ($isAlumno || $isSuperAlumno) {
                 return redirect()->route('portal.student');
             }
 

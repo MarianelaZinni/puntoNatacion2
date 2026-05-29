@@ -18,6 +18,7 @@ use App\Http\Controllers\BackupController;
 use App\Http\Controllers\MedicalCheckupController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AnnouncementController;
+use App\Models\User;
 
 Route::get('/', function () {
     return Auth::check()
@@ -32,13 +33,19 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Settings – available to all authenticated users
-    Route::redirect('settings', 'settings/profile');
-    Volt::route('settings/profile', 'settings.profile')->name('profile.edit');
+   Route::get('settings', function () {
+    $user = Auth::user();
+
+    return $user instanceof User && $user->isAdmin()
+        ? redirect()->route('profile.edit')
+        : redirect()->route('password.edit');
+})->name('settings');
+    Volt::route('settings/profile', 'settings.profile')->middleware('role:admin')->name('profile.edit');
     Volt::route('settings/password', 'settings.password')->name('password.edit');
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');
 
     // ── Portal Alumno ─────────────────────────────────────────────────────────
-    Route::middleware('role:alumno,admin')->group(function () {
+    Route::middleware('role:alumno,super_alumno,admin')->group(function () {
         Route::get('/portal/student', [StudentPortalController::class, 'index'])->name('portal.student');
         Route::post('/portal/announcements/{announcement}/read', [StudentPortalController::class, 'markRead'])->name('portal.announcements.read');
         Route::get('/portal/announcements', [StudentPortalController::class, 'announcements'])->name('portal.announcements');
@@ -170,8 +177,9 @@ Route::middleware(['auth'])->group(function () {
         // Backup
         Route::get('/backup/download', [BackupController::class, 'download'])->name('backup.download');
 
-         // Announcements (Comunicados)
+        // Announcements (Comunicados)
         Route::resource('announcements', AnnouncementController::class)->except(['show']);
+
     }); // end role:admin group
 
 }); // end auth middleware

@@ -30,7 +30,7 @@
                 @endif
 
                 {{-- ── PORTAL ALUMNO ──────────────────────────────────────────── --}}
-                @if($role === 'alumno')
+                @if(in_array($role, ['alumno', 'super_alumno']))
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Mi Portal</div>
                     <flux:navlist.group>
@@ -163,6 +163,7 @@
                 </div>
                 @endif
 
+
             </flux:navlist>
             @endauth
 
@@ -189,7 +190,7 @@
                                     </span>
                                     <div class="grid flex-1 text-start text-sm leading-tight">
                                         <span class="truncate font-semibold">{{ auth()->user()->name }}</span>
-                                         <span class="truncate text-xs">{{ auth()->user()->loginIdentifier() }}</span>
+                                        <span class="truncate text-xs">{{ auth()->user()->loginIdentifier() }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -198,7 +199,7 @@
                         <flux:menu.separator />
 
                         <flux:menu.radio.group>
-                            <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
+                            <flux:menu.item :href="route('settings')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
                         </flux:menu.radio.group>
 
                         <flux:menu.separator />
@@ -245,7 +246,7 @@
                         <flux:menu.separator />
 
                         <flux:menu.radio.group>
-                            <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
+                            <flux:menu.item :href="route('settings')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
                         </flux:menu.radio.group>
 
                         <flux:menu.separator />

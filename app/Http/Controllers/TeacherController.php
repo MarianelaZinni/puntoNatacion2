@@ -4,9 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Subject;
 use App\Models\Teacher;
+use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class TeacherController extends Controller
 {
@@ -70,15 +74,26 @@ class TeacherController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'dni' => 'nullable|string|max:20|unique:teachers,dni',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
-            'address' => 'nullable|string|max:255',
+            'name'         => 'required|string|max:255',
+            'dni'          => ['required', 'string', 'max:20', Rule::unique('teachers', 'dni'), Rule::unique('users', 'dni')],
+            'email'        => 'nullable|email|max:255',
+            'phone'        => 'nullable|string|max:50',
+            'address'      => 'nullable|string|max:255',
             'observations' => 'nullable|string|max:1000',
         ]);
 
-        Teacher::create($request->only('name', 'dni', 'email', 'phone', 'address', 'observations'));
+        DB::transaction(function () use ($request) {
+            $teacher = Teacher::create($request->only('name', 'dni', 'email', 'phone', 'address', 'observations'));
+
+            User::create([
+                'name'       => $teacher->name,
+                'email'      => $teacher->email ?: null,
+                'dni'        => $teacher->dni,
+                'password'   => Hash::make($teacher->dni),
+                'role'       => User::ROLE_PROFESOR,
+                'teacher_id' => $teacher->id,
+            ]);
+        });
 
         return redirect()->route('teachers.index')
                          ->with('success', 'Profesor creado correctamente.');
