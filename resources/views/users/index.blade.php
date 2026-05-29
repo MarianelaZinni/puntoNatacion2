@@ -28,7 +28,7 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Email / DNI</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Rol</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Vinculado a</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Acciones</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase min-w-[100px]">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
@@ -61,7 +61,7 @@
                                 <span class="text-gray-400">—</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-center">
+                        <td class="px-4 py-3 text-center whitespace-nowrap">
                             <div class="flex items-center justify-center gap-2">
                                 <a href="{{ route('users.edit', $user) }}"
                                    class="inline-flex items-center justify-center h-9 w-9 rounded-full text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition"

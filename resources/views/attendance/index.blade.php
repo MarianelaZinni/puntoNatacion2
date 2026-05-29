@@ -78,7 +78,7 @@
                             </th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Clase</th>
                             <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Presentes / Total</th>
-                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Acciones</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase min-w-[160px]">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -103,8 +103,8 @@
                                 <span class="font-semibold text-green-700 dark:text-green-400">{{ $row->present_count }}</span>
                                 <span class="text-gray-500 dark:text-gray-400">/ {{ $row->total }}</span>
                             </td>
-                            <td class="px-4 py-2 text-center">
-                                <div class="inline-flex items-center gap-2">
+                            <td class="px-4 py-2 text-center whitespace-nowrap">
+                                <div class="flex flex-wrap items-center justify-center gap-2">
                                     <a href="{{ route('attendance.take', ['subject_id' => $row->subject_id, 'date' => $row->date->format('Y-m-d')]) }}"
                                        class="inline-flex items-center gap-1 px-3 py-1 rounded text-xs text-white bg-[#29b1dc] hover:bg-[#24a8cf] transition">
                                         Ver / Editar

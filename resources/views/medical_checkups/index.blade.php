@@ -71,7 +71,7 @@
                                 <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Período</th>
                                 <th class="text-center text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Estado</th>
                                 <th class="text-left text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Observaciones</th>
-                                <th class="text-center text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2">Acciones</th>
+                                <th class="text-center text-sm font-medium text-gray-700 dark:text-gray-300 px-4 py-2 min-w-[100px]">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -105,7 +105,7 @@
                                     <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-300">
                                         {{ $checkup->observations ? Str::limit($checkup->observations, 50) : '-' }}
                                     </td>
-                                    <td class="px-4 py-3 text-center">
+                                    <td class="px-4 py-3 text-center whitespace-nowrap">
                                         <div class="flex items-center justify-center gap-2">
                                             {{-- Botón Ver/Editar --}}
                                             

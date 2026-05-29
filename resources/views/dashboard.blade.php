@@ -128,7 +128,8 @@
         // render function
         function renderGridInto(container) {
             const scheduleMap = buildScheduleMap();
-            let html = '<div class="overflow-auto border border-gray-200 dark:border-gray-700 rounded">';
+            let html = '<div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded">';
+            html += '<div class="min-w-[600px]">';
 
             // header
             html += '<div class="grid grid-cols-6 gap-0 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">';
@@ -172,6 +173,7 @@
                 });
                 html += `</div>`;
             });
+            html += '</div>';
             html += '</div>';
             html += '</div>';
 

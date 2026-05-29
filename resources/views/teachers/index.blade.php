@@ -80,7 +80,7 @@
                             </button>
                         </th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Teléfono</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[120px]">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="teachers-table-body" class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
