@@ -32,7 +32,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Settings – available to all authenticated users
-    Route::redirect('settings', 'settings/profile');
+    Route::get('settings', function () {
+        return auth()->user()?->isAdmin()
+            ? redirect()->route('profile.edit')
+            : redirect()->route('password.edit');
+    })->name('settings');
     Volt::route('settings/profile', 'settings.profile')->name('profile.edit');
     Volt::route('settings/password', 'settings.password')->name('password.edit');
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');
