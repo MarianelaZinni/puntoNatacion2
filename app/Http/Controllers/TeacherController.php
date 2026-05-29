@@ -85,7 +85,7 @@ class TeacherController extends Controller
         DB::transaction(function () use ($request) {
             $teacher = Teacher::create($request->only('name', 'dni', 'email', 'phone', 'address', 'observations'));
 
-            $initialPassword = filled($teacher->dni) ? $teacher->dni : $teacher->name;
+            $initialPassword = filled($teacher->dni) ? $teacher->dni : \Illuminate\Support\Str::random(12);
 
             User::create([
                 'name'       => $teacher->name,

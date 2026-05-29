@@ -5,6 +5,7 @@ use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 return new class extends Migration
 {
@@ -28,7 +29,7 @@ return new class extends Migration
                     }
 
                     if (! $user) {
-                        $initialPassword = filled($teacher->dni) ? $teacher->dni : $teacher->name;
+                        $initialPassword = filled($teacher->dni) ? $teacher->dni : Str::random(12);
 
                         User::query()->create([
                             'name'       => $teacher->name,
