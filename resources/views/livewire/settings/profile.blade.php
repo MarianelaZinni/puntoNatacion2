@@ -126,28 +126,29 @@ new class extends Component {
                     </flux:text>
                 @endif
 
-                @if (auth()->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail &&! auth()->user()->hasVerifiedEmail())
-                    <div>
-                        <flux:text class="mt-4">
-                            {{ __('Your email address is unverified.') }}
-
-                            <flux:link class="text-sm cursor-pointer" wire:click.prevent="resendVerificationNotification">
-                                {{ __('Click here to re-send the verification email.') }}
-                            </flux:link>
-                        </flux:text>
-
-                        @if (session('status') === 'verification-link-sent')
-                            <flux:text class="mt-2 font-medium !dark:text-green-400 !text-green-600">
-                                {{ __('A new verification link has been sent to your email address.') }}
-                            </flux:text>
-                        @endif
-                    </div>
-                @endif
             </div>
 
-            <div class="flex items-center gap-4">
-                <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full" data-test="update-profile-button">
+            @if (auth()->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! auth()->user()->hasVerifiedEmail())
+                <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
+                    <flux:text>
+                        {{ __('Your email address is unverified.') }}
+
+                        <flux:link class="cursor-pointer text-sm" wire:click.prevent="resendVerificationNotification">
+                            {{ __('Click here to re-send the verification email.') }}
+                        </flux:link>
+                    </flux:text>
+
+                    @if (session('status') === 'verification-link-sent')
+                        <flux:text class="mt-2 font-medium !text-green-600 !dark:text-green-400">
+                            {{ __('A new verification link has been sent to your email address.') }}
+                        </flux:text>
+                    @endif
+                </div>
+            @endif
+
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div class="w-full sm:w-auto">
+                    <flux:button variant="primary" type="submit" class="w-full sm:w-auto" data-test="update-profile-button">
                         {{ __('Save') }}
                     </flux:button>
                 </div>

@@ -46,67 +46,69 @@
                     No hay comunicados creados todavía.
                 </div>
             @else
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
-                    <thead class="bg-gray-50 dark:bg-zinc-800">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Título</th>
-                            <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Creado por</th>
-                            <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
-                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-zinc-900 divide-y divide-gray-200 dark:divide-zinc-800">
-                        @foreach($announcements as $announcement)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-zinc-800 transition">
-                            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                {{ $announcement->title }}
-                                <p class="text-xs text-gray-500 dark:text-gray-400 font-normal mt-0.5">{{ Str::limit($announcement->body, 80) }}</p>
-                            </td>
-                            <td class="hidden md:table-cell px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                                {{ $announcement->author?->name ?? '—' }}
-                            </td>
-                            <td class="hidden sm:table-cell px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                                {{ $announcement->created_at->format('d/m/Y') }}
-                            </td>
-                            <td class="px-4 py-3 text-center">
-                                @if($announcement->is_active)
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                                        Activo
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-zinc-700 dark:text-gray-400">
-                                        Inactivo
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3 text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <a href="{{ route('announcements.edit', $announcement) }}"
-                                       title="Editar"
-                                       class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-yellow-100 dark:hover:bg-yellow-900 text-yellow-600 dark:text-yellow-300">
-                                        <flux:icon name="pencil-square" class="h-5 w-5" />
-                                        <span class="sr-only">Editar</span>
-                                    </a>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
+                        <thead class="bg-gray-50 dark:bg-zinc-800">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Título</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Creado por</th>
+                                <th class="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-zinc-900 divide-y divide-gray-200 dark:divide-zinc-800">
+                            @foreach($announcements as $announcement)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-zinc-800 transition">
+                                <td class="min-w-[16rem] px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    <span class="break-words">{{ $announcement->title }}</span>
+                                    <p class="mt-0.5 text-xs font-normal text-gray-500 dark:text-gray-400">{{ Str::limit($announcement->body, 80) }}</p>
+                                </td>
+                                <td class="hidden md:table-cell px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                                    {{ $announcement->author?->name ?? '—' }}
+                                </td>
+                                <td class="hidden sm:table-cell px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                    {{ $announcement->created_at->format('d/m/Y') }}
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    @if($announcement->is_active)
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                                            Activo
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-zinc-700 dark:text-gray-400">
+                                            Inactivo
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{{ route('announcements.edit', $announcement) }}"
+                                           title="Editar"
+                                           class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-yellow-100 dark:hover:bg-yellow-900 text-yellow-600 dark:text-yellow-300">
+                                            <flux:icon name="pencil-square" class="h-5 w-5" />
+                                            <span class="sr-only">Editar</span>
+                                        </a>
 
-                                    <form action="{{ route('announcements.destroy', $announcement) }}" method="POST" class="inline announcement-delete-form"
-                                          data-title="{{ $announcement->title }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button"
-                                                onclick="confirmDeleteAnnouncement(this)"
-                                                title="Eliminar"
-                                                class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-400 border-0">
-                                            <flux:icon name="x-circle" class="h-5 w-5" />
-                                            <span class="sr-only">Eliminar</span>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                                        <form action="{{ route('announcements.destroy', $announcement) }}" method="POST" class="inline announcement-delete-form"
+                                              data-title="{{ $announcement->title }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button"
+                                                    onclick="confirmDeleteAnnouncement(this)"
+                                                    title="Eliminar"
+                                                    class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-transparent hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-400 border-0">
+                                                <flux:icon name="x-circle" class="h-5 w-5" />
+                                                <span class="sr-only">Eliminar</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
 
                 @if($announcements->hasPages())
                     <div class="px-4 py-3 border-t border-gray-200 dark:border-zinc-700">

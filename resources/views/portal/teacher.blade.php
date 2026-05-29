@@ -66,7 +66,7 @@
                 @else
                     <ul class="divide-y divide-gray-100 dark:divide-zinc-800">
                         @foreach($teacher->titularSubjects as $subject)
-                        <li class="py-3 flex items-center justify-between">
+                        <li class="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                             <div class="text-sm">
                                 <p class="font-medium text-gray-900 dark:text-gray-100">
                                     {{ $subject->subjectType?->description ?? 'Clase' }}
@@ -76,7 +76,7 @@
                                 </p>
                             </div>
                             <a href="{{ route('attendance.index') }}"
-                               class="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-[#29b1dc] text-white hover:bg-[#24a8cf] transition">
+                               class="inline-flex items-center gap-1 self-start rounded bg-[#29b1dc] px-3 py-1.5 text-xs text-white transition hover:bg-[#24a8cf] sm:self-auto">
                                 <flux:icon name="clipboard-document-check" class="h-3.5 w-3.5" />
                                 Asistencia
                             </a>
@@ -96,7 +96,7 @@
                 @else
                     <ul class="divide-y divide-gray-100 dark:divide-zinc-800">
                         @foreach($teacher->suplenteSubjects as $subject)
-                        <li class="py-3 flex items-center justify-between">
+                        <li class="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                             <div class="text-sm">
                                 <p class="font-medium text-gray-900 dark:text-gray-100">
                                     {{ $subject->subjectType?->description ?? 'Clase' }}
@@ -106,7 +106,7 @@
                                 </p>
                             </div>
                             <a href="{{ route('attendance.index') }}"
-                               class="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-[#29b1dc] text-white hover:bg-[#24a8cf] transition">
+                               class="inline-flex items-center gap-1 self-start rounded bg-[#29b1dc] px-3 py-1.5 text-xs text-white transition hover:bg-[#24a8cf] sm:self-auto">
                                 <flux:icon name="clipboard-document-check" class="h-3.5 w-3.5" />
                                 Asistencia
                             </a>
