@@ -30,7 +30,9 @@ class UserController extends Controller
 
     public function create()
     {
-        $roles    = User::roles();
+        $roles    = collect(User::roles())
+            ->except(User::ROLE_ALUMNO)
+            ->all();
         $teachers = Teacher::orderBy('name')->get();
         $students = Student::orderBy('name')->get();
 
@@ -51,7 +53,7 @@ class UserController extends Controller
             'email_verified_at' => filled($data['email'] ?? null) ? now() : null,
         ]);
 
-        if ($data['role'] === 'alumno' && ! empty($data['student_ids'])) {
+        if (in_array($data['role'], [User::ROLE_ALUMNO, User::ROLE_SUPER_ALUMNO], true) && ! empty($data['student_ids'])) {
             $user->students()->sync($data['student_ids']);
         }
 
@@ -89,7 +91,7 @@ class UserController extends Controller
 
         $user->save();
 
-        if ($data['role'] === 'alumno') {
+        if (in_array($data['role'], [User::ROLE_ALUMNO, User::ROLE_SUPER_ALUMNO], true)) {
             $user->students()->sync($data['student_ids'] ?? []);
         } else {
             $user->students()->detach();
@@ -135,13 +137,32 @@ class UserController extends Controller
             ]);
         }
 
-        $validator->after(function ($validator) use ($request) {
+        $validator->after(function ($validator) use ($request, $user) {
             $role = $request->input('role');
             $email = trim((string) $request->input('email'));
             $dni = trim((string) $request->input('dni'));
             $studentIds = array_filter((array) $request->input('student_ids', []));
 
+            if ($user === null && $role === User::ROLE_ALUMNO) {
+                $validator->errors()->add('role', 'No se pueden crear usuarios con rol alumno desde este formulario.');
+                return;
+            }
+
             if ($role === User::ROLE_ALUMNO) {
+                if ($email === '' && $dni === '') {
+                    $message = 'Completá al menos email o DNI.';
+                    $validator->errors()->add('email', $message);
+                    $validator->errors()->add('dni', $message);
+                }
+
+                if (count($studentIds) !== 1) {
+                    $validator->errors()->add('student_ids', 'Seleccioná un único alumno para el rol alumno.');
+                }
+
+                return;
+            }
+
+            if ($role === User::ROLE_SUPER_ALUMNO) {
                 if ($email === '' && $dni === '') {
                     $message = 'Completá al menos email o DNI.';
                     $validator->errors()->add('email', $message);

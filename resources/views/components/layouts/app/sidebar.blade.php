@@ -30,7 +30,7 @@
                 @endif
 
                 {{-- ── PORTAL ALUMNO ──────────────────────────────────────────── --}}
-                @if($role === 'alumno')
+                @if(in_array($role, ['alumno', 'super_alumno']))
                 <div class="mt-2 mb-3 px-1">
                     <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Mi Portal</div>
                     <flux:navlist.group>
@@ -158,6 +158,17 @@
                         </flux:navlist.item>
                         <flux:navlist.item icon="arrow-down-tray" href="{{ route('backup.download') }}">
                             {{ __('Backup de Base de Datos') }}
+                        </flux:navlist.item>
+                    </flux:navlist.group>
+                </div>
+                @endif
+
+                @if(in_array($role, ['alumno', 'super_alumno', 'profesor', 'enfermeria']))
+                <div class="mt-2 mb-3 px-1">
+                    <div class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-1">Cuenta</div>
+                    <flux:navlist.group>
+                        <flux:navlist.item icon="key" :href="route('password.edit')" :current="request()->routeIs('password.edit')" wire:navigate>
+                            {{ __('Cambiar clave') }}
                         </flux:navlist.item>
                     </flux:navlist.group>
                 </div>

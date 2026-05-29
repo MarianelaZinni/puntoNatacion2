@@ -13,20 +13,21 @@
 
     function updateSections() {
         const role = roleSelect ? roleSelect.value : '';
+        const isStudentLinkedRole = ['alumno', 'super_alumno'].includes(role);
         const hasStudentSelection = Array.from(studentCheckboxes).some((checkbox) => checkbox.checked);
-        const shouldLockDataFields = isCreate && (! role || (role === 'alumno' && ! hasStudentSelection));
+        const shouldLockDataFields = isCreate && (! role || (isStudentLinkedRole && ! hasStudentSelection));
 
         if (teacherSection) teacherSection.classList.toggle('hidden', role !== 'profesor');
-        if (studentSection) studentSection.classList.toggle('hidden', role !== 'alumno');
-        if (dniField) dniField.classList.toggle('hidden', role !== 'alumno');
-        if (emailRequiredIndicator) emailRequiredIndicator.classList.toggle('hidden', role === 'alumno');
+        if (studentSection) studentSection.classList.toggle('hidden', ! isStudentLinkedRole);
+        if (dniField) dniField.classList.toggle('hidden', ! isStudentLinkedRole);
+        if (emailRequiredIndicator) emailRequiredIndicator.classList.toggle('hidden', isStudentLinkedRole);
         if (userDataSection) userDataSection.classList.toggle('opacity-60', shouldLockDataFields);
 
         userInputs.forEach((input) => {
             input.disabled = shouldLockDataFields;
 
             if (input.id === 'email') {
-                input.required = role !== 'alumno';
+                input.required = ! isStudentLinkedRole;
             }
         });
     }

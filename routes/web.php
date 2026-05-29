@@ -38,7 +38,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('appearance.edit');
 
     // ── Portal Alumno ─────────────────────────────────────────────────────────
-    Route::middleware('role:alumno,admin')->group(function () {
+    Route::middleware('role:alumno,super_alumno,admin')->group(function () {
         Route::get('/portal/student', [StudentPortalController::class, 'index'])->name('portal.student');
         Route::post('/portal/announcements/{announcement}/read', [StudentPortalController::class, 'markRead'])->name('portal.announcements.read');
         Route::get('/portal/announcements', [StudentPortalController::class, 'announcements'])->name('portal.announcements');

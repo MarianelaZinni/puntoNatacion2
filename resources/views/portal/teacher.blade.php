@@ -1,6 +1,13 @@
 <x-layouts.app title="Mi Perfil — Profesor">
     <div class="max-w-3xl mx-auto py-8 px-4">
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Mi Perfil</h1>
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Mi Perfil</h1>
+            <a href="{{ route('password.edit') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] transition">
+                <flux:icon name="key" class="h-4 w-4" />
+                Cambiar clave
+            </a>
+        </div>
 
         @if(!$teacher)
             <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-6 text-center text-amber-800 dark:text-amber-300">

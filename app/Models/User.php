@@ -17,6 +17,7 @@ class User extends Authenticatable
     const ROLE_ADMIN      = 'admin';
     const ROLE_ENFERMERIA = 'enfermeria';
     const ROLE_ALUMNO     = 'alumno';
+    const ROLE_SUPER_ALUMNO = 'super_alumno';
     const ROLE_PROFESOR   = 'profesor';
 
     /**
@@ -89,6 +90,11 @@ class User extends Authenticatable
         return $this->role === self::ROLE_ALUMNO;
     }
 
+    public function isSuperAlumno(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ALUMNO;
+    }
+
     public function isProfesor(): bool
     {
         return $this->role === self::ROLE_PROFESOR;
@@ -105,6 +111,7 @@ class User extends Authenticatable
             self::ROLE_ADMIN      => 'Administrador',
             self::ROLE_ENFERMERIA => 'Enfermería',
             self::ROLE_ALUMNO     => 'Alumno',
+            self::ROLE_SUPER_ALUMNO => 'Super Alumno',
             self::ROLE_PROFESOR   => 'Profesor',
         ];
     }

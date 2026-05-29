@@ -6,10 +6,14 @@ use App\Models\Student;
 use App\Models\Subject;
 use App\Models\SubjectPrice;
 use App\Models\AttendanceRecord;
+use App\Models\User;
 use App\Services\PriceCalculator;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class StudentController extends Controller
@@ -145,7 +149,7 @@ class StudentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-        'dni' => 'required|unique:students,dni',
+        'dni' => ['required', 'unique:students,dni', Rule::unique('users', 'dni')],
         'name' => 'required',
         'email' => 'nullable|email',
         'address' => 'nullable',
@@ -159,8 +163,22 @@ class StudentController extends Controller
     $data = $request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date');
     $data['active_from'] = $request->input('active_from') . '-01';
 
-    // Crear el estudiante
-    $student = Student::create($data);
+    $student = DB::transaction(function () use ($data) {
+       $student = Student::create($data);
+
+       $user = User::create([
+           'name' => $student->name,
+           'email' => null,
+           'dni' => $student->dni,
+           'password' => Hash::make($student->dni),
+           'role' => User::ROLE_ALUMNO,
+           'teacher_id' => null,
+       ]);
+
+       $user->students()->sync([$student->id]);
+
+       return $student;
+    });
 
     // Redireccionar a la página de inscripción de clases
     return redirect()->route('students.enrollClassForm', ['student' => $student->id])

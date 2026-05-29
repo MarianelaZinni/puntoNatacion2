@@ -1,6 +1,13 @@
 <x-layouts.app title="Mi Portal">
     <div class="max-w-4xl mx-auto py-8 px-4">
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Mi Portal</h1>
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Mi Portal</h1>
+            <a href="{{ route('password.edit') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] transition">
+                <flux:icon name="key" class="h-4 w-4" />
+                Cambiar clave
+            </a>
+        </div>
 
         {{-- Comunicados --}}
         @if($announcements->isNotEmpty())
