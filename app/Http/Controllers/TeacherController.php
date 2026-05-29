@@ -75,7 +75,7 @@ class TeacherController extends Controller
     {
         $request->validate([
             'name'         => 'required|string|max:255',
-            'dni'          => ['nullable', 'string', 'max:20', Rule::unique('teachers', 'dni'), Rule::unique('users', 'dni')],
+            'dni'          => ['required', 'string', 'max:20', Rule::unique('teachers', 'dni'), Rule::unique('users', 'dni')],
             'email'        => 'nullable|email|max:255',
             'phone'        => 'nullable|string|max:50',
             'address'      => 'nullable|string|max:255',
@@ -85,13 +85,11 @@ class TeacherController extends Controller
         DB::transaction(function () use ($request) {
             $teacher = Teacher::create($request->only('name', 'dni', 'email', 'phone', 'address', 'observations'));
 
-            $initialPassword = filled($teacher->dni) ? $teacher->dni : \Illuminate\Support\Str::random(12);
-
             User::create([
                 'name'       => $teacher->name,
                 'email'      => $teacher->email ?: null,
-                'dni'        => $teacher->dni ?: null,
-                'password'   => Hash::make($initialPassword),
+                'dni'        => $teacher->dni,
+                'password'   => Hash::make($teacher->dni),
                 'role'       => User::ROLE_PROFESOR,
                 'teacher_id' => $teacher->id,
             ]);
