@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subject;
+use App\Models\SubjectType;
 use App\Models\Student;
 use App\Models\Payment;
 use Illuminate\Http\Request;
@@ -55,6 +56,52 @@ class ReportController extends Controller
             'subject' => $subject,
             'students' => $students,
             'classes' => $classes,
+            'generated_at' => Carbon::now(),
+        ];
+    }
+
+    /**
+     * Fetch data for class type enrollees report
+     */
+    private function fetchClassTypeEnrolleesData(Request $request): array
+    {
+        $subjectTypeId = $request->query('subject_type_id');
+
+        $subjectTypes = SubjectType::withCount('subjects')->orderBy('description')->get();
+
+        $subjectType = null;
+        $students = collect();
+        $classesCount = 0;
+
+        if ($subjectTypeId) {
+            $subjectType = SubjectType::withCount('subjects')->find($subjectTypeId);
+
+            if ($subjectType) {
+                $classesCount = (int) $subjectType->subjects_count;
+
+                $students = Student::query()
+                    ->select('students.*')
+                    ->whereHas('subjects', function ($q) use ($subjectTypeId) {
+                        $q->where('subject_type_id', $subjectTypeId);
+                    })
+                    ->with(['subjects' => function ($q) use ($subjectTypeId) {
+                        $q->where('subject_type_id', $subjectTypeId)
+                            ->with('subjectType')
+                            ->orderBy('day')
+                            ->orderBy('start_time');
+                    }])
+                    ->orderBy('name')
+                    ->distinct()
+                    ->get();
+            }
+        }
+
+        return [
+            'company' => $this->companyName,
+            'subject_type' => $subjectType,
+            'subject_types' => $subjectTypes,
+            'students' => $students,
+            'classes_count' => $classesCount,
             'generated_at' => Carbon::now(),
         ];
     }
@@ -214,6 +261,35 @@ class ReportController extends Controller
     {
         $data = $this->fetchClassEnrolleesData($request);
         return view('reports.class_enrollees_page', $data);
+    }
+
+    //
+    // 1.1) Inscriptos por tipo de clase
+    //
+    public function classTypeEnrolleesForm()
+    {
+        $subjectTypes = SubjectType::withCount('subjects')->orderBy('description')->get();
+        return view('reports.class_type_enrollees_form', compact('subjectTypes'));
+    }
+
+    public function classTypeEnrollees(Request $request)
+    {
+        $data = $this->fetchClassTypeEnrolleesData($request);
+        return view('reports.class_type_enrollees', $data);
+    }
+
+    public function classTypeEnrolleesPdf(Request $request)
+    {
+        $data = $this->fetchClassTypeEnrolleesData($request);
+        $subjectTypeId = $request->query('subject_type_id');
+        $filename = 'inscriptos_tipo_clase_' . ($subjectTypeId ?: 'all') . '.pdf';
+        return $this->renderPdfFromView('reports.class_type_enrollees', $data, $filename);
+    }
+
+    public function classTypeEnrolleesPage(Request $request)
+    {
+        $data = $this->fetchClassTypeEnrolleesData($request);
+        return view('reports.class_type_enrollees_page', $data);
     }
 
     //

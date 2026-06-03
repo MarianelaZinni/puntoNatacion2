@@ -155,6 +155,10 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/class-enrollees/view', [ReportController::class, 'classEnrolleesPage'])->name('class_enrollees.view');
             Route::get('/class-enrollees/print', [ReportController::class, 'classEnrollees'])->name('class_enrollees.print');
             Route::get('/class-enrollees/pdf', [ReportController::class, 'classEnrolleesPdf'])->name('class_enrollees.pdf');
+            Route::get('/class-type-enrollees', [ReportController::class, 'classTypeEnrolleesForm'])->name('class_type_enrollees.form');
+            Route::get('/class-type-enrollees/view', [ReportController::class, 'classTypeEnrolleesPage'])->name('class_type_enrollees.view');
+            Route::get('/class-type-enrollees/print', [ReportController::class, 'classTypeEnrollees'])->name('class_type_enrollees.print');
+            Route::get('/class-type-enrollees/pdf', [ReportController::class, 'classTypeEnrolleesPdf'])->name('class_type_enrollees.pdf');
             Route::get('/debtors', [ReportController::class, 'debtorsForm'])->name('debtors.form');
             Route::get('/debtors/view', [ReportController::class, 'debtorsPage'])->name('debtors.view');
             Route::get('/debtors/print', [ReportController::class, 'debtors'])->name('debtors.print');
