@@ -7,6 +7,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use Livewire\Volt\Component;
 
+$announcements = $announcements ?? collect();
+
 new class extends Component {
     public string $name = '';
     public string $email = '';
