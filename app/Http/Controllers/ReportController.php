@@ -9,6 +9,8 @@ use App\Models\Payment;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf; // barryvdh/laravel-dompdf facade
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -79,14 +81,25 @@ class ReportController extends Controller
             if ($subjectType) {
                 $classesCount = (int) $subjectType->subjects_count;
 
-                $students = Student::query()
-                    ->select('students.*')
-                    ->whereHas('subjects', function ($q) use ($subjectTypeId) {
-                        $q->where('subjects.subject_type_id', $subjectTypeId);
-                    })
-                    ->orderBy('name')
-                    ->distinct()
-                    ->get();
+                $pivotTable = null;
+                if (Schema::hasTable('student_subject')) {
+                    $pivotTable = 'student_subject';
+                } elseif (Schema::hasTable('Student_Subject')) {
+                    $pivotTable = 'Student_Subject';
+                }
+
+                if ($pivotTable) {
+                    $studentIds = DB::table($pivotTable . ' as ss')
+                        ->join('subjects as s', 's.id', '=', 'ss.subject_id')
+                        ->where('s.subject_type_id', $subjectTypeId)
+                        ->distinct()
+                        ->pluck('ss.student_id');
+
+                    $students = Student::query()
+                        ->whereIn('id', $studentIds)
+                        ->orderBy('name')
+                        ->get();
+                }
             }
         }
 
