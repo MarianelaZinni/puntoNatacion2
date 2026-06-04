@@ -297,7 +297,11 @@ class ReportController extends Controller
     public function classTypeEnrolleesPage(Request $request)
     {
         $data = $this->fetchClassTypeEnrolleesData($request);
-        return view('reports.class_type_enrollees_page', $data);
+        if (view()->exists('reports.class_type_enrollees_page')) {
+            return view('reports.class_type_enrollees_page', $data);
+        }
+
+        return view('reports.class_type_enrollees', $data);
     }
 
     //
