@@ -295,6 +295,18 @@
     if (!window._studentsDropdownListenerAttached) {
         window._studentsDropdownListenerAttached = true;
 
+        function closeAllMenus() {
+            document.querySelectorAll('[data-dropdown-menu]:not(.hidden)').forEach(m => {
+                m.classList.add('hidden');
+                m.style.position = '';
+                m.style.top = '';
+                m.style.right = '';
+                m.style.left = '';
+                const tb = m.closest('[data-actions-dropdown]')?.querySelector('[data-dropdown-toggle]');
+                if (tb) tb.setAttribute('aria-expanded', 'false');
+            });
+        }
+
         document.addEventListener('click', function (e) {
             const toggleBtn = e.target.closest('[data-dropdown-toggle]');
 
@@ -307,38 +319,40 @@
                 const isOpen = !menu.classList.contains('hidden');
 
                 // Close every other open menu first
-                document.querySelectorAll('[data-dropdown-menu]:not(.hidden)').forEach(m => {
-                    m.classList.add('hidden');
-                    const tb = m.closest('[data-actions-dropdown]')?.querySelector('[data-dropdown-toggle]');
-                    if (tb) tb.setAttribute('aria-expanded', 'false');
-                });
+                closeAllMenus();
 
-                // Toggle this one
+                // Toggle this one – use fixed positioning so the menu escapes
+                // any overflow:hidden/auto ancestor (e.g. the overflow-x-auto table wrapper)
                 if (!isOpen) {
+                    const rect = toggleBtn.getBoundingClientRect();
+                    menu.style.position = 'fixed';
+                    menu.style.top    = (rect.bottom + 4) + 'px';
+                    menu.style.right  = (window.innerWidth - rect.right) + 'px';
+                    menu.style.left   = 'auto';
                     menu.classList.remove('hidden');
+                    // Flip above button if it extends beyond the bottom of the viewport
+                    const menuRect = menu.getBoundingClientRect();
+                    if (menuRect.bottom > window.innerHeight) {
+                        menu.style.top = (rect.top - menuRect.height - 4) + 'px';
+                    }
                     toggleBtn.setAttribute('aria-expanded', 'true');
                 }
                 return;
             }
 
             // Click outside – close all open menus
-            document.querySelectorAll('[data-dropdown-menu]:not(.hidden)').forEach(m => {
-                m.classList.add('hidden');
-                const tb = m.closest('[data-actions-dropdown]')?.querySelector('[data-dropdown-toggle]');
-                if (tb) tb.setAttribute('aria-expanded', 'false');
-            });
+            closeAllMenus();
         });
 
         // Close on Escape key
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
-                document.querySelectorAll('[data-dropdown-menu]:not(.hidden)').forEach(m => {
-                    m.classList.add('hidden');
-                    const tb = m.closest('[data-actions-dropdown]')?.querySelector('[data-dropdown-toggle]');
-                    if (tb) tb.setAttribute('aria-expanded', 'false');
-                });
+                closeAllMenus();
             }
         });
+
+        // Close on scroll so the menu doesn't become misaligned
+        document.addEventListener('scroll', closeAllMenus, true);
     }
     </script>
     <script>
