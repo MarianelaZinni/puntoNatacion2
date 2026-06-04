@@ -1,4 +1,8 @@
 <x-layouts.app title="Mi Portal">
+    @php
+        $announcements = $announcements ?? collect();
+    @endphp
+
     <div class="max-w-4xl mx-auto py-8 px-4">
         <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Mi Portal</h1>
