@@ -82,14 +82,8 @@ class ReportController extends Controller
                 $students = Student::query()
                     ->select('students.*')
                     ->whereHas('subjects', function ($q) use ($subjectTypeId) {
-                        $q->where('subject_type_id', $subjectTypeId);
+                        $q->where('subjects.subject_type_id', $subjectTypeId);
                     })
-                    ->with(['subjects' => function ($q) use ($subjectTypeId) {
-                        $q->where('subject_type_id', $subjectTypeId)
-                            ->with('subjectType')
-                            ->orderBy('day')
-                            ->orderBy('start_time');
-                    }])
                     ->orderBy('name')
                     ->distinct()
                     ->get();
