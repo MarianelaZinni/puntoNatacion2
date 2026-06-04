@@ -28,7 +28,7 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Email / DNI</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Rol</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Vinculado a</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Acciones</th>
+                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase min-w-[100px]">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
@@ -38,6 +38,7 @@
                             'admin'      => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
                             'enfermeria' => 'bg-lime-100 text-lime-800 dark:bg-lime-900/40 dark:text-lime-300',
                             'alumno'     => 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+                            'super_alumno' => 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/40 dark:text-fuchsia-300',
                             'profesor'   => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
                         ][$user->role] ?? 'bg-gray-100 text-gray-600';
                     @endphp
@@ -52,15 +53,15 @@
                         <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                             @if($user->role === 'profesor' && $user->teacher)
                                 <span class="text-amber-700 dark:text-amber-400">Profesor: {{ $user->teacher->name }}</span>
-                            @elseif($user->role === 'alumno' && $user->students->count())
-                                <span class="text-purple-700 dark:text-purple-400">
+                            @elseif(in_array($user->role, ['alumno', 'super_alumno'], true) && $user->students->count())
+                                <span class="break-words text-purple-700 dark:text-purple-400">
                                     {{ $user->students->pluck('name')->join(', ') }}
                                 </span>
                             @else
                                 <span class="text-gray-400">—</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-center">
+                        <td class="px-4 py-3 text-center whitespace-nowrap">
                             <div class="flex items-center justify-center gap-2">
                                 <a href="{{ route('users.edit', $user) }}"
                                    class="inline-flex items-center justify-center h-9 w-9 rounded-full text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition"

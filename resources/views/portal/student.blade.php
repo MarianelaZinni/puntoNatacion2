@@ -128,29 +128,29 @@
                         @if($student->payments->isEmpty())
                             <p class="text-sm text-gray-400">Sin pagos registrados.</p>
                         @else
-                            <div class="overflow-x-auto">
+                            <div class="overflow-x-auto -mx-2 sm:mx-0">
                                 <table class="min-w-full text-sm divide-y divide-gray-200 dark:divide-zinc-700">
                                     <thead>
                                         <tr class="text-left text-xs text-gray-500 dark:text-gray-400 uppercase">
-                                            <th class="pb-2 pr-4">Fecha</th>
-                                            <th class="pb-2 pr-4">Período</th>
-                                            <th class="pb-2 pr-4">Monto</th>
-                                            <th class="pb-2">Método</th>
+                                            <th class="pb-2 pr-4 whitespace-nowrap">Fecha</th>
+                                            <th class="pb-2 pr-4 whitespace-nowrap">Período</th>
+                                            <th class="pb-2 pr-4 whitespace-nowrap">Monto</th>
+                                            <th class="pb-2 whitespace-nowrap">Método</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-100 dark:divide-zinc-800">
                                         @foreach($student->payments->take(10) as $payment)
                                         <tr>
-                                            <td class="py-1.5 pr-4 text-gray-700 dark:text-gray-300">
+                                            <td class="py-2 pr-4 text-gray-700 dark:text-gray-300 whitespace-nowrap">
                                                 {{ $payment->payment_date?->format('d/m/Y') ?? '—' }}
                                             </td>
-                                            <td class="py-1.5 pr-4 text-gray-600 dark:text-gray-400">
+                                            <td class="py-2 pr-4 text-gray-600 dark:text-gray-400 whitespace-nowrap">
                                                 {{ $payment->payment_period ? \Carbon\Carbon::parse($payment->payment_period)->translatedFormat('M Y') : '—' }}
                                             </td>
-                                            <td class="py-1.5 pr-4 font-medium text-gray-900 dark:text-gray-100">
+                                            <td class="py-2 pr-4 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">
                                                 ${{ number_format($payment->amount, 2, ',', '.') }}
                                             </td>
-                                            <td class="py-1.5 text-gray-500 dark:text-gray-400">
+                                            <td class="py-2 text-gray-500 dark:text-gray-400">
                                                 {{ $payment->paymentMethod?->name ?? '—' }}
                                             </td>
                                         </tr>

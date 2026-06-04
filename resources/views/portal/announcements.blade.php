@@ -19,8 +19,8 @@
             <div class="space-y-4">
                 @foreach($announcements as $announcement)
                 <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-5 shadow-sm">
-                    <div class="flex items-start justify-between gap-4 mb-2">
-                        <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ $announcement->title }}</h2>
+                    <div class="mb-2 flex flex-wrap items-start justify-between gap-2 sm:gap-4">
+                        <h2 class="min-w-0 flex-1 break-words text-base font-semibold text-gray-900 dark:text-gray-100">{{ $announcement->title }}</h2>
                         @if($announcement->is_read)
                             <span class="flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
                                 <flux:icon name="check-circle" class="h-3.5 w-3.5" />
@@ -34,13 +34,13 @@
                         @endif
                     </div>
                     <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">{{ $announcement->body }}</p>
-                    <div class="flex items-center justify-between mt-3">
+                    <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <p class="text-xs text-gray-400 dark:text-gray-500">{{ $announcement->created_at->diffForHumans() }}</p>
                         @if(!$announcement->is_read)
                         <form action="{{ route('portal.announcements.read', $announcement) }}" method="POST">
                             @csrf
                             <button type="submit"
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-[#29b1dc]/50 text-[#29b1dc] hover:bg-[#29b1dc] hover:text-white dark:hover:bg-[#29b1dc] transition">
+                                    class="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-[#29b1dc]/50 px-3 py-1.5 text-xs font-medium text-[#29b1dc] transition hover:bg-[#29b1dc] hover:text-white dark:hover:bg-[#29b1dc] sm:w-auto">
                                 <flux:icon name="check" class="h-3.5 w-3.5" />
                                 Marcar como leído
                             </button>

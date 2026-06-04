@@ -5,7 +5,7 @@
     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{{ $teacher->name }}</td>
     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{{ $teacher->email ?? '—' }}</td>
     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">{{ $teacher->phone ?? '—' }}</td>
-    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
+    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-200 whitespace-nowrap">
         <div class="flex flex-wrap items-center justify-center gap-2">
 
             <!-- Ver -->
