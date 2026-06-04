@@ -81,25 +81,26 @@ class ReportController extends Controller
             if ($subjectType) {
                 $classesCount = (int) $subjectType->subjects_count;
 
-                $pivotTable = null;
-                if (Schema::hasTable('student_subject')) {
-                    $pivotTable = 'student_subject';
-                } elseif (Schema::hasTable('Student_Subject')) {
-                    $pivotTable = 'Student_Subject';
-                }
+                $studentIds = collect();
 
-                if ($pivotTable) {
-                    $studentIds = DB::table($pivotTable . ' as ss')
+                if (Schema::hasTable('student_subject')) {
+                    $studentIds = DB::table('student_subject as ss')
                         ->join('subjects as s', 's.id', '=', 'ss.subject_id')
                         ->where('s.subject_type_id', $subjectTypeId)
                         ->distinct()
                         ->pluck('ss.student_id');
-
-                    $students = Student::query()
-                        ->whereIn('id', $studentIds)
-                        ->orderBy('name')
-                        ->get();
+                } elseif (Schema::hasTable('Student_Subject')) {
+                    $studentIds = DB::table('Student_Subject as ss')
+                        ->join('subjects as s', 's.id', '=', 'ss.subject_id')
+                        ->where('s.subject_type_id', $subjectTypeId)
+                        ->distinct()
+                        ->pluck('ss.student_id');
                 }
+
+                $students = Student::query()
+                    ->whereIn('id', $studentIds)
+                    ->orderBy('name')
+                    ->get();
             }
         }
 
