@@ -1,8 +1,4 @@
 <x-layouts.app title="Mi Portal">
-    @php
-        $announcements = $announcements ?? collect();
-    @endphp
-
     <div class="max-w-4xl mx-auto py-8 px-4">
         <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Mi Portal</h1>
@@ -14,13 +10,13 @@
         </div>
 
         {{-- Comunicados --}}
-        @if($announcements->isNotEmpty())
+        @if(!empty($announcements) && $announcements->isNotEmpty())
         <div class="mb-8 space-y-4">
             <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 <flux:icon name="megaphone" class="h-5 w-5 text-[#29b1dc]" />
                 Comunicados
             </h2>
-            @foreach($announcements as $announcement)
+            @foreach(($announcements ?? collect()) as $announcement)
             <div class="bg-[#eaf7fc] dark:bg-[#29b1dc]/10 border border-[#29b1dc]/30 dark:border-[#29b1dc]/40 rounded-lg p-4 shadow-sm">
                 <div class="flex items-start justify-between gap-4">
                     <div class="flex-1 min-w-0">
