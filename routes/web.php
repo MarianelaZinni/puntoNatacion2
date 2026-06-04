@@ -155,6 +155,10 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('/', [ReportController::class, 'index'])->name('index');
             Route::get('/class-enrollees', [ReportController::class, 'classEnrolleesForm'])->name('class_enrollees.form');
+            Route::get('/class-type-enrollees', [ReportController::class, 'classTypeEnrolleesForm'])->name('class_type_enrollees.form');
+            Route::get('/class-type-enrollees/view', [ReportController::class, 'classTypeEnrolleesPage'])->name('class_type_enrollees.view');
+            Route::get('/class-type-enrollees/print', [ReportController::class, 'classTypeEnrollees'])->name('class_type_enrollees.print');
+            Route::get('/class-type-enrollees/pdf', [ReportController::class, 'classTypeEnrolleesPdf'])->name('class_type_enrollees.pdf');
             Route::get('/class-enrollees/view', [ReportController::class, 'classEnrolleesPage'])->name('class_enrollees.view');
             Route::get('/class-enrollees/print', [ReportController::class, 'classEnrollees'])->name('class_enrollees.print');
             Route::get('/class-enrollees/pdf', [ReportController::class, 'classEnrolleesPdf'])->name('class_enrollees.pdf');
