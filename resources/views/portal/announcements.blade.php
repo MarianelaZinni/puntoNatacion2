@@ -11,13 +11,13 @@
             </a>
         </div>
 
-        @if($announcements->isEmpty())
+        @if(empty($announcements) || $announcements->isEmpty())
             <div class="bg-gray-50 dark:bg-zinc-900/40 border border-gray-200 dark:border-zinc-700 rounded-lg p-8 text-center text-gray-500 dark:text-gray-400">
                 No hay comunicados publicados por el momento.
             </div>
         @else
             <div class="space-y-4">
-                @foreach($announcements as $announcement)
+                @foreach(($announcements ?? collect()) as $announcement)
                 <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-5 shadow-sm">
                     <div class="mb-2 flex flex-wrap items-start justify-between gap-2 sm:gap-4">
                         <h2 class="min-w-0 flex-1 break-words text-base font-semibold text-gray-900 dark:text-gray-100">{{ $announcement->title }}</h2>
