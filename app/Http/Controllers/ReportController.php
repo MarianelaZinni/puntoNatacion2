@@ -9,6 +9,8 @@ use App\Models\Payment;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf; // barryvdh/laravel-dompdf facade
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -79,19 +81,25 @@ class ReportController extends Controller
             if ($subjectType) {
                 $classesCount = (int) $subjectType->subjects_count;
 
+                $studentIds = collect();
+
+                if (Schema::hasTable('student_subject')) {
+                    $studentIds = DB::table('student_subject as ss')
+                        ->join('subjects as s', 's.id', '=', 'ss.subject_id')
+                        ->where('s.subject_type_id', $subjectTypeId)
+                        ->distinct()
+                        ->pluck('ss.student_id');
+                } elseif (Schema::hasTable('Student_Subject')) {
+                    $studentIds = DB::table('Student_Subject as ss')
+                        ->join('subjects as s', 's.id', '=', 'ss.subject_id')
+                        ->where('s.subject_type_id', $subjectTypeId)
+                        ->distinct()
+                        ->pluck('ss.student_id');
+                }
+
                 $students = Student::query()
-                    ->select('students.*')
-                    ->whereHas('subjects', function ($q) use ($subjectTypeId) {
-                        $q->where('subject_type_id', $subjectTypeId);
-                    })
-                    ->with(['subjects' => function ($q) use ($subjectTypeId) {
-                        $q->where('subject_type_id', $subjectTypeId)
-                            ->with('subjectType')
-                            ->orderBy('day')
-                            ->orderBy('start_time');
-                    }])
+                    ->whereIn('id', $studentIds)
                     ->orderBy('name')
-                    ->distinct()
                     ->get();
             }
         }
