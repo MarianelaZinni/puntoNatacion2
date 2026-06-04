@@ -72,7 +72,7 @@
 @endif
 
         {{-- Desktop: table | Mobile: cards --}}
-        <div id="students-table-wrapper" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
+        <div id="students-table-wrapper" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-visible">
 
             {{-- Desktop table (hidden on mobile) --}}
             <div class="hidden sm:block overflow-x-auto">
