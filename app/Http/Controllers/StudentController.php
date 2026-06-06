@@ -321,7 +321,9 @@ class StudentController extends Controller
         if ($activeFromLocked) {
             // Preserve the existing value — changing it once set would retroactively alter
             // the debt start date and invalidate existing financial records.
-            $data['active_from'] = $student->active_from->format('Y-m-d');
+            $data['active_from'] = $student->active_from
+                ? $student->active_from->format('Y-m-d')
+                : null;
         } else {
             $data['active_from'] = $request->input('active_from') . '-01';
         }

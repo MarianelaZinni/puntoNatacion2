@@ -175,14 +175,14 @@
                     <input
                         id="active_from"
                         type="month"
-                        value="{{ $student->active_from->format('Y-m') }}"
+                        value="{{ optional($student->active_from)->format('Y-m') }}"
                         class="mt-2 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 shadow-sm text-base leading-relaxed"
                         disabled
                     >
                     <input
                         type="hidden"
                         name="active_from"
-                        value="{{ $student->active_from->format('Y-m') }}"
+                        value="{{ optional($student->active_from)->format('Y-m') }}"
                     >
                 @else
                     <input
