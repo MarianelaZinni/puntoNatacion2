@@ -53,4 +53,14 @@ class Subject extends Model
         return $this->belongsToMany(\App\Models\Student::class, 'student_subject', 'subject_id', 'student_id')
                     ->withTimestamps();
     }
+
+    public function monthlyPlans()
+    {
+        return $this->hasMany(ClassMonthlyPlan::class);
+    }
+
+    public function studentNotes()
+    {
+        return $this->hasMany(StudentClassNote::class);
+    }
 }

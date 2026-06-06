@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
-use Illuminate\Http\Request;
+use App\Models\StudentClassNote;
 use Illuminate\Support\Facades\Auth;
 
 class StudentPortalController extends Controller
@@ -44,7 +44,18 @@ class StudentPortalController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('portal.student', compact('students', 'announcements'));
+        $studentIds = $students->pluck('id')->all();
+        $readNoteIds = $user->readStudentNotes()->pluck('student_class_note_id');
+
+        $notes = StudentClassNote::query()
+            ->with(['subject.subjectType', 'student', 'author'])
+            ->whereIn('student_id', $studentIds)
+            ->whereNotIn('id', $readNoteIds)
+            ->latest()
+            ->limit(8)
+            ->get();
+
+        return view('portal.student', compact('students', 'announcements', 'notes'));
     }
 
     /**
@@ -80,5 +91,40 @@ class StudentPortalController extends Controller
             });
 
         return view('portal.announcements', compact('announcements'));
+    }
+
+    public function notes()
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $studentIds = $user->students()->pluck('students.id');
+        $readIds = $user->readStudentNotes()->pluck('student_class_note_id')->flip();
+
+        $notes = StudentClassNote::query()
+            ->with(['subject.subjectType', 'student', 'author'])
+            ->whereIn('student_id', $studentIds)
+            ->latest()
+            ->get()
+            ->map(function ($note) use ($readIds) {
+                $note->is_read = $readIds->has($note->id);
+
+                return $note;
+            });
+
+        return view('portal.notes', compact('notes'));
+    }
+
+    public function markNoteRead(StudentClassNote $note)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $canRead = $user->students()->where('students.id', $note->student_id)->exists();
+        abort_unless($canRead, 403);
+
+        $note->readers()->syncWithoutDetaching([$user->id => ['read_at' => now()]]);
+
+        return redirect()->back();
     }
 }

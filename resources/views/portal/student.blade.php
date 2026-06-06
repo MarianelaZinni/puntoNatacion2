@@ -39,6 +39,44 @@
         </div>
         @endif
 
+        {{-- Notas de profesores --}}
+        @if(!empty($notes) && $notes->isNotEmpty())
+        <div class="mb-8 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                    <flux:icon name="chat-bubble-left-right" class="h-5 w-5 text-[#29b1dc]" />
+                    Notas de profesores
+                </h2>
+                <a href="{{ route('portal.notes') }}" wire:navigate
+                   class="text-sm text-[#29b1dc] hover:underline">Ver todas</a>
+            </div>
+            @foreach($notes as $note)
+            <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {{ $note->title ?: 'Nota de clase' }}
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Alumno: {{ $note->student?->name ?? '—' }} ·
+                            Clase: {{ $note->subject?->subjectType?->description ?? '—' }} ·
+                            {{ $note->created_at->diffForHumans() }}
+                        </p>
+                        <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line mt-2">{{ $note->body }}</p>
+                    </div>
+                    <form action="{{ route('portal.notes.read', $note) }}" method="POST" class="shrink-0">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center gap-1.5 rounded-full border border-[#29b1dc]/50 px-3 py-1.5 text-xs font-medium text-[#29b1dc] transition hover:bg-[#29b1dc] hover:text-white">
+                            <flux:icon name="check" class="h-3.5 w-3.5" />
+                            Leída
+                        </button>
+                    </form>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+
         @if($students->isEmpty())
             <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-6 text-center text-amber-800 dark:text-amber-300">
                 <p class="font-medium">No tienes alumnos vinculados a tu cuenta.</p>

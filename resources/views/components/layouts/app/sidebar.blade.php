@@ -40,6 +40,9 @@
                         <flux:navlist.item icon="megaphone" :href="route('portal.announcements')" :current="request()->routeIs('portal.announcements')" wire:navigate>
                             {{ __('Comunicados') }}
                         </flux:navlist.item>
+                        <flux:navlist.item icon="chat-bubble-left-right" :href="route('portal.notes')" :current="request()->routeIs('portal.notes')" wire:navigate>
+                            {{ __('Notas') }}
+                        </flux:navlist.item>
                     </flux:navlist.group>
                 </div>
                 @endif

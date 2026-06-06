@@ -5,6 +5,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\StudentPortalController;
 use App\Http\Controllers\TeacherPortalController;
+use App\Http\Controllers\TeacherMonthlyPlanController;
+use App\Http\Controllers\TeacherStudentNoteController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -49,11 +51,26 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/portal/student', [StudentPortalController::class, 'index'])->name('portal.student');
         Route::post('/portal/announcements/{announcement}/read', [StudentPortalController::class, 'markRead'])->name('portal.announcements.read');
         Route::get('/portal/announcements', [StudentPortalController::class, 'announcements'])->name('portal.announcements');
+        Route::post('/portal/notes/{note}/read', [StudentPortalController::class, 'markNoteRead'])->name('portal.notes.read');
+        Route::get('/portal/notes', [StudentPortalController::class, 'notes'])->name('portal.notes');
     });
 
     // ── Portal Profesor + Asistencia ──────────────────────────────────────────
     Route::middleware('role:admin,profesor')->group(function () {
         Route::get('/portal/teacher', [TeacherPortalController::class, 'index'])->name('portal.teacher');
+        Route::get('/portal/teacher/subjects/{subject}/plans', [TeacherMonthlyPlanController::class, 'index'])->name('portal.teacher.plans.index');
+        Route::get('/portal/teacher/subjects/{subject}/plans/create', [TeacherMonthlyPlanController::class, 'create'])->name('portal.teacher.plans.create');
+        Route::post('/portal/teacher/subjects/{subject}/plans', [TeacherMonthlyPlanController::class, 'store'])->name('portal.teacher.plans.store');
+        Route::get('/portal/teacher/subjects/{subject}/plans/{plan}/edit', [TeacherMonthlyPlanController::class, 'edit'])->name('portal.teacher.plans.edit');
+        Route::put('/portal/teacher/subjects/{subject}/plans/{plan}', [TeacherMonthlyPlanController::class, 'update'])->name('portal.teacher.plans.update');
+        Route::delete('/portal/teacher/subjects/{subject}/plans/{plan}', [TeacherMonthlyPlanController::class, 'destroy'])->name('portal.teacher.plans.destroy');
+
+        Route::get('/portal/teacher/subjects/{subject}/notes', [TeacherStudentNoteController::class, 'index'])->name('portal.teacher.notes.index');
+        Route::post('/portal/teacher/subjects/{subject}/notes', [TeacherStudentNoteController::class, 'store'])->name('portal.teacher.notes.store');
+        Route::get('/portal/teacher/subjects/{subject}/notes/{note}/edit', [TeacherStudentNoteController::class, 'edit'])->name('portal.teacher.notes.edit');
+        Route::put('/portal/teacher/subjects/{subject}/notes/{note}', [TeacherStudentNoteController::class, 'update'])->name('portal.teacher.notes.update');
+        Route::delete('/portal/teacher/subjects/{subject}/notes/{note}', [TeacherStudentNoteController::class, 'destroy'])->name('portal.teacher.notes.destroy');
+
         Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
         Route::get('/attendance/take', [AttendanceController::class, 'take'])->name('attendance.take');
         Route::post('/attendance/store', [AttendanceController::class, 'store'])->name('attendance.store');
