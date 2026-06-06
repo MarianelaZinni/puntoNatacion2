@@ -4,7 +4,6 @@
     const roleSelect = document.getElementById('role');
     const teacherSection = document.getElementById('teacher-section');
     const studentSection = document.getElementById('student-section');
-    const dniField = document.getElementById('dni-field');
     const emailRequiredIndicator = document.getElementById('email-required-indicator');
     const userDataSection = document.getElementById('user-data-section');
     const userInputs = document.querySelectorAll('[data-user-input]');
@@ -19,7 +18,6 @@
 
         if (teacherSection) teacherSection.classList.toggle('hidden', role !== 'profesor');
         if (studentSection) studentSection.classList.toggle('hidden', ! isStudentLinkedRole);
-        if (dniField) dniField.classList.toggle('hidden', ! isStudentLinkedRole);
         if (emailRequiredIndicator) emailRequiredIndicator.classList.toggle('hidden', isStudentLinkedRole);
         if (userDataSection) userDataSection.classList.toggle('opacity-60', shouldLockDataFields);
 

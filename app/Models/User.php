@@ -157,4 +157,10 @@ class User extends Authenticatable
         return $this->belongsToMany(Announcement::class, 'announcement_reads')
                     ->withPivot('read_at');
     }
+
+    public function readStudentNotes()
+    {
+        return $this->belongsToMany(StudentClassNote::class, 'student_class_note_reads')
+            ->withPivot('read_at');
+    }
 }
