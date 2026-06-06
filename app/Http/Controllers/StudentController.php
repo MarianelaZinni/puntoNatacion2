@@ -302,16 +302,18 @@ class StudentController extends Controller
     {
         $studentHasClasses = $student->subjects()->exists();
 
-        $request->validate([
+        $validationRules = [
             'dni' => 'required|unique:students,dni,' . $student->id,
             'name' => 'required',
             'email' => 'nullable|email',
             'address' => 'nullable',
             'phone' => 'nullable',
             'observations' => 'nullable|string|max:1000',
-             'birth_date' => 'nullable|date|before:today',
-            'active_from' => 'required|date_format:Y-m',
-        ]);
+            'birth_date' => 'nullable|date|before:today',
+            'active_from' => $studentHasClasses ? 'nullable|date_format:Y-m' : 'required|date_format:Y-m',
+        ];
+
+        $request->validate($validationRules);
         $data = $request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date');
         // Once a student is enrolled in classes, changing active_from would retroactively alter
         // the debt start date and invalidate existing financial records. To preserve data integrity
