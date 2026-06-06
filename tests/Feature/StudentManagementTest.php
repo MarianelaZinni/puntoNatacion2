@@ -40,7 +40,7 @@ class StudentManagementTest extends TestCase
         $this->assertTrue($user->students->contains($student));
     }
 
-    public function test_updating_an_enrolled_student_without_active_from_does_not_fail(): void
+    public function test_updating_an_enrolled_student_without_active_from_can_set_it(): void
     {
         $admin = User::factory()->create([
             'role' => User::ROLE_ADMIN,
@@ -68,6 +68,7 @@ class StudentManagementTest extends TestCase
 
         $student->subjects()->attach($subject->id);
 
+        // Admin sets active_from for the first time even though student is enrolled
         $response = $this->actingAs($admin)->put(route('students.update', ['student' => $student->id]), [
             'dni' => $student->dni,
             'name' => 'Alumno Editado',
@@ -76,14 +77,60 @@ class StudentManagementTest extends TestCase
             'phone' => null,
             'observations' => null,
             'birth_date' => null,
-            'active_from' => '',
+            'active_from' => '2023-02',
         ]);
 
         $response->assertRedirect(route('students.index'));
-        $response->assertSessionHasNoErrors('active_from');
+        $response->assertSessionHasNoErrors();
         $this->assertDatabaseHas('students', [
             'id' => $student->id,
             'name' => 'Alumno Editado',
+            'active_from' => '2023-02-01',
+        ]);
+    }
+
+    public function test_updating_an_enrolled_student_with_active_from_set_cannot_change_it(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $student = Student::create([
+            'dni' => '30124000',
+            'name' => 'Alumno Con Activacion',
+            'email' => 'con.activacion@example.com',
+            'active_from' => '2023-01-01',
+        ]);
+
+        $subjectType = SubjectType::create([
+            'description' => 'Natación',
+            'value' => 10000,
+        ]);
+
+        $subject = Subject::create([
+            'subject_type_id' => $subjectType->id,
+            'capacity' => 10,
+            'day' => 'Martes',
+            'start_time' => '09:00:00',
+            'end_time' => '10:00:00',
+        ]);
+
+        $student->subjects()->attach($subject->id);
+
+        // Admin tries to change active_from — it should be silently preserved
+        $response = $this->actingAs($admin)->put(route('students.update', ['student' => $student->id]), [
+            'dni' => $student->dni,
+            'name' => 'Alumno Editado',
+            'email' => $student->email,
+            'active_from' => '2023-06',
+        ]);
+
+        $response->assertRedirect(route('students.index'));
+        $response->assertSessionHasNoErrors();
+        // active_from must remain unchanged
+        $this->assertDatabaseHas('students', [
+            'id' => $student->id,
+            'active_from' => '2023-01-01',
         ]);
     }
 }
