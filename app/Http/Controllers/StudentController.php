@@ -294,32 +294,53 @@ class StudentController extends Controller
             ->limit(10)
             ->get();
 
-        return view('students.edit', compact('student', 'subjects', 'priceSummary', 'subjectPricesForJs', 'recentAttendance'));
+        $studentHasClasses = $student->subjects->isNotEmpty();
+        $studentHasHistory = $student->payments()->exists() || $recentAttendance->isNotEmpty();
+        $activeFromLocked = $studentHasClasses && $student->active_from !== null;
+        $activeFromRequired = ! $studentHasClasses && ! $studentHasHistory;
+
+        return view('students.edit', compact(
+            'student',
+            'subjects',
+            'priceSummary',
+            'subjectPricesForJs',
+            'recentAttendance',
+            'activeFromLocked',
+            'activeFromRequired'
+        ));
     }
 
 
     public function update(Request $request, Student $student)
     {
         $studentHasClasses = $student->subjects()->exists();
+        // active_from is locked only when the student is enrolled AND already has a value set.
+        // If enrolled but active_from is still null, the admin may set it now.
+        $activeFromLocked = $studentHasClasses && $student->active_from !== null;
+        $activeFromRequired = ! $studentHasClasses;
 
-        $request->validate([
+         $validationRules = [
             'dni' => 'required|unique:students,dni,' . $student->id,
             'name' => 'required',
             'email' => 'nullable|email',
             'address' => 'nullable',
             'phone' => 'nullable',
             'observations' => 'nullable|string|max:1000',
-             'birth_date' => 'nullable|date|before:today',
-            'active_from' => 'required|date_format:Y-m',
-        ]);
+            'birth_date' => 'nullable|date|before:today',
+             'active_from' => $activeFromRequired ? 'required|date_format:Y-m' : 'nullable|date_format:Y-m',
+        ];
+
+        $request->validate($validationRules);
         $data = $request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date');
-        // Once a student is enrolled in classes, changing active_from would retroactively alter
-        // the debt start date and invalidate existing financial records. To preserve data integrity
-        // the field is locked to its current value when the student has active class enrolments.
-        if ($studentHasClasses) {
-            $data['active_from'] = $student->active_from ? $student->active_from->format('Y-m-d') : null;
+        if ($activeFromLocked) {
+            // Preserve the existing value — changing it once set would retroactively alter
+            // the debt start date and invalidate existing financial records.
+            $data['active_from'] = $student->active_from
+                ? $student->active_from->format('Y-m-d')
+                : null;
         } else {
-            $data['active_from'] = $request->input('active_from') . '-01';
+             $activeFrom = $request->input('active_from');
+            $data['active_from'] = filled($activeFrom) ? $activeFrom . '-01' : null;
         }
 
         $student->update($data);
