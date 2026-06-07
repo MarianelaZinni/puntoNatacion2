@@ -1,6 +1,6 @@
 <x-layouts.app :title="__('Dashboard')">
 
-    
+    @if(auth()->user()?->isAdmin())
     <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
         <div class="grid auto-rows-min gap-4 md:grid-cols-2">
             <!-- Card: Precios con profesor -->
@@ -37,7 +37,7 @@
                 </ul>
             </div>
         </div>
-
+@endif
         <div class="relative h-full flex-1 overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-gray-900 p-4">
             <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Horario semanal</h2>
 
