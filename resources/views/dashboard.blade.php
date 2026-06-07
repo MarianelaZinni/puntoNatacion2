@@ -2,41 +2,43 @@
 
     
     <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
-        <div class="grid auto-rows-min gap-4 md:grid-cols-2">
-            <!-- Card: Precios con profesor -->
-            <div class="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-900 p-4">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Precios — Con profesor</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Precio según cantidad de clases por semana</p>
-                <ul class="space-y-1 text-sm text-gray-700 dark:text-gray-200">
-                    @php
-                        $teacherPrices = $subjectPricesForJs['teacher'] ?? [];
-                    @endphp
-                    @for($i=1;$i<=5;$i++)
-                        <li class="flex items-center justify-between">
-                            <span> {{ $i }} vez/semana</span>
-                            <span class="font-medium">{{ isset($teacherPrices[$i]) ? number_format($teacherPrices[$i], 0, ',', '.') : '—' }}</span>
-                        </li>
-                    @endfor
-                </ul>
-            </div>
+        @if (! auth()->user()?->isProfesor())
+            <div class="grid auto-rows-min gap-4 md:grid-cols-2">
+                <!-- Card: Precios con profesor -->
+                <div class="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-900 p-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Precios — Con profesor</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Precio según cantidad de clases por semana</p>
+                    <ul class="space-y-1 text-sm text-gray-700 dark:text-gray-200">
+                        @php
+                            $teacherPrices = $subjectPricesForJs['teacher'] ?? [];
+                        @endphp
+                        @for($i=1;$i<=5;$i++)
+                            <li class="flex items-center justify-between">
+                                <span> {{ $i }} vez/semana</span>
+                                <span class="font-medium">{{ isset($teacherPrices[$i]) ? number_format($teacherPrices[$i], 0, ',', '.') : '—' }}</span>
+                            </li>
+                        @endfor
+                    </ul>
+                </div>
 
-            <!-- Card: Precios sin profesor -->
-            <div class="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-900 p-4">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Precios — Sin profesor</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Precio según cantidad de clases por semana</p>
-                <ul class="space-y-1 text-sm text-gray-700 dark:text-gray-200">
-                    @php
-                        $noTeacherPrices = $subjectPricesForJs['no_teacher'] ?? [];
-                    @endphp
-                    @for($i=1;$i<=5;$i++)
-                        <li class="flex items-center justify-between">
-                            <span> {{ $i }} vez/semana</span>
-                            <span class="font-medium">{{ isset($noTeacherPrices[$i]) ? number_format($noTeacherPrices[$i], 0, ',', '.') : '—' }}</span>
-                        </li>
-                    @endfor
-                </ul>
+                <!-- Card: Precios sin profesor -->
+                <div class="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-900 p-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Precios — Sin profesor</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Precio según cantidad de clases por semana</p>
+                    <ul class="space-y-1 text-sm text-gray-700 dark:text-gray-200">
+                        @php
+                            $noTeacherPrices = $subjectPricesForJs['no_teacher'] ?? [];
+                        @endphp
+                        @for($i=1;$i<=5;$i++)
+                            <li class="flex items-center justify-between">
+                                <span> {{ $i }} vez/semana</span>
+                                <span class="font-medium">{{ isset($noTeacherPrices[$i]) ? number_format($noTeacherPrices[$i], 0, ',', '.') : '—' }}</span>
+                            </li>
+                        @endfor
+                    </ul>
+                </div>
             </div>
-        </div>
+        @endif
 
         <div class="relative h-full flex-1 overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-gray-900 p-4">
             <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Horario semanal</h2>
