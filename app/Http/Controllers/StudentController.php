@@ -358,7 +358,10 @@ class StudentController extends Controller
                 return true;
             }
         } catch (\Throwable $e) {
-            // Legacy databases may still have a differently-cased pivot table.
+            Log::warning('Could not verify enrollment via default student_subject relation.', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         if (Schema::hasTable('student_subject')
