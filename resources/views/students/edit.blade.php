@@ -1,7 +1,4 @@
 <x-layouts.app title="Editar alumno">
-    @php
-        $isEnrolledInAnyClass = $student->subjects->isNotEmpty();
-    @endphp
     <div class="max-w-3xl mx-auto py-8 px-4">
       <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Editar Alumno</h1>
@@ -196,7 +193,7 @@
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Mes y año a partir del cual el alumno está activo y genera deuda.</p>
                 @if($activeFromLocked)
                     <p class="mt-1 text-xs text-amber-700 dark:text-amber-300">Este valor no se puede editar porque el alumno ya está inscripto en al menos una clase.</p>
-                @elseif($isEnrolledInAnyClass)
+                @elseif($studentHasClasses)
                     <p class="mt-1 text-xs text-amber-700 dark:text-amber-300">El alumno ya tiene clases. Una vez guardado este valor quedará bloqueado.</p>
                 @endif
                 @error('active_from')
