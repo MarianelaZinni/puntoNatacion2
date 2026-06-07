@@ -124,7 +124,7 @@
             @error('email') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
         </div>
 
-        <div id="dni-field" class="{{ $isStudentLinkedRole ? '' : 'hidden' }}">
+        <div id="dni-field">
             <label for="dni" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 DNI
             </label>
@@ -137,9 +137,11 @@
                 data-user-input
                 @disabled($shouldLockDataFields)
             >
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Para usuarios vinculados a alumnos, completá email o DNI.
-            </p>
+            @if($isStudentLinkedRole)
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Para usuarios vinculados a alumnos, completá email o DNI.
+                </p>
+            @endif
             @error('dni') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
         </div>
 

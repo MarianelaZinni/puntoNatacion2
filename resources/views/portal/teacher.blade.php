@@ -1,128 +1,137 @@
-<x-layouts.app title="Mi Perfil — Profesor">
-    <div class="max-w-3xl mx-auto py-8 px-4">
+<x-layouts.app title="Mi Portal — Profesor">
+    <div class="mx-auto max-w-5xl px-4 py-8">
         <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Mi Perfil</h1>
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Mi Portal</h1>
             <a href="{{ route('password.edit') }}"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded text-white bg-[#29b1dc] hover:bg-[#24a8cf] transition">
+               class="inline-flex items-center gap-2 rounded bg-[#29b1dc] px-4 py-2 text-white transition hover:bg-[#24a8cf]">
                 <flux:icon name="key" class="h-4 w-4" />
                 Cambiar clave
             </a>
         </div>
 
-        @if(!$teacher)
-            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-6 text-center text-amber-800 dark:text-amber-300">
+        @if (! $teacher)
+            <div class="rounded-lg border border-amber-200 bg-amber-50 p-6 text-center text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
                 <p class="font-medium">No tienes un perfil de profesor vinculado.</p>
-                <p class="text-sm mt-1">Contactá al administrador para vincular tu usuario con un profesor.</p>
+                <p class="mt-1 text-sm">Contactá al administrador para vincular tu usuario con un profesor.</p>
             </div>
         @else
-            {{-- Profile card --}}
-            <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-sm p-6 mb-6">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Datos personales</h2>
-                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Datos personales</h2>
+                <dl class="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
                     <div>
                         <dt class="text-gray-500 dark:text-gray-400">Nombre</dt>
                         <dd class="font-medium text-gray-900 dark:text-gray-100">{{ $teacher->name }}</dd>
                     </div>
-                    @if($teacher->dni)
-                    <div>
-                        <dt class="text-gray-500 dark:text-gray-400">DNI</dt>
-                        <dd class="font-medium text-gray-900 dark:text-gray-100">{{ $teacher->dni }}</dd>
-                    </div>
+                    @if ($teacher->dni)
+                        <div>
+                            <dt class="text-gray-500 dark:text-gray-400">DNI</dt>
+                            <dd class="font-medium text-gray-900 dark:text-gray-100">{{ $teacher->dni }}</dd>
+                        </div>
                     @endif
-                    @if($teacher->email)
-                    <div>
-                        <dt class="text-gray-500 dark:text-gray-400">Email</dt>
-                        <dd class="font-medium text-gray-900 dark:text-gray-100">{{ $teacher->email }}</dd>
-                    </div>
+                    @if ($teacher->email)
+                        <div>
+                            <dt class="text-gray-500 dark:text-gray-400">Email</dt>
+                            <dd class="font-medium text-gray-900 dark:text-gray-100">{{ $teacher->email }}</dd>
+                        </div>
                     @endif
-                    @if($teacher->phone)
-                    <div>
-                        <dt class="text-gray-500 dark:text-gray-400">Teléfono</dt>
-                        <dd class="font-medium text-gray-900 dark:text-gray-100">{{ $teacher->phone }}</dd>
-                    </div>
-                    @endif
-                    @if($teacher->address)
-                    <div class="sm:col-span-2">
-                        <dt class="text-gray-500 dark:text-gray-400">Dirección</dt>
-                        <dd class="font-medium text-gray-900 dark:text-gray-100">{{ $teacher->address }}</dd>
-                    </div>
-                    @endif
-                    @if($teacher->observations)
-                    <div class="sm:col-span-2">
-                        <dt class="text-gray-500 dark:text-gray-400">Observaciones</dt>
-                        <dd class="text-gray-700 dark:text-gray-300">{{ $teacher->observations }}</dd>
-                    </div>
+                    @if ($teacher->phone)
+                        <div>
+                            <dt class="text-gray-500 dark:text-gray-400">Teléfono</dt>
+                            <dd class="font-medium text-gray-900 dark:text-gray-100">{{ $teacher->phone }}</dd>
+                        </div>
                     @endif
                 </dl>
             </div>
 
-            {{-- Titular classes --}}
-            <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-sm p-6 mb-6">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                    Clases como Profesor Titular
-                </h2>
-                @if($teacher->titularSubjects->isEmpty())
-                    <p class="text-sm text-gray-400">No tenés clases asignadas como titular.</p>
+            <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Calendario semanal</h2>
+                @if ($calendarSubjects->isEmpty())
+                    <p class="text-sm text-gray-400">No tenés clases asignadas.</p>
                 @else
-                    <ul class="divide-y divide-gray-100 dark:divide-zinc-800">
-                        @foreach($teacher->titularSubjects as $subject)
-                        <li class="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div class="text-sm">
-                                <p class="font-medium text-gray-900 dark:text-gray-100">
-                                    {{ $subject->subjectType?->description ?? 'Clase' }}
-                                </p>
-                                <p class="text-gray-500 dark:text-gray-400">
-                                    {{ $subject->day }} · {{ substr($subject->start_time, 0, 5) }} – {{ substr($subject->end_time, 0, 5) }}
-                                </p>
-                            </div>
-                            <a href="{{ route('attendance.index') }}"
-                               class="inline-flex items-center gap-1 self-start rounded bg-[#29b1dc] px-3 py-1.5 text-xs text-white transition hover:bg-[#24a8cf] sm:self-auto">
-                                <flux:icon name="clipboard-document-check" class="h-3.5 w-3.5" />
-                                Asistencia
-                            </a>
-                        </li>
-                        @endforeach
-                    </ul>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-zinc-700">
+                            <thead class="bg-gray-50 dark:bg-zinc-800">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs uppercase text-gray-500">Día</th>
+                                    <th class="px-3 py-2 text-left text-xs uppercase text-gray-500">Horario</th>
+                                    <th class="px-3 py-2 text-left text-xs uppercase text-gray-500">Clase</th>
+                                    <th class="px-3 py-2 text-left text-xs uppercase text-gray-500">Rol</th>
+                                    <th class="px-3 py-2 text-left text-xs uppercase text-gray-500">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-zinc-800">
+                                @foreach ($calendarSubjects as $subject)
+                                    @php
+                                        $isTitular = (int) $subject->titular_teacher_id === (int) $teacher->id;
+                                    @endphp
+                                    <tr>
+                                        <td class="px-3 py-2 text-gray-700 dark:text-gray-200">{{ $subject->day }}</td>
+                                        <td class="px-3 py-2 text-gray-700 dark:text-gray-200">
+                                            {{ substr($subject->start_time, 0, 5) }}–{{ substr($subject->end_time, 0, 5) }}
+                                        </td>
+                                        <td class="px-3 py-2 text-gray-700 dark:text-gray-200">
+                                            {{ $subject->subjectType?->description ?? 'Clase' }}
+                                            <div class="text-xs text-gray-400">{{ $subject->students_count }} alumno(s)</div>
+                                        </td>
+                                        <td class="px-3 py-2">
+                                            <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $isTitular ? 'bg-[#29b1dc]/15 text-[#1a8eb5]' : 'bg-gray-100 text-gray-700 dark:bg-zinc-700 dark:text-zinc-100' }}">
+                                                {{ $isTitular ? 'Titular' : 'Suplente' }}
+                                            </span>
+                                        </td>
+                                        <td class="px-3 py-2">
+                                            <div class="flex flex-wrap gap-2">
+                                                <a href="{{ route('portal.teacher.plans.index', $subject) }}" class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 transition hover:bg-gray-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
+                                                    Plan mensual
+                                                </a>
+                                                <a href="{{ route('portal.teacher.notes.index', $subject) }}" class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 transition hover:bg-gray-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
+                                                    Notas alumnos
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 @endif
             </div>
 
-            {{-- Suplente classes --}}
-            <div class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-sm p-6">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                    Clases como Profesor Suplente
-                </h2>
-                @if($teacher->suplenteSubjects->isEmpty())
-                    <p class="text-sm text-gray-400">No tenés clases asignadas como suplente.</p>
-                @else
-                    <ul class="divide-y divide-gray-100 dark:divide-zinc-800">
-                        @foreach($teacher->suplenteSubjects as $subject)
-                        <li class="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div class="text-sm">
-                                <p class="font-medium text-gray-900 dark:text-gray-100">
-                                    {{ $subject->subjectType?->description ?? 'Clase' }}
-                                </p>
-                                <p class="text-gray-500 dark:text-gray-400">
-                                    {{ $subject->day }} · {{ substr($subject->start_time, 0, 5) }} – {{ substr($subject->end_time, 0, 5) }}
-                                </p>
-                            </div>
-                            <a href="{{ route('attendance.index') }}"
-                               class="inline-flex items-center gap-1 self-start rounded bg-[#29b1dc] px-3 py-1.5 text-xs text-white transition hover:bg-[#24a8cf] sm:self-auto">
-                                <flux:icon name="clipboard-document-check" class="h-3.5 w-3.5" />
-                                Asistencia
-                            </a>
-                        </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Clases como titular</h2>
+                    @if ($teacher->titularSubjects->isEmpty())
+                        <p class="text-sm text-gray-400">No tenés clases asignadas como titular.</p>
+                    @else
+                        <ul class="space-y-3">
+                            @foreach ($teacher->titularSubjects->sortBy('start_time') as $subject)
+                                <li class="rounded border border-gray-100 p-3 dark:border-zinc-800">
+                                    <p class="font-medium text-gray-900 dark:text-gray-100">{{ $subject->subjectType?->description ?? 'Clase' }}</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ $subject->day }} · {{ substr($subject->start_time, 0, 5) }}–{{ substr($subject->end_time, 0, 5) }}
+                                    </p>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
 
-            {{-- Attendance link --}}
-            <div class="mt-6 text-center">
-                <a href="{{ route('attendance.index') }}"
-                   class="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-[#29b1dc] text-white hover:bg-[#24a8cf] transition font-medium">
-                    <flux:icon name="clipboard-document-check" class="h-5 w-5" />
-                    Tomar Asistencia
-                </a>
+                <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Clases como suplente</h2>
+                    @if ($teacher->suplenteSubjects->isEmpty())
+                        <p class="text-sm text-gray-400">No tenés clases asignadas como suplente.</p>
+                    @else
+                        <ul class="space-y-3">
+                            @foreach ($teacher->suplenteSubjects->sortBy('start_time') as $subject)
+                                <li class="rounded border border-gray-100 p-3 dark:border-zinc-800">
+                                    <p class="font-medium text-gray-900 dark:text-gray-100">{{ $subject->subjectType?->description ?? 'Clase' }}</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ $subject->day }} · {{ substr($subject->start_time, 0, 5) }}–{{ substr($subject->end_time, 0, 5) }}
+                                    </p>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
             </div>
         @endif
     </div>

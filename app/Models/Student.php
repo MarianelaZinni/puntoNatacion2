@@ -368,6 +368,11 @@ protected function calculateEffectiveDebtStartDate(Carbon $creationDate, ?Carbon
         return $this->hasMany(StudentPause::class)->orderBy('start_date');
     }
 
+     public function classNotes()
+    {
+        return $this->hasMany(StudentClassNote::class);
+    }
+    
     /**
      * Returns true if the student is currently on pause.
      * Uses the already-loaded `pauses` relation when available to avoid extra DB queries.
