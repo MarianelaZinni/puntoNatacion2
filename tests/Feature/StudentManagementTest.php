@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\SubjectType;
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -179,6 +180,50 @@ class StudentManagementTest extends TestCase
         $this->assertDatabaseHas('students', [
             'id' => $student->id,
             'active_from' => '2023-01-01',
+        ]);
+    }
+
+    public function test_updating_student_with_payment_history_and_no_classes_can_keep_active_from_empty(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $student = Student::create([
+            'dni' => '30124001',
+            'name' => 'Alumno Con Historial',
+            'email' => 'historial@example.com',
+            'active_from' => null,
+        ]);
+
+        Payment::create([
+            'student_id' => $student->id,
+            'payment_method_id' => null,
+            'amount' => 5000,
+            'expected_amount' => 5000,
+            'payment_date' => now()->toDateString(),
+            'payment_period' => now()->startOfMonth()->toDateString(),
+            'payment_type' => Payment::TYPE_NORMAL,
+            'notes' => null,
+        ]);
+
+        $response = $this->actingAs($admin)->put(route('students.update', ['student' => $student->id]), [
+            'dni' => $student->dni,
+            'name' => 'Alumno Con Historial Editado',
+            'email' => $student->email,
+            'address' => null,
+            'phone' => null,
+            'observations' => null,
+            'birth_date' => null,
+            'active_from' => '',
+        ]);
+
+        $response->assertRedirect(route('students.index'));
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('students', [
+            'id' => $student->id,
+            'name' => 'Alumno Con Historial Editado',
+            'active_from' => null,
         ]);
     }
 }

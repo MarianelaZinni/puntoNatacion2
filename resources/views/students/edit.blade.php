@@ -166,10 +166,6 @@
             </div>
 
             {{-- Periodo de inicio (active_from) --}}
-            @php
-                $activeFromLocked = $isEnrolledInAnyClass && $student->active_from !== null;
-                $activeFromRequired = !$isEnrolledInAnyClass;
-            @endphp
             <div>
                 <label for="active_from" class="block text-base font-medium text-gray-700 dark:text-gray-300">Periodo de inicio @if($activeFromRequired)<span class="text-red-500">*</span>@endif</label>
                 @if($activeFromLocked)

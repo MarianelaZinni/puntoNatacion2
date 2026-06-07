@@ -294,17 +294,32 @@ class StudentController extends Controller
             ->limit(10)
             ->get();
 
-        return view('students.edit', compact('student', 'subjects', 'priceSummary', 'subjectPricesForJs', 'recentAttendance'));
+        $studentHasClasses = $student->subjects->isNotEmpty();
+        $studentHasHistory = $student->payments()->exists() || $recentAttendance->isNotEmpty();
+        $activeFromLocked = $studentHasClasses && $student->active_from !== null;
+        $activeFromRequired = ! $studentHasClasses && ! $studentHasHistory;
+
+        return view('students.edit', compact(
+            'student',
+            'subjects',
+            'priceSummary',
+            'subjectPricesForJs',
+            'recentAttendance',
+            'activeFromLocked',
+            'activeFromRequired'
+        ));
     }
 
 
     public function update(Request $request, Student $student)
     {
         $studentHasClasses = $student->subjects()->exists();
+        $studentHasHistory = $student->payments()->exists()
+            || AttendanceRecord::where('student_id', $student->id)->exists();
         // active_from is locked only when the student is enrolled AND already has a value set.
         // If enrolled but active_from is still null, the admin may set it now.
         $activeFromLocked = $studentHasClasses && $student->active_from !== null;
-        $activeFromRequired = ! $studentHasClasses;
+        $activeFromRequired = ! $studentHasClasses && ! $studentHasHistory;
 
         $validationRules = [
             'dni' => 'required|unique:students,dni,' . $student->id,
