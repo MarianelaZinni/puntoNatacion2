@@ -304,6 +304,7 @@ class StudentController extends Controller
         // active_from is locked only when the student is enrolled AND already has a value set.
         // If enrolled but active_from is still null, the admin may set it now.
         $activeFromLocked = $studentHasClasses && $student->active_from !== null;
+        $activeFromRequired = ! $studentHasClasses;
 
         $validationRules = [
             'dni' => 'required|unique:students,dni,' . $student->id,
@@ -313,7 +314,7 @@ class StudentController extends Controller
             'phone' => 'nullable',
             'observations' => 'nullable|string|max:1000',
             'birth_date' => 'nullable|date|before:today',
-            'active_from' => $activeFromLocked ? 'nullable|date_format:Y-m' : 'required|date_format:Y-m',
+            'active_from' => $activeFromRequired ? 'required|date_format:Y-m' : 'nullable|date_format:Y-m',
         ];
 
         $request->validate($validationRules);
@@ -325,7 +326,8 @@ class StudentController extends Controller
                 ? $student->active_from->format('Y-m-d')
                 : null;
         } else {
-            $data['active_from'] = $request->input('active_from') . '-01';
+            $activeFrom = $request->input('active_from');
+            $data['active_from'] = filled($activeFrom) ? $activeFrom . '-01' : null;
         }
 
         $student->update($data);

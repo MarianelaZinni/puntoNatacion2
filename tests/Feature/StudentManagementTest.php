@@ -89,6 +89,54 @@ class StudentManagementTest extends TestCase
         ]);
     }
 
+    public function test_updating_an_enrolled_student_without_active_from_can_keep_it_empty(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $student = Student::create([
+            'dni' => '30123998',
+            'name' => 'Alumno Sin Activacion',
+            'email' => 'sin.activacion.vacio@example.com',
+            'active_from' => null,
+        ]);
+
+        $subjectType = SubjectType::create([
+            'description' => 'Natación',
+            'value' => 10000,
+        ]);
+
+        $subject = Subject::create([
+            'subject_type_id' => $subjectType->id,
+            'capacity' => 10,
+            'day' => 'Jueves',
+            'start_time' => '08:00:00',
+            'end_time' => '09:00:00',
+        ]);
+
+        $student->subjects()->attach($subject->id);
+
+        $response = $this->actingAs($admin)->put(route('students.update', ['student' => $student->id]), [
+            'dni' => $student->dni,
+            'name' => 'Alumno Editado Sin Periodo',
+            'email' => $student->email,
+            'address' => null,
+            'phone' => null,
+            'observations' => null,
+            'birth_date' => null,
+            'active_from' => '',
+        ]);
+
+        $response->assertRedirect(route('students.index'));
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('students', [
+            'id' => $student->id,
+            'name' => 'Alumno Editado Sin Periodo',
+            'active_from' => null,
+        ]);
+    }
+
     public function test_updating_an_enrolled_student_with_active_from_set_cannot_change_it(): void
     {
         $admin = User::factory()->create([

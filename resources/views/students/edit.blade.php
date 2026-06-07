@@ -168,9 +168,10 @@
             {{-- Periodo de inicio (active_from) --}}
             @php
                 $activeFromLocked = $isEnrolledInAnyClass && $student->active_from !== null;
+                $activeFromRequired = !$isEnrolledInAnyClass;
             @endphp
             <div>
-                <label for="active_from" class="block text-base font-medium text-gray-700 dark:text-gray-300">Periodo de inicio <span class="text-red-500">*</span></label>
+                <label for="active_from" class="block text-base font-medium text-gray-700 dark:text-gray-300">Periodo de inicio @if($activeFromRequired)<span class="text-red-500">*</span>@endif</label>
                 @if($activeFromLocked)
                     <input
                         id="active_from"
@@ -189,7 +190,7 @@
                         id="active_from"
                         name="active_from"
                         type="month"
-                        required
+                        @if($activeFromRequired) required @endif
                         value="{{ old('active_from', $student->active_from ? $student->active_from->format('Y-m') : '') }}"
                         class="mt-2 block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 shadow-sm focus:ring-2 focus:ring-[#29b1dc] focus:border-[#29b1dc] text-base leading-relaxed @error('active_from') ring-2 ring-red-400 @enderror"
                         aria-invalid="{{ $errors->has('active_from') ? 'true' : 'false' }}"
