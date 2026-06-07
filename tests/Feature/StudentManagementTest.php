@@ -83,11 +83,10 @@ class StudentManagementTest extends TestCase
 
         $response->assertRedirect(route('students.index'));
         $response->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('students', [
-            'id' => $student->id,
-            'name' => 'Alumno Editado',
-            'active_from' => '2023-02-01',
-        ]);
+        $student->refresh();
+
+        $this->assertSame('Alumno Editado', $student->name);
+        $this->assertSame('2023-02-01', optional($student->active_from)->toDateString());
     }
 
     public function test_updating_an_enrolled_student_without_active_from_can_keep_it_empty(): void
@@ -177,10 +176,9 @@ class StudentManagementTest extends TestCase
         $response->assertRedirect(route('students.index'));
         $response->assertSessionHasNoErrors();
         // active_from must remain unchanged
-        $this->assertDatabaseHas('students', [
-            'id' => $student->id,
-            'active_from' => '2023-01-01',
-        ]);
+        $student->refresh();
+
+        $this->assertSame('2023-01-01', optional($student->active_from)->toDateString());
     }
 
     public function test_updating_student_with_payment_history_and_no_classes_can_keep_active_from_empty(): void
