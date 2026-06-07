@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
@@ -294,7 +295,7 @@ class StudentController extends Controller
             ->limit(10)
             ->get();
 
-        $studentHasClasses = $student->subjects->isNotEmpty();
+         $studentHasClasses = $this->studentHasAnyClassEnrollment($student);
         $studentHasHistory = $student->payments()->exists() || $recentAttendance->isNotEmpty();
         $activeFromLocked = $studentHasClasses && $student->active_from !== null;
         $activeFromRequired = ! $studentHasClasses && ! $studentHasHistory;
@@ -305,6 +306,7 @@ class StudentController extends Controller
             'priceSummary',
             'subjectPricesForJs',
             'recentAttendance',
+            'studentHasClasses',
             'activeFromLocked',
             'activeFromRequired'
         ));
@@ -313,7 +315,7 @@ class StudentController extends Controller
 
     public function update(Request $request, Student $student)
     {
-        $studentHasClasses = $student->subjects()->exists();
+        $studentHasClasses = $this->studentHasAnyClassEnrollment($student);
         // active_from is locked only when the student is enrolled AND already has a value set.
         // If enrolled but active_from is still null, the admin may set it now.
         $activeFromLocked = $studentHasClasses && $student->active_from !== null;
@@ -345,6 +347,30 @@ class StudentController extends Controller
 
         $student->update($data);
         return redirect()->route('students.index')->with('success', 'Alumno actualizado correctamente.');
+    }
+
+    private function studentHasAnyClassEnrollment(Student $student): bool
+    {
+        try {
+            if ($student->subjects()->exists()) {
+                return true;
+            }
+        } catch (\Throwable $e) {
+            // Legacy databases may still have a differently-cased pivot table.
+             // Legacy databases may still have a differently-cased pivot table.
+            Log::warning('Could not verify enrollment via default student_subject relation.', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        if (Schema::hasTable('student_subject')
+            && DB::table('student_subject')->where('student_id', $student->id)->exists()) {
+            return true;
+        }
+
+        return Schema::hasTable('Student_Subject')
+            && DB::table('Student_Subject')->where('student_id', $student->id)->exists();
     }
 
     public function destroy(Student $student)
