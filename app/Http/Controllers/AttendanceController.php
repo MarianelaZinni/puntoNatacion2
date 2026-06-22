@@ -21,15 +21,12 @@ class AttendanceController extends Controller
 
         $sortBy    = in_array($request->query('sort'), ['id', 'date']) ? $request->query('sort') : 'date';
         $direction = $request->query('direction') === 'asc' ? 'asc' : 'desc';
+        $sortColumn = 'attendance_lists.' . $sortBy;
 
-        $recent = AttendanceList::withCount([
-                'records as total',
-                'records as present_count' => function ($q) {
-                    $q->where('present', true);
-                },
-            ])
+        $recent = AttendanceList::withCount('records as total')
+            ->withCount(['records as present_count' => fn ($q) => $q->where('present', true)])
             ->with('subject.subjectType')
-            ->orderBy($sortBy, $direction)
+            ->orderBy($sortColumn, $direction)
             ->paginate(15)
             ->withQueryString();
 
@@ -57,17 +54,27 @@ class AttendanceController extends Controller
 
         $date = $request->date;
 
-        // Load existing attendance list (if any) for this class + date
-        $list = AttendanceList::where('subject_id', $subject->id)
-            ->whereDate('date', $date)
-            ->first();
+        // Load or create the attendance list for this class + date
+        $list = AttendanceList::firstOrCreate([
+            'subject_id' => $subject->id,
+            'date'       => $date,
+        ]);
+
+        // Pre-create a record for every enrolled student (present = true by default).
+        // This ensures total always equals the number of enrolled students,
+        // even if the teacher hasn't clicked anything yet.
+        $enrolledIds = $subject->students()->pluck('students.id');
+        foreach ($enrolledIds as $studentId) {
+            AttendanceRecord::firstOrCreate(
+                ['attendance_list_id' => $list->id, 'student_id' => $studentId],
+                ['present' => true]
+            );
+        }
 
         // Build present/absent map keyed by student_id
-        $existing = $list
-            ? $list->records()->pluck('present', 'student_id')->toArray()
-            : [];
+        $existing = $list->records()->pluck('present', 'student_id')->toArray();
 
-        $alreadySaved = $list !== null;
+        $alreadySaved = true;
 
         return view('attendance.take', compact('subject', 'date', 'existing', 'alreadySaved', 'list'));
     }

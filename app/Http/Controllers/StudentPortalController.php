@@ -12,6 +12,10 @@ class StudentPortalController extends Controller
      * Show the student portal: display all students linked to the current user.
      * Only announcements NOT yet read by this user are shown.
      */
+   /**
+     * Show the student portal: display all students linked to the current user.
+     * Only announcements NOT yet read by this user are shown.
+     */
     public function index()
     {
         /** @var \App\Models\User $user */
@@ -25,14 +29,18 @@ class StudentPortalController extends Controller
             ])
             ->get();
 
-        // Compute debt for each student
+        // Compute debt and payment_status for each student
         $students = $students->map(function ($student) {
             $calc = $student->calculateDebtFromCreationUsingCurrentMonthly();
-            $student->debt              = $calc['debt'];
-            $student->monthly_amount    = $calc['monthly_amount'];
-            $student->unpaid_periods    = $calc['unpaid_periods'];
+            $student->debt               = $calc['debt'];
+            $student->monthly_amount     = $calc['monthly_amount'];
+            $student->unpaid_periods     = $calc['unpaid_periods'];
             $student->selectable_periods = $calc['selectable_periods'] ?? [];
             $student->next_unpaid_period = $calc['next_unpaid_period'];
+
+            // Estado unificado desde el modelo (max created_at/active_from/DEBT_START_DATE; descuenta pausas)
+            $student->payment_status = $student->debtStatus();
+
             return $student;
         });
 
@@ -45,11 +53,20 @@ class StudentPortalController extends Controller
             ->get();
 
         $studentIds = $students->pluck('id')->all();
+        $subjectIds = $students->flatMap(fn($s) => $s->subjects->pluck('id'))->unique()->values()->all();
         $readNoteIds = $user->readStudentNotes()->pluck('student_class_note_id');
 
         $notes = StudentClassNote::query()
             ->with(['subject.subjectType', 'student', 'author'])
-            ->whereIn('student_id', $studentIds)
+            ->where(function ($q) use ($studentIds, $subjectIds) {
+                // Notes for a specific student of this user
+                $q->whereIn('student_id', $studentIds)
+                  // OR group notes for any class the user's students attend
+                  ->orWhere(function ($q2) use ($subjectIds) {
+                      $q2->whereNull('student_id')
+                         ->whereIn('subject_id', $subjectIds);
+                  });
+            })
             ->whereNotIn('id', $readNoteIds)
             ->latest()
             ->limit(8)
@@ -99,16 +116,27 @@ class StudentPortalController extends Controller
         $user = Auth::user();
 
         $studentIds = $user->students()->pluck('students.id');
+        $subjectIds = $user->students()
+            ->with('subjects')
+            ->get()
+            ->flatMap(fn($s) => $s->subjects->pluck('id'))
+            ->unique()
+            ->values();
         $readIds = $user->readStudentNotes()->pluck('student_class_note_id')->flip();
 
         $notes = StudentClassNote::query()
             ->with(['subject.subjectType', 'student', 'author'])
-            ->whereIn('student_id', $studentIds)
+            ->where(function ($q) use ($studentIds, $subjectIds) {
+                $q->whereIn('student_id', $studentIds)
+                  ->orWhere(function ($q2) use ($subjectIds) {
+                      $q2->whereNull('student_id')
+                         ->whereIn('subject_id', $subjectIds);
+                  });
+            })
             ->latest()
             ->get()
             ->map(function ($note) use ($readIds) {
                 $note->is_read = $readIds->has($note->id);
-
                 return $note;
             });
 
@@ -120,7 +148,18 @@ class StudentPortalController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $canRead = $user->students()->where('students.id', $note->student_id)->exists();
+        // Allow reading if: note targets one of this user's students,
+        // OR it's a group note for a class one of their students attends.
+        if ($note->student_id !== null) {
+            $canRead = $user->students()->where('students.id', $note->student_id)->exists();
+        } else {
+            $subjectIds = $user->students()
+                ->with('subjects')
+                ->get()
+                ->flatMap(fn($s) => $s->subjects->pluck('id'))
+                ->unique();
+            $canRead = $subjectIds->contains($note->subject_id);
+        }
         abort_unless($canRead, 403);
 
         $note->readers()->syncWithoutDetaching([$user->id => ['read_at' => now()]]);

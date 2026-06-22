@@ -27,20 +27,23 @@ class TeacherStudentNoteController extends Controller
         $subject = $this->resolveSubjectForCurrentTeacher($subject->id);
 
         $data = $request->validate([
-            'student_id' => ['required', 'integer', 'exists:students,id'],
+            'student_id' => ['nullable', 'integer', 'exists:students,id'],
             'title' => ['nullable', 'string', 'max:150'],
             'body' => ['required', 'string'],
         ]);
 
-        $isEnrolled = $subject->students()->where('students.id', $data['student_id'])->exists();
-        abort_unless($isEnrolled, 422, 'El alumno no pertenece a esta clase.');
+        // If a specific student was selected, verify they belong to this class
+        if (!empty($data['student_id'])) {
+            $isEnrolled = $subject->students()->where('students.id', $data['student_id'])->exists();
+            abort_unless($isEnrolled, 422, 'El alumno no pertenece a esta clase.');
+        }
 
         StudentClassNote::query()->create([
-            'subject_id' => $subject->id,
-            'student_id' => $data['student_id'],
-            'teacher_user_id' =>  Auth::id(),
-            'title' => $data['title'] ?? null,
-            'body' => $data['body'],
+            'subject_id'      => $subject->id,
+            'student_id'      => $data['student_id'] ?? null,
+            'teacher_user_id' => Auth::id(),
+            'title'           => $data['title'] ?? null,
+            'body'            => $data['body'],
         ]);
 
         return redirect()
@@ -64,18 +67,20 @@ class TeacherStudentNoteController extends Controller
         $this->ensureNoteBelongsToSubject($subject, $note);
 
         $data = $request->validate([
-            'student_id' => ['required', 'integer', 'exists:students,id'],
+            'student_id' => ['nullable', 'integer', 'exists:students,id'],
             'title' => ['nullable', 'string', 'max:150'],
             'body' => ['required', 'string'],
         ]);
 
-        $isEnrolled = $subject->students()->where('students.id', $data['student_id'])->exists();
-        abort_unless($isEnrolled, 422, 'El alumno no pertenece a esta clase.');
+        if (!empty($data['student_id'])) {
+            $isEnrolled = $subject->students()->where('students.id', $data['student_id'])->exists();
+            abort_unless($isEnrolled, 422, 'El alumno no pertenece a esta clase.');
+        }
 
         $note->update([
-            'student_id' => $data['student_id'],
-            'title' => $data['title'] ?? null,
-            'body' => $data['body'],
+            'student_id'      => $data['student_id'] ?? null,
+            'title'           => $data['title'] ?? null,
+            'body'            => $data['body'],
             'teacher_user_id' => Auth::id(),
         ]);
 

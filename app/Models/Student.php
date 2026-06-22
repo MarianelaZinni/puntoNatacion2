@@ -159,10 +159,11 @@ public function calculateDebtFromCreationUsingCurrentMonthly(): array
         ];
     }
 
-    // Fecha de inicio de deuda del alumno: active_from tiene prioridad sobre created_at
-    $creationDate = $this->active_from
-        ? Carbon::parse($this->active_from)->startOfMonth()
-        : ($this->created_at ? Carbon::parse($this->created_at)->startOfMonth() : Carbon::now()->startOfMonth());
+    // Fecha base: siempre created_at del alumno
+    // active_from y la fecha del sistema se aplican como techo mínimo en calculateEffectiveDebtStartDate
+    $creationDate = $this->created_at
+        ? Carbon::parse($this->created_at)->startOfMonth()
+        : Carbon::now()->startOfMonth();
 
     // Fecha absoluta de inicio de deuda del sistema (configurada en .env)
     $systemDebtStartDate = $this->getSystemDebtStartDate();
@@ -264,17 +265,15 @@ public function calculateDebtFromCreationUsingCurrentMonthly(): array
  */
 protected function getSystemDebtStartDate(): ?Carbon
 {
-    $debtStartDateConfig = '2026-03';
-    
+    $debtStartDateConfig = config('business.debt_start_date', '');
+
     if (empty($debtStartDateConfig)) {
         return null;
     }
-    
+
     try {
-        // Espera formato 'YYYY-MM'
         return Carbon::createFromFormat('Y-m', $debtStartDateConfig)->startOfMonth();
     } catch (\Throwable $e) {
-        // Si hay error en el formato, retorna null (sin restricción)
         return null;
     }
 }
@@ -299,20 +298,23 @@ protected function getSystemDebtStartDate(): ?Carbon
  */
 protected function calculateEffectiveDebtStartDate(Carbon $creationDate, ?Carbon $systemDebtStartDate): Carbon
 {
-    // Si no hay fecha de inicio del sistema configurada, usar fecha de creación
-    if ($systemDebtStartDate === null) {
-        return $creationDate->copy();
+    // Start with created_at as the base
+    $effective = $creationDate->copy();
+
+    // active_from overrides if it's later than created_at
+    if ($this->active_from) {
+        $activeFrom = Carbon::parse($this->active_from)->startOfMonth();
+        if ($activeFrom->gt($effective)) {
+            $effective = $activeFrom;
+        }
     }
-    
-    // Si el alumno se creó antes de la fecha de inicio del sistema,
-    // la deuda comienza en la fecha de inicio del sistema
-    if ($creationDate->lt($systemDebtStartDate)) {
-        return $systemDebtStartDate->copy();
+
+    // System debt start date overrides if it's later than the above
+    if ($systemDebtStartDate !== null && $systemDebtStartDate->gt($effective)) {
+        $effective = $systemDebtStartDate->copy();
     }
-    
-    // Si el alumno se creó después de la fecha de inicio del sistema,
-    // la deuda comienza desde la fecha de creación
-    return $creationDate->copy();
+
+    return $effective;
 }
 
     /**
@@ -322,6 +324,60 @@ protected function calculateEffectiveDebtStartDate(Carbon $creationDate, ?Carbon
     {
         $res = $this->calculateDebtFromCreationUsingCurrentMonthly();
         return ($res['debt'] > 0);
+    }
+
+    /**
+     * Devuelve el estado de deuda del alumno: 'al_dia', 'pendiente' o 'deudor'.
+     *
+     * Criterio unificado usado tanto en el listado del admin como en el portal del alumno:
+     *  - al_dia:   sin cuota mensual, o período de activación aún no empezó, o pagó este mes sin períodos anteriores impagos
+     *  - deudor:   tiene períodos anteriores sin pagar, o ya pasó el día de vencimiento del mes actual sin pagar
+     *  - pendiente: debe el mes actual pero todavía no venció el día de gracia
+     *
+     * El período de activación efectivo es el máximo entre created_at, active_from y DEBT_START_DATE.
+     * Los meses en pausa se descuentan automáticamente (los maneja calculateDebtFromCreationUsingCurrentMonthly).
+     */
+    public function debtStatus(): string
+    {
+        $calc = $this->calculateDebtFromCreationUsingCurrentMonthly();
+
+        $monthlyAmt = (float) ($calc['monthly_amount'] ?? 0);
+
+        if ($monthlyAmt <= 0) {
+            return 'al_dia';
+        }
+
+        // Determine effective activation start to avoid marking as deudor before it begins
+        $effectiveStart = $this->calculateEffectiveDebtStartDate(
+            $this->created_at
+                ? Carbon::parse($this->created_at)->startOfMonth()
+                : Carbon::now()->startOfMonth(),
+            $this->getSystemDebtStartDate()
+        );
+
+        if ($effectiveStart->gt(Carbon::now()->startOfMonth())) {
+            return 'al_dia';
+        }
+
+        $nowYm   = Carbon::now()->format('Y-m');
+        $dueDay  = (int) config('business.debt_due_day', 10);
+        $todayDay = Carbon::now()->day;
+
+        $unpaidPeriods = $calc['unpaid_periods'] ?? [];
+        $hasPreviousUnpaid = collect($unpaidPeriods)->contains(
+            fn ($p) => ($p['period'] ?? '') !== $nowYm
+        );
+        $paidThisMonth = $this->isPeriodFullyPaid($nowYm);
+
+        if ($hasPreviousUnpaid) {
+            return 'deudor';
+        }
+
+        if ($paidThisMonth) {
+            return 'al_dia';
+        }
+
+        return $todayDay > $dueDay ? 'deudor' : 'pendiente';
     }
 
     /**

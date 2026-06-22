@@ -27,15 +27,16 @@
             <form action="{{ route('portal.teacher.notes.store', $subject) }}" method="POST" class="space-y-4">
                 @csrf
                 <div>
-                    <label for="student_id" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Alumno</label>
-                    <select id="student_id" name="student_id" required class="w-full rounded border-gray-300 bg-white text-gray-900 focus:ring-[#29b1dc] dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-100">
-                        <option value="">Seleccionar alumno...</option>
+                    <label for="student_id" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Destinatario</label>
+                    <select id="student_id" name="student_id" class="w-full rounded border-gray-300 bg-white text-gray-900 focus:ring-[#29b1dc] dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-100">
+                        <option value="">📢 Toda la clase</option>
                         @foreach ($students as $student)
                             <option value="{{ $student->id }}" @selected(old('student_id') == $student->id)>
                                 {{ $student->name }} @if($student->dni) (DNI {{ $student->dni }}) @endif
                             </option>
                         @endforeach
                     </select>
+                    <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Dejá "Toda la clase" para que la nota sea visible para todos los alumnos de esta clase.</p>
                 </div>
                 <div>
                     <label for="title" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Título (opcional)</label>
@@ -56,7 +57,13 @@
                     <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                         <div>
                             <p class="font-medium text-gray-900 dark:text-gray-100">
-                                {{ $note->student?->name ?? 'Alumno eliminado' }}
+                                @if($note->student_id === null)
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-[#29b1dc]/15 px-2 py-0.5 text-xs font-semibold text-[#1a8eb5] dark:text-[#29b1dc]">
+                                        📢 Toda la clase
+                                    </span>
+                                @else
+                                    {{ $note->student?->name ?? 'Alumno eliminado' }}
+                                @endif
                                 @if($note->title) — {{ $note->title }} @endif
                             </p>
                             <p class="text-xs text-gray-500 dark:text-gray-400">

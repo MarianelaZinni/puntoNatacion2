@@ -63,8 +63,10 @@
                                 @foreach ($calendarSubjects as $subject)
                                     @php
                                         $isTitular = (int) $subject->titular_teacher_id === (int) $teacher->id;
+                                        $attendanceUrl = route('attendance.take', ['subject_id' => $subject->id, 'date' => now()->format('Y-m-d')]);
                                     @endphp
-                                    <tr>
+                                    <tr onclick="window.location='{{ $attendanceUrl }}'"
+                                        class="cursor-pointer transition hover:bg-[#29b1dc]/5 dark:hover:bg-[#29b1dc]/10">
                                         <td class="px-3 py-2 text-gray-700 dark:text-gray-200">{{ $subject->day }}</td>
                                         <td class="px-3 py-2 text-gray-700 dark:text-gray-200">
                                             {{ substr($subject->start_time, 0, 5) }}–{{ substr($subject->end_time, 0, 5) }}
@@ -78,12 +80,14 @@
                                                 {{ $isTitular ? 'Titular' : 'Suplente' }}
                                             </span>
                                         </td>
-                                        <td class="px-3 py-2">
+                                        <td class="px-3 py-2" onclick="event.stopPropagation()">
                                             <div class="flex flex-wrap gap-2">
-                                                <a href="{{ route('portal.teacher.plans.index', $subject) }}" class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 transition hover:bg-gray-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
-                                                    Plan mensual
+                                                <a href="{{ route('portal.teacher.plans.index', $subject) }}"
+                                                   class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 transition hover:bg-gray-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
+                                                    Contenidos/Clases
                                                 </a>
-                                                <a href="{{ route('portal.teacher.notes.index', $subject) }}" class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 transition hover:bg-gray-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
+                                                <a href="{{ route('portal.teacher.notes.index', $subject) }}"
+                                                   class="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 transition hover:bg-gray-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
                                                     Notas alumnos
                                                 </a>
                                             </div>
@@ -96,43 +100,7 @@
                 @endif
             </div>
 
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                    <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Clases como titular</h2>
-                    @if ($teacher->titularSubjects->isEmpty())
-                        <p class="text-sm text-gray-400">No tenés clases asignadas como titular.</p>
-                    @else
-                        <ul class="space-y-3">
-                            @foreach ($teacher->titularSubjects->sortBy('start_time') as $subject)
-                                <li class="rounded border border-gray-100 p-3 dark:border-zinc-800">
-                                    <p class="font-medium text-gray-900 dark:text-gray-100">{{ $subject->subjectType?->description ?? 'Clase' }}</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                                        {{ $subject->day }} · {{ substr($subject->start_time, 0, 5) }}–{{ substr($subject->end_time, 0, 5) }}
-                                    </p>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
-                </div>
-
-                <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-                    <h2 class="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Clases como suplente</h2>
-                    @if ($teacher->suplenteSubjects->isEmpty())
-                        <p class="text-sm text-gray-400">No tenés clases asignadas como suplente.</p>
-                    @else
-                        <ul class="space-y-3">
-                            @foreach ($teacher->suplenteSubjects->sortBy('start_time') as $subject)
-                                <li class="rounded border border-gray-100 p-3 dark:border-zinc-800">
-                                    <p class="font-medium text-gray-900 dark:text-gray-100">{{ $subject->subjectType?->description ?? 'Clase' }}</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                                        {{ $subject->day }} · {{ substr($subject->start_time, 0, 5) }}–{{ substr($subject->end_time, 0, 5) }}
-                                    </p>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @endif
-                </div>
-            </div>
+            
         @endif
     </div>
 </x-layouts.app>

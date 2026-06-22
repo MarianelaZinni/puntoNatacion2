@@ -12,14 +12,16 @@
             @method('PUT')
 
             <div>
-                <label for="student_id" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Alumno</label>
-                <select id="student_id" name="student_id" required class="w-full rounded border-gray-300 bg-white text-gray-900 focus:ring-[#29b1dc] dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-100">
+                <label for="student_id" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Destinatario</label>
+                <select id="student_id" name="student_id" class="w-full rounded border-gray-300 bg-white text-gray-900 focus:ring-[#29b1dc] dark:border-zinc-700 dark:bg-zinc-800 dark:text-gray-100">
+                    <option value="" @selected(old('student_id', $note->student_id) === null)>📢 Toda la clase</option>
                     @foreach ($students as $student)
                         <option value="{{ $student->id }}" @selected(old('student_id', $note->student_id) == $student->id)>
                             {{ $student->name }} @if($student->dni) (DNI {{ $student->dni }}) @endif
                         </option>
                     @endforeach
                 </select>
+                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Dejá "Toda la clase" para que la nota sea visible para todos los alumnos de esta clase.</p>
             </div>
 
             <div>

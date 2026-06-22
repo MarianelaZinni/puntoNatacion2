@@ -51,62 +51,28 @@ class StudentController extends Controller
        try {
            $students = $query->paginate($perPage)->withQueryString();
 
-           // calcular deuda y bandera paid_this_month para cada alumno en la colección paginada
+           // calcular deuda y estado para cada alumno en la colección paginada
            $students->getCollection()->transform(function ($student) {
-               // Usar el helper del modelo que calcula la deuda desde la creación usando el monto mensual actual.
                $calc = $student->calculateDebtFromCreationUsingCurrentMonthly();
 
-               $student->debt = $calc['debt'];
-               $student->monthly_amount = $calc['monthly_amount'];
-               $student->unpaid_periods = $calc['unpaid_periods'];
+               $student->debt               = $calc['debt'];
+               $student->monthly_amount     = $calc['monthly_amount'];
+               $student->unpaid_periods     = $calc['unpaid_periods'];
                $student->selectable_periods = $calc['selectable_periods'] ?? [];
                $student->next_unpaid_period = $calc['next_unpaid_period'];
-               $student->has_debt = ($calc['debt'] > 0);
+               $student->has_debt           = ($calc['debt'] > 0);
+               $student->paid_this_month    = $student->isPeriodFullyPaid(Carbon::now()->format('Y-m'));
 
-               // Un periodo se considera pagado si existe al menos un registro de pago,
-               // independientemente del monto. Usamos el helper del modelo que implementa
-               // esta regla de negocio de manera consistente.
-               $nowYm = Carbon::now()->format('Y-m');
-               $student->paid_this_month = $student->isPeriodFullyPaid($nowYm);
+               // Estado unificado: usa el método del modelo que aplica todos los criterios
+               // (max de created_at, active_from y DEBT_START_DATE; descuenta pausas)
+               $student->payment_status = $student->debtStatus();
 
-               // Determinar estado (status) según las reglas:
-               // - "deudor"   => si debe algún mes anterior OR (estamos > dia 10 y no pagó el mes en curso)
-               // - "pendiente"=> si estamos <= dia 10 y no pagó el mes en curso y no debe meses anteriores
-               // - "al_dia"   => si pagó todos los periodos anteriores y el mes actual
-               //
-               // Regla simplificada aplicada:
-               // 1) Si monthly_amount <= 0 => 'al_dia' (no corresponde deuda)
-               // 2) else if has previous unpaid months => 'deudor'
-               // 3) else if paid_this_month => 'al_dia'
-               // 4) else if today > 10 => 'deudor' (mes actual vencido)
-               // 5) else => 'pendiente' (antes del día 11, sin deuda previa)
-               $unpaidPeriods = is_array($student->unpaid_periods) ? $student->unpaid_periods : [];
-               $hasPreviousUnpaid = collect($unpaidPeriods)->contains(function ($p) use ($nowYm) {
-                   return ($p['period'] ?? '') !== $nowYm;
-               });
-               $todayDay = Carbon::now()->day;
-
-               if (empty($student->monthly_amount) || (float)$student->monthly_amount <= 0) {
-                   $student->payment_status = 'al_dia';
-               } elseif ($hasPreviousUnpaid) {
-                   $student->payment_status = 'deudor';
-               } elseif ($student->paid_this_month) {
-                   $student->payment_status = 'al_dia';
-               } elseif ($todayDay > 10) {
-                   $student->payment_status = 'deudor';
-               } else {
-                   $student->payment_status = 'pendiente';
-               }
-
-                // Pre-compute can_pay flag to avoid duplicating this logic in blade partials.
-               $debt       = isset($student->debt) ? (float)$student->debt : 0.0;
-               $hasUnpaid  = !empty($student->unpaid_periods) && is_array($student->unpaid_periods) && count($student->unpaid_periods) > 0;
-               $status     = $student->payment_status;
+               $hasUnpaid        = !empty($student->unpaid_periods) && count($student->unpaid_periods) > 0;
                $student->can_pay = !(
                    ($student->paid_this_month && !$hasUnpaid) ||
-                   ($debt <= 0 && !$hasUnpaid && $status !== 'pendiente')
+                   ((float)$student->debt <= 0 && !$hasUnpaid && $student->payment_status !== 'pendiente')
                );
-               
+
                return $student;
            });
 
@@ -157,12 +123,13 @@ class StudentController extends Controller
         'phone' => 'nullable',
         'observations' => 'nullable|string|max:1000',
         'birth_date' => 'nullable|date|before:today',
-        'active_from' => 'required|date_format:Y-m',
+        'active_from' => 'nullable|date_format:Y-m',
     ]);
 
     // Normalize active_from (YYYY-MM) to first day of month for DB storage
     $data = $request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date');
-    $data['active_from'] = $request->input('active_from') . '-01';
+    $activeFrom = $request->input('active_from');
+    $data['active_from'] = filled($activeFrom) ? $activeFrom . '-01' : null;
 
     $student = DB::transaction(function () use ($data) {
        $student = Student::create($data);
@@ -295,10 +262,11 @@ class StudentController extends Controller
             ->limit(10)
             ->get();
 
-         $studentHasClasses = $this->studentHasAnyClassEnrollment($student);
+        $studentHasClasses = $this->studentHasAnyClassEnrollment($student);
         $studentHasHistory = $student->payments()->exists() || $recentAttendance->isNotEmpty();
-        $activeFromLocked = $studentHasClasses && $student->active_from !== null;
-        $activeFromRequired = ! $studentHasClasses && ! $studentHasHistory;
+        $activeFromLocked   = false;
+        $activeFromRequired = false; // always optional
+        $activeFromHasHistory = $studentHasHistory;
 
         return view('students.edit', compact(
             'student',
@@ -308,7 +276,8 @@ class StudentController extends Controller
             'recentAttendance',
             'studentHasClasses',
             'activeFromLocked',
-            'activeFromRequired'
+            'activeFromRequired',
+            'activeFromHasHistory'
         ));
     }
 
@@ -316,33 +285,26 @@ class StudentController extends Controller
     public function update(Request $request, Student $student)
     {
         $studentHasClasses = $this->studentHasAnyClassEnrollment($student);
-        // active_from is locked only when the student is enrolled AND already has a value set.
-        // If enrolled but active_from is still null, the admin may set it now.
-        $activeFromLocked = $studentHasClasses && $student->active_from !== null;
-        $activeFromRequired = ! $studentHasClasses;
+        $activeFromLocked  = false; // Always editable by admin
 
-         $validationRules = [
-            'dni' => 'required|unique:students,dni,' . $student->id,
-            'name' => 'required',
-            'email' => 'nullable|email',
-            'address' => 'nullable',
-            'phone' => 'nullable',
+        $validationRules = [
+            'dni'          => 'required|unique:students,dni,' . $student->id,
+            'name'         => 'required',
+            'email'        => 'nullable|email',
+            'address'      => 'nullable',
+            'phone'        => 'nullable',
             'observations' => 'nullable|string|max:1000',
-            'birth_date' => 'nullable|date|before:today',
-             'active_from' => $activeFromRequired ? 'required|date_format:Y-m' : 'nullable|date_format:Y-m',
+            'birth_date'   => 'nullable|date|before:today',
+            'active_from'  => 'nullable|date_format:Y-m',  // always optional
         ];
 
-        $request->validate($validationRules);
-        $data = $request->only('dni', 'name', 'email', 'address', 'phone', 'observations', 'birth_date');
-        if ($activeFromLocked) {
-            // Preserve the existing value — changing it once set would retroactively alter
-            // the debt start date and invalidate existing financial records.
-            $data['active_from'] = $student->active_from
-                ? $student->active_from->format('Y-m-d')
-                : null;
+        $data = $request->validate($validationRules);
+
+        // Convert Y-m to Y-m-d for storage (use first day of month)
+        if (!empty($data['active_from'])) {
+            $data['active_from'] = $data['active_from'] . '-01';
         } else {
-             $activeFrom = $request->input('active_from');
-            $data['active_from'] = filled($activeFrom) ? $activeFrom . '-01' : null;
+            $data['active_from'] = null;
         }
 
         $student->update($data);

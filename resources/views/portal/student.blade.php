@@ -95,15 +95,20 @@
                         @php
                             $debtAmt = (float) ($student->debt ?? 0);
                             $ispaused = $student->isCurrentlyPaused();
+                            $payStatus = $student->payment_status ?? ($debtAmt > 0 ? 'deudor' : 'al_dia');
                         @endphp
                         @if($ispaused)
                             <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
                                 <flux:icon name="pause-circle" class="h-4 w-4" />
                                 Pausado
                             </span>
-                        @elseif($debtAmt > 0)
+                        @elseif($payStatus === 'deudor')
                             <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
                                 Deuda: ${{ number_format($debtAmt, 2, ',', '.') }}
+                            </span>
+                        @elseif($payStatus === 'pendiente')
+                            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                                Pendiente
                             </span>
                         @else
                             <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">

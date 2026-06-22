@@ -24,7 +24,11 @@
                                     {{ $note->title ?: 'Nota de clase' }}
                                 </h2>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    Alumno: {{ $note->student?->name ?? '—' }}
+                                    @if($note->student_id === null)
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-[#29b1dc]/15 px-2 py-0.5 text-xs font-semibold text-[#1a8eb5] dark:text-[#29b1dc]">📢 Toda la clase</span>
+                                    @else
+                                        Alumno: {{ $note->student?->name ?? '—' }}
+                                    @endif
                                     · Clase: {{ $note->subject?->subjectType?->description ?? '—' }}
                                     · {{ $note->created_at->diffForHumans() }}
                                 </p>

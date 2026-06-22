@@ -26,10 +26,14 @@ class TeacherPortalController extends Controller
         if ($teacher) {
             $calendarSubjects = $teacher->titularSubjects
                 ->concat($teacher->suplenteSubjects)
-                ->sortBy([
-                    fn ($s) => $this->dayOrder($s->day),
-                    fn ($s) => $s->start_time,
-                ])
+                ->sort(function ($a, $b) {
+                    $dayDiff = $this->dayOrder($a->day) <=> $this->dayOrder($b->day);
+                    if ($dayDiff !== 0) {
+                        return $dayDiff;
+                    }
+                    // Compare start_time as string (HH:MM:SS) — lexicographic order works correctly
+                    return strcmp($a->start_time ?? '', $b->start_time ?? '');
+                })
                 ->values();
         }
 
