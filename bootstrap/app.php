@@ -16,5 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Cuando la sesión expira (error 419), redirigir al login en lugar de mostrar la página de error.
+        // Esto es especialmente útil para usuarios que acceden desde accesos directos en el celular.
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'Tu sesión expiró. Por favor iniciá sesión nuevamente.',
+            ]);
+        });
     })->create();
+    
