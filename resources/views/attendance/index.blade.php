@@ -101,7 +101,7 @@
                             </td>
                             <td class="px-4 py-2 text-center">
                                 <span class="font-semibold text-green-700 dark:text-green-400">{{ $row->present_count }}</span>
-                                <span class="text-gray-500 dark:text-gray-400">/ {{ $row->total }}</span>
+                                <span class="text-gray-500 dark:text-gray-400">/ {{ $row->subject?->students_count ?? $row->total }}</span>
                             </td>
                             <td class="px-4 py-2 text-center whitespace-nowrap">
                                 <div class="flex flex-wrap items-center justify-center gap-2">

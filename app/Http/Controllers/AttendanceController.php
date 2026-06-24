@@ -25,7 +25,7 @@ class AttendanceController extends Controller
 
         $recent = AttendanceList::withCount('records as total')
             ->withCount(['records as present_count' => fn ($q) => $q->where('present', true)])
-            ->with('subject.subjectType')
+            ->with(['subject' => fn ($q) => $q->withCount('students')->with('subjectType')])
             ->orderBy($sortColumn, $direction)
             ->paginate(15)
             ->withQueryString();
@@ -54,27 +54,18 @@ class AttendanceController extends Controller
 
         $date = $request->date;
 
-        // Load or create the attendance list for this class + date
-        $list = AttendanceList::firstOrCreate([
-            'subject_id' => $subject->id,
-            'date'       => $date,
-        ]);
+        // Load existing attendance list (if any) — do NOT create it here.
+        // The list is created only when the teacher actually saves (storeSingle or store).
+        $list = AttendanceList::where('subject_id', $subject->id)
+            ->whereDate('date', $date)
+            ->first();
 
-        // Pre-create a record for every enrolled student (present = true by default).
-        // This ensures total always equals the number of enrolled students,
-        // even if the teacher hasn't clicked anything yet.
-        $enrolledIds = $subject->students()->pluck('students.id');
-        foreach ($enrolledIds as $studentId) {
-            AttendanceRecord::firstOrCreate(
-                ['attendance_list_id' => $list->id, 'student_id' => $studentId],
-                ['present' => true]
-            );
-        }
+        // Build present/absent map keyed by student_id from saved records
+        $existing = $list
+            ? $list->records()->pluck('present', 'student_id')->toArray()
+            : [];
 
-        // Build present/absent map keyed by student_id
-        $existing = $list->records()->pluck('present', 'student_id')->toArray();
-
-        $alreadySaved = true;
+        $alreadySaved = $list !== null;
 
         return view('attendance.take', compact('subject', 'date', 'existing', 'alreadySaved', 'list'));
     }
