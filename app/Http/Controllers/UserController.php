@@ -16,16 +16,41 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $search = $request->query('search');
-        $query  = User::with(['teacher', 'students'])
-                      ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%")
-                                                    ->orWhere('email', 'like', "%{$search}%")
-                                                    ->orWhere('dni', 'like', "%{$search}%"))
-                      ->orderBy('name');
+        $role   = $request->query('role');
+
+        $query = User::with(['teacher', 'students'])
+            ->when($search, fn ($q) => $q->where(fn ($q2) => $q2
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhere('dni', 'like', "%{$search}%")
+            ))
+            ->when($role, fn ($q) => $q->where('role', $role))
+            ->orderBy('name');
 
         $users = $query->paginate(15)->withQueryString();
         $roles = User::roles();
 
-        return view('users.index', compact('users', 'search', 'roles'));
+        return view('users.index', compact('users', 'search', 'role', 'roles'));
+    }
+
+    /**
+     * AJAX: buscar alumnos por nombre o DNI para el formulario de usuario.
+     * GET /users/search-students?q=...
+     */
+    public function searchStudents(Request $request)
+    {
+        $q = $request->query('q', '');
+
+        $students = Student::query()
+            ->when($q, fn ($query) => $query
+                ->where('name', 'like', "%{$q}%")
+                ->orWhere('dni', 'like', "%{$q}%")
+            )
+            ->orderBy('name')
+            ->limit(20)
+            ->get(['id', 'name', 'dni']);
+
+        return response()->json($students);
     }
 
     public function create()

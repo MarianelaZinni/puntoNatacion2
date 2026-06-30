@@ -1,6 +1,6 @@
 <x-layouts.app title="Usuarios">
     <div class="max-w-5xl mx-auto py-8 px-4">
-       <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">Gestión de Usuarios</h1>
             <a href="{{ route('users.create') }}"
                class="inline-flex items-center gap-2 px-4 py-2 bg-[#29b1dc] hover:bg-[#24a8cf] text-white rounded shadow transition focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#29b1dc]">
@@ -20,6 +20,49 @@
             </div>
         @endif
 
+        {{-- Buscador y filtro de rol --}}
+        <form method="GET" action="{{ route('users.index') }}" class="mb-4 flex flex-wrap gap-3 items-end">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Buscar</label>
+                <div class="relative">
+                    <input
+                        type="text"
+                        name="search"
+                        value="{{ $search }}"
+                        placeholder="Nombre, email o DNI..."
+                        class="w-full pl-9 pr-3 py-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-[#29b1dc]"
+                    >
+                    <flux:icon name="magnifying-glass" class="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                </div>
+            </div>
+            <div class="min-w-[160px]">
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Rol</label>
+                <select
+                    name="role"
+                    class="w-full px-3 py-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-[#29b1dc]"
+                >
+                    <option value="">Todos los roles</option>
+                    @foreach($roles as $value => $label)
+                        <option value="{{ $value }}" {{ ($role ?? '') === $value ? 'selected' : '' }}>
+                            {{ $label }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit"
+                        class="px-4 py-2 rounded bg-[#29b1dc] hover:bg-[#24a8cf] text-white text-sm transition">
+                    Filtrar
+                </button>
+                @if($search || $role)
+                    <a href="{{ route('users.index') }}"
+                       class="px-4 py-2 rounded border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-zinc-800 transition">
+                        Limpiar
+                    </a>
+                @endif
+            </div>
+        </form>
+
         <div class="overflow-x-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
                 <thead class="bg-gray-50 dark:bg-gray-800">
@@ -28,18 +71,18 @@
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Email / DNI</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Rol</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Vinculado a</th>
-                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase min-w-[100px]">Acciones</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase min-w-[100px]">Acciones</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
                     @forelse($users as $user)
                     @php
                         $roleBadge = [
-                            'admin'      => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-                            'enfermeria' => 'bg-lime-100 text-lime-800 dark:bg-lime-900/40 dark:text-lime-300',
-                            'alumno'     => 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+                            'admin'        => 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+                            'enfermeria'   => 'bg-lime-100 text-lime-800 dark:bg-lime-900/40 dark:text-lime-300',
+                            'alumno'       => 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
                             'super_alumno' => 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/40 dark:text-fuchsia-300',
-                            'profesor'   => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+                            'profesor'     => 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
                         ][$user->role] ?? 'bg-gray-100 text-gray-600';
                     @endphp
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
@@ -84,7 +127,7 @@
                     @empty
                     <tr>
                         <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                            No hay usuarios registrados.
+                            No se encontraron usuarios{{ ($search || $role) ? ' con los filtros aplicados' : '' }}.
                         </td>
                     </tr>
                     @endforelse
@@ -98,7 +141,6 @@
     </div>
 
     @push('scripts')
-
     <script>
     function confirmDeleteUser(btn) {
         Swal.fire({

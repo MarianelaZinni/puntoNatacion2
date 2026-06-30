@@ -64,12 +64,32 @@
                 Seleccioná primero los alumnos vinculados para habilitar los datos del usuario.
             </p>
         @endif
-        <div class="max-h-48 overflow-y-auto border border-gray-300 dark:border-zinc-700 rounded p-2 bg-white dark:bg-zinc-800 space-y-1">
+
+        {{-- Buscador de alumnos --}}
+        <div class="mb-2">
+            <input
+                type="text"
+                id="student-search"
+                placeholder="Buscar por nombre o DNI..."
+                autocomplete="off"
+                class="w-full px-3 py-1.5 text-sm rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#29b1dc]"
+            >
+        </div>
+
+        {{-- Lista de alumnos seleccionados (chips) --}}
+        <div id="selected-students-chips" class="flex flex-wrap gap-1 mb-2 min-h-[24px]"></div>
+
+        {{-- Resultados de búsqueda --}}
+        <div id="student-search-results" class="hidden max-h-48 overflow-y-auto border border-gray-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-800 shadow-sm divide-y divide-gray-100 dark:divide-zinc-700"></div>
+
+        {{-- Contenedor de checkboxes oculto — solo existe para que los inputs se envíen con el form --}}
+        <div id="student-checkboxes" class="hidden">
             @foreach($students as $student)
-                @php
-                    $checked = in_array($student->id, $selectedStudentIds, true);
-                @endphp
-                <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-700 px-1 rounded">
+                @php $checked = in_array($student->id, $selectedStudentIds, true); @endphp
+                <label class="student-checkbox-item {{ $checked ? '' : 'hidden' }}"
+                       data-student-id="{{ $student->id }}"
+                       data-student-name="{{ $student->name }}"
+                       data-student-dni="{{ $student->dni }}">
                     <input
                         type="checkbox"
                         name="student_ids[]"

@@ -107,6 +107,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Gestión de usuarios
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('/users/search-students', [UserController::class, 'searchStudents'])->name('users.search-students');
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
