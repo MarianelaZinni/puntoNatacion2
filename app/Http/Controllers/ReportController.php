@@ -210,7 +210,7 @@ class ReportController extends Controller
      */
     private function fetchAllStudentsData(Request $request): array
     {
-        $students = Student::with(['subjects.subjectType'])->orderBy('name')->get();
+        $students = Student::with(['subjects.subjectType'])->whereHas('subjects')->orderBy('name')->get();
 
         return [
             'company' => $this->companyName,
