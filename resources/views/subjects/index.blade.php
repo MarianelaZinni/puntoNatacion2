@@ -91,17 +91,31 @@
     </div>
 
     <style>
-    .slot-card { cursor:pointer; }
-    .slot-card:hover { transform: translateY(-2px); transition: transform .12s ease; }
+.slot-card {
+    cursor: pointer;
+}
+
+.slot-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.10);
+}
     </style>
 
     @push('scripts')
     <script>
     (function () {
-        const subjects = @json($subjectsForJs);
-        const subjectTypes = @json($subjectTypesForJs);
-        const subjectColors = @json($subjectColors);
-        const teachers = @json($teachersForJs);
+       const subjects = @json($subjectsForJs);
+const subjectTypes = @json($subjectTypesForJs);
+const subjectColors = @json($subjectColors);
+const teachers = @json($teachersForJs);
+
+console.log('========== CALENDARIO ==========');
+console.log('subjects:', subjects);
+console.log('Cantidad de clases:', subjects.length);
+console.log('subjectTypes:', subjectTypes);
+console.log('subjectColors:', subjectColors);
+console.log('teachers:', teachers);
+console.log('================================');
 
         const days = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado'];
         const slotMinutes = 50;
@@ -132,20 +146,34 @@
             return `${H}:${M}`;
         }
 
-        function buildScheduleMap() {
-            const map = {};
-            for (const d of days) {
-                map[d] = {};
-                for (const s of slots) map[d][s] = [];
-            }
-            for (const s of subjects) {
-                if (!s || !s.day || !s.start_time) continue;
-                if (!map[s.day]) continue;
-                map[s.day][s.start_time] = map[s.day][s.start_time] || [];
-                map[s.day][s.start_time].push(s);
-            }
-            return map;
-        }
+        function timeToMinutes(time) {
+    if (!time) return 0;
+
+    const [hours, minutes] = time.substring(0, 5)
+        .split(':')
+        .map(Number);
+
+    return (hours * 60) + minutes;
+}
+
+
+
+ function buildScheduleMap() {
+    const map = {};
+
+    days.forEach(day => {
+        map[day] = [];
+    });
+
+    subjects.forEach(s => {
+        if (!s || !s.day || !s.start_time) return;
+        if (!map[s.day]) return;
+
+        map[s.day].push(s);
+    });
+
+    return map;
+}
 
         function hexToRgba(hex, alpha) {
             const h = hex.replace('#','');
@@ -164,68 +192,241 @@
             });
         }
 
-        function renderGridInto(container) {
-            const scheduleMap = buildScheduleMap();
-            let html = '<div class="overflow-auto border border-gray-200 dark:border-gray-700 rounded">';
+function renderGridInto(container) {
+    const scheduleMap = buildScheduleMap();
 
-            html += '<div class="grid grid-cols-6 gap-0 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">';
-            for (let i=0;i<days.length;i++) {
-                html += `<div class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 text-center">${days[i]}</div>`;
-            }
-            html += '</div>';
+    let html = `
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
 
-            html += '<div class="flex flex-col">';
-            slots.forEach(slot => {
-                html += `<div class="grid grid-cols-6 gap-0 border-b border-gray-100 dark:border-gray-800 min-h-[64px]">`;
-                days.forEach(day => {
-                    const cellSubjects = scheduleMap[day][slot] || [];
-                    let cellInner = `<div class="p-2">`;
-                    if (cellSubjects.length === 0) {
-                        cellInner += `<div class="text-xs text-gray-400 dark:text-gray-600">${slot}</div>`;
-                    } else {
-                        for (const subj of cellSubjects) {
-                            const color = subjectColors[subj.subject_type_id] || '#29b1dc';
-                            const enrolled = subj.students ? subj.students.length : 0;
-                            const title = subj.subject_type ? (subj.subject_type.description || subj.subject_type.value || 'Materia') : 'Materia';
-                            cellInner += `
-                                <button
-                                    type="button"
-                                    class="slot-card w-full text-left block mb-1 p-2 rounded shadow-sm"
-                                    style="background: linear-gradient(90deg, ${hexToRgba(color,0.16)}, ${hexToRgba(color,0.06)}); border-left:4px solid ${color};"
-                                    data-subject-id="${subj.id}"
-                                    data-subject='${escapeHtml(JSON.stringify(subj))}'
-                                >
-                                    <div class="flex items-center justify-between">
-                                        <div class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">${escapeHtml(title)}</div>
-                                    </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-300 mt-1">${escapeHtml(subj.start_time)} — ${escapeHtml(subj.end_time)}</div>
-                                    <div class="text-xs text-gray-600 dark:text-gray-300 mt-1">${enrolled}/${subj.capacity || '—'}</div>
-                                    ${subj.titular_teacher_name ? `<div class="text-xs text-blue-600 dark:text-blue-300 mt-1 truncate">T: ${escapeHtml(subj.titular_teacher_name)}</div>` : ''}
-                                    ${subj.suplente_teacher_name ? `<div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">S: ${escapeHtml(subj.suplente_teacher_name)}</div>` : ''}
-                                </button>
-                            `;
-                        }
-                    }
-                    cellInner += `</div>`;
-                    html += `<div class="border-r border-gray-100 dark:border-gray-800">${cellInner}</div>`;
-                });
-                html += `</div>`;
-            });
-            html += '</div>';
+            <!-- Encabezado de días -->
+            <div class="
+                grid grid-cols-6
+                bg-gray-50 dark:bg-gray-800
+                border-b border-gray-200 dark:border-gray-700
+            ">
+    `;
 
-            html += '</div>';
-            container.innerHTML = html;
+    days.forEach(day => {
+        html += `
+            <div class="
+                px-2 py-3
+                text-sm font-semibold
+                text-gray-700 dark:text-gray-200
+                text-center
+                border-r border-gray-200 dark:border-gray-700
+            ">
+                ${day}
+            </div>
+        `;
+    });
 
-            // attach handlers
-            container.querySelectorAll('.slot-card').forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const subjStr = btn.dataset.subject;
-                    let subj;
-                    try { subj = JSON.parse(subjStr); } catch(e) { console.error(e); return; }
-                    openEditModal(subj);
-                });
-            });
+    html += `
+            </div>
+
+            <!-- Columnas de días -->
+            <div class="grid grid-cols-6">
+    `;
+
+    days.forEach(day => {
+
+        const daySubjects = [...(scheduleMap[day] || [])];
+
+        // Orden cronológico
+        daySubjects.sort((a, b) => {
+            return timeToMinutes(a.start_time) -
+                   timeToMinutes(b.start_time);
+        });
+
+        html += `
+            <div class="
+                p-2
+                border-r
+                border-gray-100
+                dark:border-gray-800
+                min-h-[500px]
+            ">
+        `;
+
+        // Si no hay clases
+        if (daySubjects.length === 0) {
+            html += `
+                <div class="
+                    text-center
+                    text-xs
+                    text-gray-400
+                    dark:text-gray-500
+                    py-8
+                ">
+                    Sin clases
+                </div>
+            `;
         }
+
+        // Clases del día
+        daySubjects.forEach(subj => {
+
+            const color =
+                subjectColors[subj.subject_type_id] || '#29b1dc';
+
+            const enrolled =
+                subj.students
+                    ? subj.students.length
+                    : 0;
+
+            const title =
+                subj.subject_type
+                    ? (
+                        subj.subject_type.description ||
+                        subj.subject_type.value ||
+                        'Materia'
+                    )
+                    : 'Materia';
+
+            html += `
+                <button
+                    type="button"
+                    class="
+                        slot-card
+                        w-full
+                        text-left
+                        rounded-lg
+                        shadow-sm
+                        overflow-hidden
+                        block
+                        mb-2
+                        transition
+                    "
+                    style="
+                        background: linear-gradient(
+                            90deg,
+                            ${hexToRgba(color, 0.16)},
+                            ${hexToRgba(color, 0.06)}
+                        );
+                        border-left: 4px solid ${color};
+                    "
+                    data-subject-id="${subj.id}"
+                    data-subject='${escapeHtml(
+                        JSON.stringify(subj)
+                    )}'
+                >
+
+                    <div class="p-2.5">
+
+                        <!-- Horario -->
+<div class="
+    text-xs
+    font-medium
+    text-gray-500
+    dark:text-gray-400
+    whitespace-nowrap
+">
+    ${escapeHtml(subj.start_time)}
+    –
+    ${escapeHtml(subj.end_time)}
+</div>
+
+<!-- Nombre de la clase -->
+<div class="
+    text-sm
+    font-semibold
+    text-gray-800
+    dark:text-gray-100
+    mt-1
+    leading-tight
+">
+    ${escapeHtml(title)}
+</div>
+
+                        <!-- Alumnos -->
+                        <div class="
+                            text-xs
+                            text-gray-600
+                            dark:text-gray-300
+                        ">
+                            ${enrolled}/${subj.capacity || '—'}
+                        </div>
+
+                        <!-- Profesor titular -->
+                        ${
+                            subj.titular_teacher_name
+                                ? `
+                                    <div class="
+                                        text-xs
+                                        text-blue-600
+                                        dark:text-blue-300
+                                        mt-1
+                                        truncate
+                                    ">
+                                        T: ${escapeHtml(
+                                            subj.titular_teacher_name
+                                        )}
+                                    </div>
+                                  `
+                                : ''
+                        }
+
+                        <!-- Profesor suplente -->
+                        ${
+                            subj.suplente_teacher_name
+                                ? `
+                                    <div class="
+                                        text-xs
+                                        text-gray-500
+                                        dark:text-gray-400
+                                        mt-0.5
+                                        truncate
+                                    ">
+                                        S: ${escapeHtml(
+                                            subj.suplente_teacher_name
+                                        )}
+                                    </div>
+                                  `
+                                : ''
+                        }
+
+                    </div>
+                </button>
+            `;
+        });
+
+        html += `
+            </div>
+        `;
+    });
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+
+    // Click sobre las clases
+    container
+        .querySelectorAll('.slot-card')
+        .forEach(btn => {
+
+            btn.addEventListener('click', function () {
+
+                const subjStr =
+                    btn.dataset.subject;
+
+                let subj;
+
+                try {
+                    subj = JSON.parse(subjStr);
+                } catch (e) {
+                    console.error(
+                        'Error parseando subject:',
+                        e
+                    );
+                    return;
+                }
+
+                openEditModal(subj);
+            });
+        });
+}
 
         // Modal logic (existing code kept, omitted here for brevity in comment)
         const modal = document.getElementById('class-modal');

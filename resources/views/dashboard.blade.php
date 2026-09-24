@@ -92,21 +92,39 @@
         }
         const slots = generateSlots();
 
+        function timeToMinutes(time) {
+    if (!time) return 0;
+
+    const [hours, minutes] = time
+        .substring(0, 5)
+        .split(':')
+        .map(Number);
+
+    return (hours * 60) + minutes;
+}
+
         // build scheduleMap
-        function buildScheduleMap() {
-            const map = {};
-            for (const d of days) {
-                map[d] = {};
-                for (const s of slots) map[d][s] = [];
-            }
-            for (const s of subjects) {
-                if (!s || !s.day || !s.start_time) continue;
-                if (!map[s.day]) continue;
-                map[s.day][s.start_time] = map[s.day][s.start_time] || [];
-                map[s.day][s.start_time].push(s);
-            }
-            return map;
+      function buildScheduleMap() {
+    const map = {};
+
+    days.forEach(day => {
+        map[day] = [];
+    });
+
+    subjects.forEach(subject => {
+        if (!subject || !subject.day || !subject.start_time) {
+            return;
         }
+
+        if (!map[subject.day]) {
+            return;
+        }
+
+        map[subject.day].push(subject);
+    });
+
+    return map;
+}
 
         function hexToRgba(hex, alpha) {
             const h = hex.replace('#','');
@@ -126,102 +144,239 @@
         }
 
         // render function
-        function renderGridInto(container) {
-            const scheduleMap = buildScheduleMap();
-             let html = '<div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded">';
-            html += '<div class="min-w-[600px]">';
+       function renderGridInto(container) {
+    const scheduleMap = buildScheduleMap();
 
-            // header
-            html += '<div class="grid grid-cols-6 gap-0 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">';
-            for (let i=0;i<days.length;i++) {
-                html += `<div class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 text-center">${days[i]}</div>`;
-            }
-            html += '</div>';
+    let html = `
+        <div class="
+            overflow-x-auto
+            border
+            border-gray-200
+            dark:border-gray-700
+            rounded
+        ">
 
-            // rows
-            html += '<div class="flex flex-col">';
-            slots.forEach(slot => {
-                html += `<div class="grid grid-cols-6 gap-0 border-b border-gray-100 dark:border-gray-800 min-h-[64px]">`;
-                days.forEach(day => {
-                    const cellSubjects = scheduleMap[day][slot] || [];
-                    let cellInner = `<div class="p-2">`;
-                    if (cellSubjects.length === 0) {
-                        cellInner += `<div class="text-xs text-gray-400 dark:text-gray-600">${slot}</div>`;
-                    } else {
-                        for (const subj of cellSubjects) {
-                            const color = subjectColors[subj.subject_type_id] || '#29b1dc';
-                            const enrolled = subj.students ? subj.students.length : 0;
-                            const title = subj.subject_type ? (subj.subject_type.description || subj.subject_type.value || 'Materia') : 'Materia';
-                            cellInner += `
-                                <button
-                                    type="button"
-                                    data-subject-id="${subj.id}"
-                                    class="w-full text-left block mb-1 p-2 rounded shadow-sm cursor-pointer subject-card"
-                                    style="background: linear-gradient(90deg, ${hexToRgba(color,0.18)}, ${hexToRgba(color,0.06)}); border-left:4px solid ${color};"
-                                >
-                                    <div class="flex items-center justify-between">
-                                        <div class="text-sm font-semibold text-gray-800 dark:text-gray-100">${escapeHtml(title)}</div>
-                                    </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-300 mt-1">${escapeHtml(subj.start_time)} — ${escapeHtml(subj.end_time)}</div>
-                                    <div class="text-xs text-gray-600 dark:text-gray-300 mt-1">${enrolled}/${subj.capacity ?? '—'}</div>
-                                </button>
-                            `;
-                        }
-                    }
-                    cellInner += `</div>`;
-                    html += `<div class="border-r border-gray-100 dark:border-gray-800">${cellInner}</div>`;
-                });
-                html += `</div>`;
-            });
-            html += '</div>';
-            html += '</div>';
-             html += '</div>';
+            <div class="min-w-[600px]">
 
-            container.innerHTML = html;
+                <!-- Encabezado de días -->
+                <div class="
+                    grid
+                    grid-cols-6
+                    gap-0
+                    bg-gray-50
+                    dark:bg-gray-800
+                    border-b
+                    border-gray-200
+                    dark:border-gray-700
+                ">
+    `;
 
-            // attach click handlers — navigate to attendance/take for today
-            // Date is provided by the server (app timezone = America/Argentina/Buenos_Aires)
-            // to avoid depending on the client browser's timezone.
-            const TODAY_DATE = '{{ $todayDate }}';
-            container.querySelectorAll('[data-subject-id]').forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const subjId = btn.getAttribute('data-subject-id');
-                    window.location.href = `/attendance/take?subject_id=${encodeURIComponent(subjId)}&date=${encodeURIComponent(TODAY_DATE)}`;
-                });
-            });
+    days.forEach(day => {
+        html += `
+            <div class="
+                px-3
+                py-3
+                text-sm
+                font-semibold
+                text-gray-700
+                dark:text-gray-200
+                text-center
+                border-r
+                border-gray-200
+                dark:border-gray-700
+            ">
+                ${day}
+            </div>
+        `;
+    });
+
+    html += `
+                </div>
+
+                <!-- Columnas de días -->
+                <div class="grid grid-cols-6 gap-0">
+    `;
+
+    days.forEach(day => {
+
+        /*
+         * Todas las clases de este día
+         */
+        const daySubjects = [
+            ...(scheduleMap[day] || [])
+        ];
+
+        /*
+         * Orden cronológico
+         */
+        daySubjects.sort((a, b) => {
+            return timeToMinutes(a.start_time) -
+                   timeToMinutes(b.start_time);
+        });
+
+        html += `
+            <div class="
+                p-2
+                border-r
+                border-gray-100
+                dark:border-gray-800
+                min-h-[500px]
+            ">
+        `;
+
+        /*
+         * Si no hay clases
+         */
+        if (daySubjects.length === 0) {
+
+            html += `
+                <div class="
+                    text-center
+                    text-xs
+                    text-gray-400
+                    dark:text-gray-500
+                    py-8
+                ">
+                    Sin clases
+                </div>
+            `;
         }
 
-        // Modal logic (uses #students-modal in DOM)
-        const modalEl = document.getElementById('students-modal');
-        const modalTitle = document.getElementById('students-modal-title');
-        const modalBody = document.getElementById('students-modal-body');
-        document.getElementById('students-modal-close')?.addEventListener('click', () => { modalEl.classList.add('hidden'); });
-        document.getElementById('students-modal-close-2')?.addEventListener('click', () => { modalEl.classList.add('hidden'); });
+        /*
+         * Clases del día
+         */
+        daySubjects.forEach(subj => {
 
-        // Use the preloaded subject object to populate modal (no network)
-        function openStudentsModalFromData(subj) {
-            try {
-                const title = subj.subject_type ? (subj.subject_type.description || subj.subject_type.value || 'Materia') : 'Materia';
-                modalTitle.textContent = `${title}`;
-                modalBody.innerHTML = '';
-                const studentsList = subj.students || [];
-                if (studentsList.length) {
-                    studentsList.forEach(st => {
-                        const el = document.createElement('div');
-                        el.className = 'flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700';
-                        el.innerHTML = `<div class="text-sm font-medium text-gray-900 dark:text-gray-100">${escapeHtml(st.name)}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-300">${escapeHtml(st.email || '')}</div>`;
-                        modalBody.appendChild(el);
-                    });
-                } else {
-                    modalBody.innerHTML = `<div class="text-sm text-gray-600 dark:text-gray-400">No hay alumnos inscriptos.</div>`;
-                }
-                modalEl.classList.remove('hidden');
-            } catch (err) {
-                console.error(err);
-                 Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo mostrar la información.' });
-            }
-        }
+            const color =
+                subjectColors[subj.subject_type_id]
+                || '#29b1dc';
+
+            const enrolled =
+                subj.students
+                    ? subj.students.length
+                    : 0;
+
+            const title =
+                subj.subject_type
+                    ? (
+                        subj.subject_type.description ||
+                        subj.subject_type.value ||
+                        'Materia'
+                    )
+                    : 'Materia';
+
+            html += `
+                <button
+                    type="button"
+                    data-subject-id="${subj.id}"
+                    class="
+    w-full
+    text-left
+    block
+    mb-2
+    p-2.5
+    rounded-lg
+    shadow-sm
+    cursor-pointer
+    slot-card
+    transition
+"
+                    style="
+                        background: linear-gradient(
+                            90deg,
+                            ${hexToRgba(color, 0.16)},
+                            ${hexToRgba(color, 0.06)}
+                        );
+                        border-left: 4px solid ${color};
+                        .slot-card {
+    cursor: pointer;
+}
+
+.slot-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.10);
+}
+                    "
+                >
+
+                    <!-- Horario -->
+                    <div class="
+                        text-xs
+                        font-medium
+                        text-gray-500
+                        dark:text-gray-400
+                        whitespace-nowrap
+                    ">
+                        ${escapeHtml(subj.start_time)}
+                        –
+                        ${escapeHtml(subj.end_time)}
+                    </div>
+
+                    <!-- Nombre de la clase -->
+                    <div class="
+                        text-sm
+                        font-semibold
+                        text-gray-800
+                        dark:text-gray-100
+                        mt-1
+                        leading-tight
+                    ">
+                        ${escapeHtml(title)}
+                    </div>
+
+                    <!-- Inscriptos -->
+                    <div class="
+                        text-xs
+                        text-gray-600
+                        dark:text-gray-300
+                        mt-1
+                    ">
+                        ${enrolled}/${subj.capacity ?? '—'}
+                    </div>
+
+                </button>
+            `;
+        });
+
+        html += `
+            </div>
+        `;
+    });
+
+    html += `
+                </div>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+
+    /*
+     * Click sobre una clase
+     *
+     * Mantenemos exactamente el comportamiento
+     * que ya tenía el Dashboard.
+     */
+    const TODAY_DATE = '{{ $todayDate }}';
+
+    container
+        .querySelectorAll('[data-subject-id]')
+        .forEach(btn => {
+
+            btn.addEventListener('click', function () {
+
+                const subjId =
+                    btn.getAttribute('data-subject-id');
+
+                window.location.href =
+                    `/attendance/take?subject_id=${
+                        encodeURIComponent(subjId)
+                    }&date=${
+                        encodeURIComponent(TODAY_DATE)
+                    }`;
+            });
+        });
+}
 
         // Fallback: fetch subject details from server (kept for compatibility)
         async function openStudentsModal(subjectId) {
