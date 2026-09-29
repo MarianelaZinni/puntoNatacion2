@@ -73,7 +73,7 @@
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.10);
 }
     </style>
-    
+
     @push('scripts')
     <script>
     (function () {
@@ -166,7 +166,7 @@ function renderGridInto(container) {
      * Esto se usa para calcular el espacio entre
      * diferentes horarios.
      */
-    const pixelsPerMinute = 2;
+    const pixelsPerMinute = 1;
 
     /*
      * Obtener todas las horas de inicio existentes

@@ -193,27 +193,117 @@ console.log('================================');
         }
 
 function renderGridInto(container) {
+
     const scheduleMap = buildScheduleMap();
 
+    /*
+     * Escala vertical.
+     *
+     * Se usa para generar el espacio entre distintos
+     * horarios de inicio.
+     */
+    const pixelsPerMinute = 1;
+
+    /*
+     * Obtener todos los horarios de inicio existentes
+     * en toda la semana.
+     *
+     * Ejemplo:
+     * 07:00
+     * 07:05
+     * 07:50
+     * 08:40
+     * 08:51
+     */
+    const startTimes = [];
+
+    days.forEach(day => {
+
+        const daySubjects = scheduleMap[day] || [];
+
+        daySubjects.forEach(subj => {
+
+            if (!subj || !subj.start_time) {
+                return;
+            }
+
+            if (!startTimes.includes(subj.start_time)) {
+                startTimes.push(subj.start_time);
+            }
+        });
+    });
+
+    /*
+     * Orden cronológico de los horarios.
+     */
+    startTimes.sort((a, b) => {
+        return timeToMinutes(a) - timeToMinutes(b);
+    });
+
+    /*
+     * Agrupar las clases por día + horario.
+     *
+     * Esto permite que dos clases del mismo día
+     * que empiezan a la misma hora se dibujen
+     * una debajo de la otra.
+     */
+    const subjectsByDayAndTime = {};
+
+    days.forEach(day => {
+
+        subjectsByDayAndTime[day] = {};
+
+        const daySubjects = scheduleMap[day] || [];
+
+        daySubjects.forEach(subj => {
+
+            if (!subj || !subj.start_time) {
+                return;
+            }
+
+            if (!subjectsByDayAndTime[day][subj.start_time]) {
+                subjectsByDayAndTime[day][subj.start_time] = [];
+            }
+
+            subjectsByDayAndTime[day][subj.start_time].push(subj);
+        });
+    });
+
     let html = `
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <div class="
+            border
+            border-gray-200
+            dark:border-gray-700
+            rounded-lg
+            overflow-hidden
+        ">
 
             <!-- Encabezado de días -->
             <div class="
-                grid grid-cols-6
-                bg-gray-50 dark:bg-gray-800
-                border-b border-gray-200 dark:border-gray-700
+                grid
+                grid-cols-6
+                bg-gray-50
+                dark:bg-gray-800
+                border-b
+                border-gray-200
+                dark:border-gray-700
             ">
     `;
 
     days.forEach(day => {
+
         html += `
             <div class="
-                px-2 py-3
-                text-sm font-semibold
-                text-gray-700 dark:text-gray-200
+                px-2
+                py-3
+                text-sm
+                font-semibold
+                text-gray-700
+                dark:text-gray-200
                 text-center
-                border-r border-gray-200 dark:border-gray-700
+                border-r
+                border-gray-200
+                dark:border-gray-700
             ">
                 ${day}
             </div>
@@ -223,169 +313,208 @@ function renderGridInto(container) {
     html += `
             </div>
 
-            <!-- Columnas de días -->
-            <div class="grid grid-cols-6">
+            <!-- Filas de horarios -->
+            <div>
     `;
 
-    days.forEach(day => {
+    /*
+     * Una fila por cada horario de inicio.
+     */
+    startTimes.forEach((startTime, timeIndex) => {
 
-        const daySubjects = [...(scheduleMap[day] || [])];
+        const currentMinutes =
+            timeToMinutes(startTime);
 
-        // Orden cronológico
-        daySubjects.sort((a, b) => {
-            return timeToMinutes(a.start_time) -
-                   timeToMinutes(b.start_time);
-        });
+        /*
+         * Espacio vertical respecto del horario anterior.
+         */
+        let timeGap = 0;
 
-        html += `
-            <div class="
-                p-2
-                border-r
-                border-gray-100
-                dark:border-gray-800
-                min-h-[500px]
-            ">
-        `;
+        if (timeIndex > 0) {
 
-        // Si no hay clases
-        if (daySubjects.length === 0) {
-            html += `
-                <div class="
-                    text-center
-                    text-xs
-                    text-gray-400
-                    dark:text-gray-500
-                    py-8
-                ">
-                    Sin clases
-                </div>
-            `;
+            const previousMinutes =
+                timeToMinutes(startTimes[timeIndex - 1]);
+
+            timeGap =
+                (currentMinutes - previousMinutes)
+                * pixelsPerMinute;
         }
 
-        // Clases del día
-        daySubjects.forEach(subj => {
+        /*
+         * El primer horario empieza directamente.
+         * Los siguientes dejan espacio proporcional
+         * a la diferencia horaria.
+         */
+        const paddingTop =
+            timeIndex === 0
+                ? 0
+                : timeGap;
 
-            const color =
-                subjectColors[subj.subject_type_id] || '#29b1dc';
+        html += `
+            <div
+                class="
+                    grid
+                    grid-cols-6
+                    gap-0
+                    items-start
+                "
+                style="
+                    padding-top: ${paddingTop}px;
+                "
+            >
+        `;
 
-            const enrolled =
-                subj.students
-                    ? subj.students.length
-                    : 0;
+        days.forEach(day => {
 
-            const title =
-                subj.subject_type
-                    ? (
-                        subj.subject_type.description ||
-                        subj.subject_type.value ||
-                        'Materia'
-                    )
-                    : 'Materia';
+            const classes =
+                subjectsByDayAndTime[day][startTime] || [];
 
             html += `
-                <button
-                    type="button"
-                    class="
-                        slot-card
-                        w-full
-                        text-left
-                        rounded-lg
-                        shadow-sm
-                        overflow-hidden
-                        block
-                        mb-2
-                        transition
-                    "
-                    style="
-                        background: linear-gradient(
-                            90deg,
-                            ${hexToRgba(color, 0.16)},
-                            ${hexToRgba(color, 0.06)}
-                        );
-                        border-left: 4px solid ${color};
-                    "
-                    data-subject-id="${subj.id}"
-                    data-subject='${escapeHtml(
-                        JSON.stringify(subj)
-                    )}'
-                >
+                <div class="
+                    px-2
+                    border-r
+                    border-gray-100
+                    dark:border-gray-800
+                    flex
+                    flex-col
+                    gap-2
+                ">
+            `;
 
-                    <div class="p-2.5">
+            /*
+             * Si no hay clase en este día para este horario,
+             * la celda queda vacía.
+             */
+            classes.forEach(subj => {
 
-                        <!-- Horario -->
-<div class="
-    text-xs
-    font-medium
-    text-gray-500
-    dark:text-gray-400
-    whitespace-nowrap
-">
-    ${escapeHtml(subj.start_time)}
-    –
-    ${escapeHtml(subj.end_time)}
-</div>
+                const color =
+                    subjectColors[subj.subject_type_id]
+                    || '#29b1dc';
 
-<!-- Nombre de la clase -->
-<div class="
-    text-sm
-    font-semibold
-    text-gray-800
-    dark:text-gray-100
-    mt-1
-    leading-tight
-">
-    ${escapeHtml(title)}
-</div>
+                const enrolled =
+                    subj.students
+                        ? subj.students.length
+                        : 0;
 
-                        <!-- Alumnos -->
-                        <div class="
-                            text-xs
-                            text-gray-600
-                            dark:text-gray-300
-                        ">
-                            ${enrolled}/${subj.capacity || '—'}
+                const title =
+                    subj.subject_type
+                        ? (
+                            subj.subject_type.description ||
+                            subj.subject_type.value ||
+                            'Materia'
+                        )
+                        : 'Materia';
+
+                html += `
+                    <button
+                        type="button"
+                        class="
+                            slot-card
+                            w-full
+                            text-left
+                            rounded-lg
+                            shadow-sm
+                            overflow-hidden
+                            block
+                            transition
+                        "
+                        style="
+                            background: linear-gradient(
+                                90deg,
+                                ${hexToRgba(color, 0.16)},
+                                ${hexToRgba(color, 0.06)}
+                            );
+                            border-left: 4px solid ${color};
+                        "
+                        data-subject-id="${subj.id}"
+                        data-subject='${escapeHtml(
+                            JSON.stringify(subj)
+                        )}'
+                    >
+
+                        <div class="p-2.5">
+
+                            <!-- Horario -->
+                            <div class="
+                                text-xs
+                                font-medium
+                                text-gray-500
+                                dark:text-gray-400
+                                whitespace-nowrap
+                            ">
+                                ${escapeHtml(subj.start_time)}
+                                –
+                                ${escapeHtml(subj.end_time)}
+                            </div>
+
+                            <!-- Nombre de la clase -->
+                            <div class="
+                                text-sm
+                                font-semibold
+                                text-gray-800
+                                dark:text-gray-100
+                                mt-1
+                                leading-tight
+                            ">
+                                ${escapeHtml(title)}
+                            </div>
+
+                            <!-- Alumnos -->
+                            <div class="
+                                text-xs
+                                text-gray-600
+                                dark:text-gray-300
+                                mt-1
+                            ">
+                                ${enrolled}/${subj.capacity || '—'}
+                            </div>
+
+                            <!-- Profesor titular -->
+                            ${
+                                subj.titular_teacher_name
+                                    ? `
+                                        <div class="
+                                            text-xs
+                                            text-blue-600
+                                            dark:text-blue-300
+                                            mt-1
+                                            truncate
+                                        ">
+                                            T: ${escapeHtml(
+                                                subj.titular_teacher_name
+                                            )}
+                                        </div>
+                                      `
+                                    : ''
+                            }
+
+                            <!-- Profesor suplente -->
+                            ${
+                                subj.suplente_teacher_name
+                                    ? `
+                                        <div class="
+                                            text-xs
+                                            text-gray-500
+                                            dark:text-gray-400
+                                            mt-0.5
+                                            truncate
+                                        ">
+                                            S: ${escapeHtml(
+                                                subj.suplente_teacher_name
+                                            )}
+                                        </div>
+                                      `
+                                    : ''
+                            }
+
                         </div>
 
-                        <!-- Profesor titular -->
-                        ${
-                            subj.titular_teacher_name
-                                ? `
-                                    <div class="
-                                        text-xs
-                                        text-blue-600
-                                        dark:text-blue-300
-                                        mt-1
-                                        truncate
-                                    ">
-                                        T: ${escapeHtml(
-                                            subj.titular_teacher_name
-                                        )}
-                                    </div>
-                                  `
-                                : ''
-                        }
+                    </button>
+                `;
+            });
 
-                        <!-- Profesor suplente -->
-                        ${
-                            subj.suplente_teacher_name
-                                ? `
-                                    <div class="
-                                        text-xs
-                                        text-gray-500
-                                        dark:text-gray-400
-                                        mt-0.5
-                                        truncate
-                                    ">
-                                        S: ${escapeHtml(
-                                            subj.suplente_teacher_name
-                                        )}
-                                    </div>
-                                  `
-                                : ''
-                        }
-
-                    </div>
-                </button>
+            html += `
+                </div>
             `;
         });
 
@@ -401,7 +530,12 @@ function renderGridInto(container) {
 
     container.innerHTML = html;
 
-    // Click sobre las clases
+    /*
+     * Click sobre las clases.
+     *
+     * Mantenemos exactamente el comportamiento
+     * de esta versión: abrir el modal de edición.
+     */
     container
         .querySelectorAll('.slot-card')
         .forEach(btn => {
@@ -414,12 +548,16 @@ function renderGridInto(container) {
                 let subj;
 
                 try {
+
                     subj = JSON.parse(subjStr);
+
                 } catch (e) {
+
                     console.error(
                         'Error parseando subject:',
                         e
                     );
+
                     return;
                 }
 
